@@ -1,0 +1,6 @@
+name: a recipe rank whose next rank is learnt is listed as well, so one recipe shows as several
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if type(info) == "table" and info.learned and not superseded then
+--- new
+		if type(info) == "table" and info.learned then

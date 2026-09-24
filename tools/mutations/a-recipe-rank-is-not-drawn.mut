@@ -1,0 +1,6 @@
+name: a recipe's rank is not drawn beside its name
+file: addons/Family_UI/Professions.lua
+--- old
+			r.text:SetText(style.colour .. (shownName or "?") .. "|r" .. rank)
+--- new
+			r.text:SetText(style.colour .. (shownName or "?") .. "|r")

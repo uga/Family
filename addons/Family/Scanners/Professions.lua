@@ -729,13 +729,54 @@ local function readModernRecipes()
 
 	local recipes = {}
 
+	-- **Ranks: one recipe, its highest learnt rank, and where that stands.** On Midnight a recipe
+	-- can come in ranks, each its own recipe id with its own materials - *Blink-Trigger Headgun*
+	-- is 198939, 198991 and 199005, 50, 40 and 30 Shal'dorei Silk - and the client lists every
+	-- rank learnt. The game's own window shows only the highest, with stars; a lower rank is
+	-- never used again. Read on Ahia 2026-09-24 (`docs/MIDNIGHT.md` §59): the ranks are a chain,
+	-- `previousRecipeID` and `nextRecipeID`, present only where there is one. So a learnt recipe
+	-- whose next rank is also learnt is left out, and the one kept counts back for its rank and
+	-- forward for how many there are. A client whose rows carry neither key - every Classic
+	-- one - reads exactly as before.
+	local infos = {}
+	local function infoOf(id)
+		id = tonumber(id)
+		if not id then return nil end
+		if infos[id] == nil then
+			infos[id] = Family:TryCall(C_TradeSkillUI.GetRecipeInfo, id) or false
+		end
+		return infos[id] or nil
+	end
+
+	-- Bounded, because a chain the client answered in a circle would otherwise never end.
+	local RANKS_AT_MOST = 20
+	local function rankOf(info)
+		local rank, seen = 1, { [tonumber(info.recipeID) or 0] = true }
+		local back = tonumber(info.previousRecipeID)
+		while back and not seen[back] and rank < RANKS_AT_MOST do
+			seen[back], rank = true, rank + 1
+			local before = infoOf(back)
+			back = before and tonumber(before.previousRecipeID)
+		end
+		local total = rank
+		local on = tonumber(info.nextRecipeID)
+		while on and not seen[on] and total < RANKS_AT_MOST do
+			seen[on], total = true, total + 1
+			local after = infoOf(on)
+			on = after and tonumber(after.nextRecipeID)
+		end
+		return rank, total
+	end
+
 	for _, id in ipairs(ids) do
-		local info = Family:TryCall(C_TradeSkillUI.GetRecipeInfo, id)
+		local info = infoOf(id)
+		local higher = type(info) == "table" and infoOf(info.nextRecipeID)
+		local superseded = type(higher) == "table" and higher.learned
 		-- **Everything the client lists as learnt is kept, gathering techniques included.**
 		-- Midnight's Kul Tiran Mining lists *Monelite Deposit* and *Storm Silver Seam*, ranked,
 		-- under *Mining Techniques*, and no smelting at all: that is the profession on that line
 		-- as the game shows it, and Family shows what the game shows (`docs/MIDNIGHT.md` §58).
-		if type(info) == "table" and info.learned then
+		if type(info) == "table" and info.learned and not superseded then
 			-- The id of what it makes, asked for separately because this window hands
 			-- back a recipe id and stops there. Without it every recipe on this client
 			-- is a spell and nothing else, and "who can make one of these" has only the
@@ -756,6 +797,12 @@ local function readModernRecipes()
 				available = info.numAvailable or 0,
 				icon = info.icon or info.iconFileID,
 			}
+
+			local rank, ranks = rankOf(info)
+			if ranks > 1 then
+				recipes[#recipes].rank = rank
+				recipes[#recipes].ranks = ranks
+			end
 		end
 	end
 

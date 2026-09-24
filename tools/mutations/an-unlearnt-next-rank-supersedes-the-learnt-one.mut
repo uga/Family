@@ -1,0 +1,6 @@
+name: a rank is dropped for a next rank that has not been learnt
+file: addons/Family/Scanners/Professions.lua
+--- old
+		local superseded = type(higher) == "table" and higher.learned
+--- new
+		local superseded = type(higher) == "table"

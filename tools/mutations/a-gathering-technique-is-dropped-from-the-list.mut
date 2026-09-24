@@ -1,6 +1,7 @@
 name: a gathering technique the client lists as learnt is dropped from the recipe list
 file: addons/Family/Scanners/Professions.lua
 --- old
-		if type(info) == "table" and info.learned then
+		if type(info) == "table" and info.learned and not superseded then
 --- new
-		if type(info) == "table" and info.learned and info.isGatheringRecipe ~= true then
+		if type(info) == "table" and info.learned and not superseded
+			and info.isGatheringRecipe ~= true then

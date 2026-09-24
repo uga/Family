@@ -1,0 +1,6 @@
+name: the ranks after a recipe's own are not counted, so the top rank of three reads as one of one
+file: addons/Family/Scanners/Professions.lua
+--- old
+			seen[on], total = true, total + 1
+--- new
+			seen[on], total = true, total

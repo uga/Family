@@ -2863,3 +2863,44 @@ the-list.mut`) so that dropping it is what fails. Harness 3889.
 
 **Where a recipe's rank lives in the client's answers is not known yet**: the 28-key row of §26 has
 no key that plainly names one. A probe line on a ranked row is the first step of that slice.
+
+## 59. Recipe ranks: one row, the highest learnt, and which rank it is (2026-09-24)
+
+Three *Blink-Trigger Headgun* rows in Family's engineering list, where the game's own window shows
+one, with three stars and 30 Shal'dorei Silk. Alberto: the rows of one name are ranks, each needing
+less material, and Family does not say which is which; the game shows only the highest, and a
+lower rank is never used again. Legion Mining showed the same - *Felslate Deposit* twice, *Infernal
+Brimstone* three times.
+
+**Read on Ahia with `/dump C_TradeSkillUI.GetRecipeInfo`**, all three learnt:
+
+| Recipe | `previousRecipeID` | `nextRecipeID` | `maxTrivialLevel` |
+|---|---|---|---|
+| 198939 | - | 198991 | 40 |
+| 198991 | 198939 | 199005 | 60 |
+| 199005 | 198991 | - | 80 |
+
+The rest of each row is the same - name, icon 1391897, category 470, and the product, item 132500,
+in `hyperlink`. **The ranks are a chain, and the two keys are there only where there is a link**,
+which is why §26's row, a recipe with no ranks, never showed them.
+
+So `readModernRecipes` now leaves out a learnt recipe whose next rank is also learnt, and on the one
+it keeps writes `rank` - counted back along `previousRecipeID` - and `ranks` - that plus the ranks
+counted forward along `nextRecipeID`, learnt or not. Bounded at twenty, since a chain answered in a
+circle would not end. A row with neither key carries neither field, so every Classic client, and
+Midnight's unranked recipes, read as before. The recipe list draws the rank beside the name in
+grey, *3/3*. The item tooltip follows by itself: with the lower ranks no longer recorded, the
+recipe `MadeBy` finds for the Headgun is the top rank, so *Made with* shows its 30 silk and not
+rank one's 50.
+
+The professions section of the fourth pretend client carries the three measured rows whole and a
+chain of its own of two whose top is not learnt, which keeps its learnt rank as one of two; a
+Classic panel check draws a recipe with a rank. Five mutations; the §58 mutation anchored on the
+line extended here was moved. Harness 3894.
+
+Records made before this carry every rank until the profession's window is opened again.
+
+**And the question marks, explained.** *Cardboard Assassin* is a Cataclysm tinker: it makes no
+item, the client gave its row the question-mark picture (134400), and the game's own window draws
+the **spell's** picture, a gear. `recipeIcon` would take the spell's picture last, through
+`GetSpellInfo` - which Midnight does not have. That belongs with the spellbook gap (§23), not here.

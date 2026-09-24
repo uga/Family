@@ -3601,6 +3601,42 @@ print("professions on the fourth pretend client")
 		-- A gathering technique among the learnt, which Midnight lists as Kul Tiran Mining's own
 		-- (2026-09-24, *Monelite Deposit*) and Family keeps (§58). **This file's**: no
 		-- technique's row has been read, so its `isGatheringRecipe = true` is the key's name.
+		-- **Blink-Trigger Headgun's three ranks, as `/dump` printed them on Ahia 2026-09-24**,
+		-- every field the client gave (§59). A chain: `previousRecipeID` and `nextRecipeID`,
+		-- each present only where there is one. All three learnt.
+		[198939] = { alwaysUsesLowestQuality = true, canCreateMultiple = true, canSkillUp = false,
+			categoryID = 470, craftable = true, disabled = false, favorite = false,
+			firstCraft = false, hasSingleItemOutput = false, icon = 1391897,
+			isDummyRecipe = false, isEnchantingRecipe = false, isGatheringRecipe = false,
+			isRecraft = false, isSalvageRecipe = false, itemLevel = 46, learned = true,
+			maxTrivialLevel = 40, name = "Blink-Trigger Headgun", nextRecipeID = 198991,
+			numSkillUps = 1, recipeID = 198939, relativeDifficulty = 3,
+			skillLineAbilityID = 35096, sourceType = 0, supportsCraftingStats = false,
+			supportsQualities = false },
+		[198991] = { alwaysUsesLowestQuality = true, canCreateMultiple = true, canSkillUp = false,
+			categoryID = 470, craftable = true, disabled = false, favorite = false,
+			firstCraft = false, hasSingleItemOutput = false, icon = 1391897,
+			isDummyRecipe = false, isEnchantingRecipe = false, isGatheringRecipe = false,
+			isRecraft = false, isSalvageRecipe = false, itemLevel = 46, learned = true,
+			maxTrivialLevel = 60, name = "Blink-Trigger Headgun", nextRecipeID = 199005,
+			numSkillUps = 1, previousRecipeID = 198939, recipeID = 198991,
+			relativeDifficulty = 3, skillLineAbilityID = 35123, sourceType = 0,
+			supportsCraftingStats = false, supportsQualities = false },
+		[199005] = { alwaysUsesLowestQuality = true, canCreateMultiple = true, canSkillUp = false,
+			categoryID = 470, craftable = true, disabled = false, favorite = false,
+			firstCraft = false, hasSingleItemOutput = false, icon = 1391897,
+			isDummyRecipe = false, isEnchantingRecipe = false, isGatheringRecipe = false,
+			isRecraft = false, isSalvageRecipe = false, itemLevel = 46, learned = true,
+			maxTrivialLevel = 80, name = "Blink-Trigger Headgun", numSkillUps = 1,
+			previousRecipeID = 198991, recipeID = 199005, relativeDifficulty = 3,
+			skillLineAbilityID = 35137, sourceType = 0, supportsCraftingStats = false,
+			supportsQualities = false },
+		-- **This file's**: a chain of two whose higher rank is not learnt, which no reading has
+		-- shown - the lower is then the one used, and is rank one of two.
+		[9900201] = { learned = true, name = "A Ranked Recipe Of This File's", icon = 1391897,
+			recipeID = 9900201, nextRecipeID = 9900202 },
+		[9900202] = { learned = false, name = "A Ranked Recipe Of This File's", icon = 1391897,
+			recipeID = 9900202, previousRecipeID = 9900201 },
 		[9900101] = { categoryID = 2385, icon = 7422725, isGatheringRecipe = true,
 			learned = true, name = "A Deposit Of This File's", recipeID = 9900101 },
 		[1260349] = { alwaysUsesLowestQuality = true, canCreateMultiple = true,
@@ -3628,7 +3664,9 @@ print("professions on the fourth pretend client")
 		-- Absent on this client. Named here as nil on purpose: it is the one call the whole
 		-- section turns on, and leaving it out of the stub would say the same thing quietly.
 		GetTradeSkillLine = nil,
-		GetAllRecipeIDs = function() return { 1260349, 255393, 9900101 } end,
+		GetAllRecipeIDs = function()
+			return { 1260349, 255393, 9900101, 198939, 198991, 199005, 9900201, 9900202 }
+		end,
 		GetRecipeInfo = function(id) looked = looked + 1 return ROWS[id] end,
 		GetRecipeItemLink = function() return nil end,
 		-- What the window really answers, and the name is in here. With the window shut it
@@ -3643,7 +3681,7 @@ print("professions on the fourth pretend client")
 
 	check("the namespace this client answers with is in front of the scanner",
 		type(_G.C_TradeSkillUI) == "table"
-			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 3
+			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 8
 			and _G.C_TradeSkillUI.GetBaseProfessionInfo().professionName == "Engineering",
 		"C_TradeSkillUI is not set up")
 
@@ -3668,13 +3706,30 @@ print("professions on the fourth pretend client")
 
 	local name, recipes = midnight.Professions:ReadRecipes()
 	check("a recipe read on Midnight is named from the base profession",
-		name == "Engineering" and recipes and #recipes == 2,
+		name == "Engineering" and recipes and #recipes == 4,
 		tostring(name) .. " / " .. (recipes and #recipes or "nil"))
-	check("and keeps the learnt ones, a gathering technique among them, after reading all three",
-		looked == 3
+	check("and keeps the learnt ones, a gathering technique among them, after reading every row",
+		looked == 8
 		and recipes and recipes[1] and recipes[1].spellID == 255393
 		and recipes[2] and recipes[2].spellID == 9900101,
 		tostring(looked) .. " looked up")
+
+	-- **Ranks** (§59): the three learnt ranks of Blink-Trigger Headgun come out as one recipe,
+	-- the highest, which knows it is three of three; a chain whose top is not learnt keeps its
+	-- learnt rank, one of two.
+	local byID = {}
+	for _, recipe in ipairs(recipes or {}) do byID[recipe.spellID] = recipe end
+	check("a recipe learnt in three ranks is one recipe, the highest",
+		byID[199005] ~= nil and byID[198991] == nil and byID[198939] == nil,
+		tostring(byID[199005]) .. " " .. tostring(byID[198991]) .. " " .. tostring(byID[198939]))
+	check("and it knows it is three of three, counted back and forward along the chain",
+		byID[199005] and byID[199005].rank == 3 and byID[199005].ranks == 3,
+		byID[199005] and (tostring(byID[199005].rank) .. "/" .. tostring(byID[199005].ranks)) or "none")
+	check("while one whose next rank is not learnt keeps the rank it has, one of two",
+		byID[9900201] and byID[9900201].rank == 1 and byID[9900201].ranks == 2,
+		byID[9900201] and (tostring(byID[9900201].rank) .. "/" .. tostring(byID[9900201].ranks)) or "none")
+	check("and a recipe with no ranks carries none",
+		byID[255393] and byID[255393].rank == nil and byID[255393].ranks == nil)
 
 	-- **With the window shut the same call answers, zeroed** - `professionName = ""`,
 	-- `professionID = 0` - and an empty word is no name. Measured 2026-09-20 at login.
@@ -3713,7 +3768,7 @@ print("professions on the fourth pretend client")
 	-- line's id, with the recipe and the word that opens the window.
 	local engineering = payload and payload.professions and payload.professions[202]
 	check("a profession scan with a window open records the profession under its skill line",
-		engineering ~= nil and engineering.recipes and #engineering.recipes == 2
+		engineering ~= nil and engineering.recipes and #engineering.recipes == 4
 			and engineering.recipes[1].spellID == 255393,
 		engineering and "recipes wrong" or "no entry at 202")
 	check("and the window is reopened by the profession's name",
@@ -12572,6 +12627,39 @@ check("the profession button is armed with the spell that opens it",
 	professionButton and tostring(professionButton.__attributes.spell))
 check("and a recipe row knows whether there is a window to open",
 	recipeButton ~= nil, recipeButton and recipeButton.recipeName)
+
+-- **A recipe's rank is drawn beside its name** (§59): the game's window draws stars, and three
+-- rows of one name read as a list that repeats. A client with ranks writes them on the record;
+-- one is put on here and the list drawn again.
+do
+	-- Every record of that name, in whichever book: one name can sit in two.
+	local ranked = {}
+	for _, book in pairs((Family.UI:Payload(key) or {}).professions or {}) do
+		for _, recipe in ipairs(type(book) == "table" and book.recipes or {}) do
+			if recipeButton and recipe.name == recipeButton.recipeName then
+				ranked[#ranked + 1] = recipe
+			end
+		end
+	end
+	for _, recipe in ipairs(ranked) do recipe.rank, recipe.ranks = 2, 3 end
+	ranked = ranked[1]
+	Family.UI:ShowProfessionFor(key, "Blacksmithing")
+	local text
+	for _, f in ipairs(frames) do
+		if f.__shown == true and ranked and f.recipeName == ranked.name and f.text then
+			text = f.text:GetText()
+		end
+	end
+	check("a recipe that comes in ranks shows which it is, beside its name",
+		ranked ~= nil and type(text) == "string" and text:find("2/3", 1, true) ~= nil,
+		tostring(text))
+	for _, book in pairs((Family.UI:Payload(key) or {}).professions or {}) do
+		for _, recipe in ipairs(type(book) == "table" and book.recipes or {}) do
+			recipe.rank, recipe.ranks = nil, nil
+		end
+	end
+	Family.UI:ShowProfessionFor(key, "Blacksmithing")
+end
 
 -- Armed is not the same as able. Attributes on a plain frame are decoration: the game reads
 -- them off secure action buttons and nothing else, and the profession buttons had had the

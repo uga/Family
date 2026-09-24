@@ -1889,7 +1889,11 @@ local function build(frame)
 			end, record.locale)
 
 			local style = DIFFICULTY[recipe.difficulty] or { colour = "|cffdddddd" }
-			r.text:SetText(style.colour .. (shownName or "?") .. "|r")
+			-- The rank, where the recipe comes in ranks: the game's own window draws it as stars,
+			-- and without it three rows of one name read as a list that repeats (§59).
+			local rank = recipe.ranks and string.format(" |cff888888%d/%d|r", recipe.rank or 1,
+				recipe.ranks) or ""
+			r.text:SetText(style.colour .. (shownName or "?") .. "|r" .. rank)
 
 			-- The name gives up the room the materials take, and takes it back on a recipe
 			-- that has none - an enchant applied to something makes no item and lists no
