@@ -2349,3 +2349,46 @@ since L-210's claim on 2026-09-22 and is thirty-three now.
 Not asked, because a probe cannot: whether `ExpandQuestHeader(0)` and `C_Reputation`'s
 `ExpandFactionHeader(index)` open what they are given. Those change the interface in front of the
 player, and the smoke row is where they are seen.
+
+## 41. Probe version 16 on Midnight, and version 17 for the auction it missed (2026-09-24)
+
+Ahia again, build 69933. Three of §40's four questions came back.
+
+**An ordinary faction.** `GetFactionDataByIndex(3)` is *Gallagio Loyalty Rewards Club*, 2685: the
+same seventeen keys, `isHeader = false`, a child, account-wide, `reaction` 5 with
+`currentStanding` 3000 between 3000 and 9000. §39's mapping reads it as Friendly, nought of six
+thousand, filed under *The War Within*. Index 4 is *Dragonflight*, a heading, as Druiduga's was.
+
+**Two quest rows, and one of them corrects the fixture.** `GetInfo(2)` is *Broken Shore*, a
+heading, **shut** (`isCollapsed = true`), twenty-five keys with no `campaignID`. `GetInfo(3)`,
+right after it, is *Armies of Legionfall*, 48641, level 50 - **with `isHidden = true`**, a bounty,
+twenty-five keys with `frequency` in place of `headerSortKey`. So:
+
+- **A shut heading does not keep the row after it out of the list.** §37's fixture had the rows
+  under a shut heading appear only once it was opened, which is what the Classic clients do and
+  what nothing here had measured. The fixture now lists them either way. The scan still opens
+  every heading and shuts again the ones it found shut; whether that is needed on this client is
+  not something a list can say.
+- **Hidden rows are real, and the first one read is a bounty** - not a quest the player's log
+  shows. §37 left them out on the strength of the key's name; this is the first row it applies
+  to.
+- `campaignID` and `headerSortKey` are not on every row. Nothing reads either.
+
+Both fixtures now carry the measured rows - Broken Shore and Armies of Legionfall in the quest
+log, Gallagio in the faction list - and only what has still not been read is the harness's: a
+quest the player would see, and a partly filled bar. The twelve mutations of §37 and §39 were run
+again against them: all caught.
+
+**The quest history.** `C_QuestLog.GetAllCompletedQuestIDs()` answers **a list of 8410 ids**,
+positional (`1=5`, `2=…`, `10=18`, `100=168`). That settles step 3 (e): the shape is a list of
+ids, where `GetQuestsCompleted` filled a table keyed by id.
+
+**The auction was up and not seen.** Alberto had an auction on the house; the reading says
+`GetNumOwnedAuctions()` 0 and `GetOwnedAuctionInfo(1)` nil, so `GetItemKeyInfo` was handed nil
+and threw its usage line. The probe asks the house two seconds after `AUCTION_HOUSE_SHOW`, and
+the owned list is the client's only after it has asked the server for it - which the Auctions tab
+does, and announces with `OWNED_AUCTIONS_UPDATED`. §35's reading of one row was the same window on
+another day, so which of the two it depends on is not known from here. **Version 17** asks the
+three owned reads again when that event arrives, at once and two seconds on, filed as
+`auctionOwned`; a selftest claim covers it and was seen to fail with the event renamed. Family
+itself scans on that event (§30), so this is the probe's gap and not the addon's.

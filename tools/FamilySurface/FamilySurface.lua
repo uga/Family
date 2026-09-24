@@ -304,6 +304,15 @@ local WINDOWS = {
 		{ "C_AuctionHouse.GetNumReplicateItems" }, { "C_AuctionHouse.GetReplicateItemInfo", 0 },
 		{ "C_AuctionHouse.GetBrowseResults" },
 	} },
+	-- Version 17. The house's own window is asked two seconds after it opens, and on
+	-- 2026-09-24 that found **no** owned auction on a character that had one up: the list is
+	-- not the client's until it has asked the server for it, which it does when the Auctions
+	-- tab is opened, and says so with this event. So the owned reads are asked again when it
+	-- arrives, at once and two seconds on. Nothing here asks the server for anything.
+	OWNED_AUCTIONS_UPDATED = { key = "auctionOwned", atOnce = true, calls = {
+		{ "C_AuctionHouse.GetNumOwnedAuctions" }, { "C_AuctionHouse.GetOwnedAuctionInfo", 1 },
+		{ "C_AuctionHouse.GetItemKeyInfo", ownedItemKey },
+	} },
 	BANKFRAME_OPENED = { key = "bank", extra = function() return { sweep() } end, calls = {
 		{ "GetNumBankSlots" },
 		{ "C_Container.GetContainerNumSlots", bank },

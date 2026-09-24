@@ -308,6 +308,15 @@ local house = table.concat(before.windows.auctionHouse or {}, "\n")
 check("an owned auction's itemKey is printed whole, as the argument of the call that reads it",
 	house:find("C_AuctionHouse.GetItemKeyInfo({#1 itemID=161053})", 1, true) ~= nil, house)
 
+-- Version 17: the owned list is the client's only once it says so, so the same reads are asked
+-- again on `OWNED_AUCTIONS_UPDATED`, the moment it arrives as well as two seconds on.
+listener(nil, "OWNED_AUCTIONS_UPDATED")
+local owned = table.concat(before.windows.auctionOwnedAtOnce or {}, "\n")
+	.. "\n" .. table.concat(before.windows.auctionOwned or {}, "\n")
+check("and asked again when the client says the owned list has arrived, at once and after",
+	#(before.windows.auctionOwnedAtOnce or {}) > 0 and #(before.windows.auctionOwned or {}) > 0
+		and owned:find("GetItemKeyInfo({#1 itemID=161053})", 1, true) ~= nil, owned)
+
 if failures > 0 then
 	print(failures .. " failed")
 	os.exit(1)

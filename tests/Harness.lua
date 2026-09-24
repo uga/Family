@@ -2978,8 +2978,10 @@ print("reputations on the fourth pretend client")
 	-- 9000. They were twelve keys until 2026-09-22, when the probe's cut hid the name, the
 	-- standing and the bar (L-210).
 	--
-	-- **Two rows are this file's**: no ordinary faction row has been read on Midnight. They
-	-- carry the same keys, with ids nothing else here uses.
+	-- **A fourth is measured since 2026-09-24**: Ahia's index 3, *Gallagio Loyalty Rewards
+	-- Club*, the first ordinary faction read on this client - `isHeader = false`, a child of the
+	-- Cartels, account-wide, Friendly at 3000 between 3000 and 9000 (§41). **One row is this
+	-- file's**, the partly filled bar, which no reading has shown yet.
 	local WW = { atWarWith = false, canSetInactive = false, canToggleAtWar = false,
 		currentReactionThreshold = 0, currentStanding = 0, description = "",
 		factionID = 2569, hasBonusRepGain = false, isAccountWide = false,
@@ -3004,9 +3006,12 @@ print("reputations on the fourth pretend client")
 		for k, v in pairs(fields) do row[k] = v end
 		return row
 	end
-	local ORDINARY = like { factionID = 990001, name = "A Faction Of This File's",
-		isHeader = false, isCollapsed = false, isChild = true, reaction = 6,
-		currentReactionThreshold = 9000, currentStanding = 12000, nextReactionThreshold = 21000 }
+	local ORDINARY = { atWarWith = false, canSetInactive = true, canToggleAtWar = false,
+		currentReactionThreshold = 3000, currentStanding = 3000,
+		description = "The Gallagio is under new management, we...", factionID = 2685,
+		hasBonusRepGain = false, isAccountWide = true, isChild = true, isCollapsed = false,
+		isHeader = false, isHeaderWithRep = false, isWatched = false,
+		name = "Gallagio Loyalty Rewards Club", nextReactionThreshold = 9000, reaction = 5 }
 	local ANOTHER = like { factionID = 990002, name = "Another Of This File's",
 		isHeader = false, isCollapsed = false, isChild = true, reaction = 4,
 		currentReactionThreshold = 0, currentStanding = 1500, nextReactionThreshold = 3000 }
@@ -3086,9 +3091,9 @@ print("reputations on the fourth pretend client")
 	check("a faction under a shut heading is found, because the heading was opened",
 		byName["Another Of This File's"] and byName["Another Of This File's"].category
 			== "Dragonflight")
-	check("and one under a heading with a standing files under the heading above it",
-		byName["A Faction Of This File's"] and byName["A Faction Of This File's"].category
-			== "The War Within")
+	check("and the measured ordinary one, under a heading with a standing, files under the heading above it",
+		byName["Gallagio Loyalty Rewards Club"] and byName["Gallagio Loyalty Rewards Club"].category
+			== "The War Within" and byName["Gallagio Loyalty Rewards Club"].id == 2685)
 
 	-- The measured row, whole: Friendly, at the start of a bar six thousand long.
 	local cartels = byName["The Cartels of Undermine"]
@@ -3097,10 +3102,10 @@ print("reputations on the fourth pretend client")
 			and cartels.maximum == 6000,
 		cartels and (tostring(cartels.standing) .. " " .. tostring(cartels.value) .. "/"
 			.. tostring(cartels.maximum)) or "missing")
-	local ordinary = byName["A Faction Of This File's"]
-	check("and a bar partly filled is measured from its own start",
-		ordinary and ordinary.value == 3000 and ordinary.maximum == 12000,
-		ordinary and (tostring(ordinary.value) .. "/" .. tostring(ordinary.maximum)) or "missing")
+	local partly = byName["Another Of This File's"]
+	check("and a bar partly filled reads as how far along it is",
+		partly and partly.value == 1500 and partly.maximum == 3000,
+		partly and (tostring(partly.value) .. "/" .. tostring(partly.maximum)) or "missing")
 
 	check("both shut headings were opened, and both are shut again, last first",
 		#opened == 2 and #shut == 2 and shut[1] == "Dragonflight"
@@ -3205,8 +3210,12 @@ print("the quest log on the fourth pretend client")
 	set("GetQuestLogTitle", nil)
 	set("SelectQuestLogEntry", nil)
 
-	-- The log, as a client with a heading that starts shut. Opening all of them shows two
-	-- more rows; shutting the one at 3 hides them again.
+	-- The log, with a heading that starts shut. **Its rows are listed all the same**: on
+	-- 2026-09-24 Ahia's index 2 was a shut heading and index 3, right after it, a quest - so
+	-- this client does not hide what is under a shut heading the way the Classic ones do, and
+	-- until then this fixture had it hiding them, which nothing had measured (L-209). The scan
+	-- still opens every heading and shuts again the ones it found shut; whether that is needed
+	-- here is not a question this section can answer.
 	local open, expanded, shut = false, {}, {}
 	set("ExpandQuestHeader", function(index) expanded[#expanded + 1] = index open = true end)
 	set("CollapseQuestHeader", function(index) shut[#shut + 1] = index open = false end)
@@ -3215,10 +3224,13 @@ print("the quest log on the fourth pretend client")
 	set("GetQuestLink", function() linked = linked + 1 return nil end)
 	set("GetNumQuestLeaderBoards", function() return 0 end)
 
-	-- **Row 1 is the measured one**, Druiduga's index 1 on 2026-09-20, all twenty-six keys as
-	-- the client gave them (`docs/MIDNIGHT.md` §27). **Rows 2 to 5 are this file's**: no
-	-- ordinary quest row, no shut heading and no hidden row has been read on Midnight. They
-	-- carry the same keys with values chosen to be recognisable, and ids nothing else here uses.
+	-- **Three rows are measured, with every key the client gave.** Row 1 is Druiduga's heading
+	-- of 2026-09-20, twenty-six keys (`docs/MIDNIGHT.md` §27). Rows 3 and 4 are Ahia's indices 2
+	-- and 3 of 2026-09-24, twenty-five keys each (§41): *Broken Shore*, a shut heading with no
+	-- `campaignID`, and *Armies of Legionfall*, a **hidden** bounty, with `frequency` where a
+	-- heading has `headerSortKey`. **Rows 2 and 5 are this file's**: no quest a player would
+	-- see in the log has been read yet, so they are made on row 1's keys, with ids nothing else
+	-- here uses.
 	local MEASURED = { campaignID = 256, difficultyLevel = 0, hasLocalPOI = false,
 		headerSortKey = -2147483392, isAbandonOnDisable = false, isAutoComplete = false,
 		isBounty = false, isCollapsed = false, isHeader = true, isHidden = false,
@@ -3227,27 +3239,38 @@ print("the quest log on the fourth pretend client")
 		questID = 0, questLogIndex = 1, readyForTranslation = false,
 		sortAsNormalQuest = false, startEvent = false, suggestedGroup = 0,
 		title = "Dragonflight", useMinimalHeader = false }
-	local function like(fields)
+	local BROKEN_SHORE = { difficultyLevel = 0, hasLocalPOI = false,
+		headerSortKey = 1073749367, isAbandonOnDisable = false, isAutoComplete = false,
+		isBounty = false, isCollapsed = true, isHeader = true, isHidden = false,
+		isInternalOnly = false, isOnMap = false, isScaling = false, isStory = false,
+		isTask = false, level = 0, overridesSortOrder = false, questClassification = 7,
+		questID = 0, questLogIndex = 2, readyForTranslation = false,
+		sortAsNormalQuest = true, startEvent = false, suggestedGroup = 0,
+		title = "Broken Shore", useMinimalHeader = false }
+	local LEGIONFALL = { difficultyLevel = 50, frequency = 3, hasLocalPOI = false,
+		isAbandonOnDisable = false, isAutoComplete = false, isBounty = true,
+		isCollapsed = true, isHeader = false, isHidden = true, isInternalOnly = false,
+		isOnMap = false, isScaling = true, isStory = false, isTask = false, level = 50,
+		overridesSortOrder = false, questClassification = 7, questID = 48641,
+		questLogIndex = 3, readyForTranslation = true, sortAsNormalQuest = true,
+		startEvent = false, suggestedGroup = 0, title = "Armies of Legionfall",
+		useMinimalHeader = false }
+	local function like(base, fields)
 		local row = {}
-		for k, v in pairs(MEASURED) do row[k] = v end
+		for k, v in pairs(base) do row[k] = v end
 		for k, v in pairs(fields) do row[k] = v end
 		return row
 	end
 	local function rows()
-		local list = {
+		return {
 			MEASURED,
-			like { title = "A Row Of This File's", questID = 910001, level = 70,
-				isHeader = false, questLogIndex = 2 },
-			like { title = "A Heading That Starts Shut", isCollapsed = not open,
-				questLogIndex = 3 },
+			like(MEASURED, { title = "A Row Of This File's", questID = 910001, level = 70,
+				isHeader = false, questLogIndex = 2 }),
+			like(BROKEN_SHORE, { isCollapsed = not open, questLogIndex = 3 }),
+			like(LEGIONFALL, { questLogIndex = 4 }),
+			like(MEASURED, { title = "A Row Under It", questID = 910002, level = 80,
+				isHeader = false, questLogIndex = 5 }),
 		}
-		if open then
-			list[4] = like { title = "A Row Under It", questID = 910002, level = 80,
-				isHeader = false, questLogIndex = 4 }
-			list[5] = like { title = "A Hidden Task", questID = 910003, level = 80,
-				isHeader = false, isHidden = true, isTask = true, questLogIndex = 5 }
-		end
-		return list
 	end
 
 	local asked = 0
@@ -3316,15 +3339,15 @@ print("the quest log on the fourth pretend client")
 	check("a quest keeps its title, level and heading",
 		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].level == 70
 			and byTitle["A Row Of This File's"].category == "Dragonflight")
-	check("and one under a heading that started shut is found, because it was opened",
+	check("and one under a heading that started shut is filed under it",
 		byTitle["A Row Under It"] and byTitle["A Row Under It"].category
-			== "A Heading That Starts Shut")
+			== "Broken Shore")
 	check("its id is the row's own, with no search through quest links",
 		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].id == 910001
 			and byTitle["A Row Under It"] and byTitle["A Row Under It"].id == 910002
 			and linked == 0, "links asked: " .. linked)
-	check("a hidden row is not a quest in the log",
-		byTitle["A Hidden Task"] == nil)
+	check("a hidden row, the measured bounty, is not a quest in the log",
+		byTitle["Armies of Legionfall"] == nil)
 	check("the summary counts the two",
 		stored.meta["Mirror-Midnight"] and stored.meta["Mirror-Midnight"].questCount == 2,
 		stored.meta["Mirror-Midnight"]
