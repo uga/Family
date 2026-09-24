@@ -161,6 +161,9 @@ refusal and naming the constants instead of sweeping for them. The mutations rec
    tools that answer questions on those three clients as a matter of routine. This one is a
    throwaway for a client Family is not released on, copied for a measuring run and deleted at
    5.0.0, so it would not belong there even at no cost. Alberto, 2026-09-20.
+   **Since 2026-09-24 `tools/DeployMidnight.bat` carries it**, with this branch's two addons, to
+   the Midnight client only - which is where it belongs, and the reason above still keeps it out
+   of `Deploy.bat`.
 2. Its `.toc` carries Midnight's interface number, `120100`, read off a 12.1.0 client with
    `/dump select(4, GetBuildInfo())` on 2026-09-19. Without it Midnight marks the addon
    incompatible and does not load it. When

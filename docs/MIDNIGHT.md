@@ -2595,3 +2595,22 @@ from this worktree runs Wide Family without compression.
   window standing with only item tooltips missing - but it is `Core.lua`, shared with `main`, and
   changes what an error does on all four clients, so it is a question for `main` rather than a
   change made here.
+
+## 48. `tools/DeployMidnight.bat`: this branch, to the Midnight client only (2026-09-24)
+
+Asked for by Alberto: a deploy like `tools/Deploy.bat` that copies this branch's `Family` and
+`Family_UI` and the probe to the Retail client and to nothing else. It has `Deploy.bat`'s shape and
+guards - three folders named explicitly, `/MIR` aimed at each and never at `AddOns`, a refusal for
+any destination that does not end in `Interface\AddOns`, `/test` and `/y` - and one guard of its
+own: it **refuses a source whose `Family.toc` does not list 120100**, since that is `main`'s
+checkout and Midnight would not load it.
+
+- **Destination**: `E:\Giochi\World of Warcraft\_retail_\Interface\AddOns`, as Alberto gave it.
+  `Deploy.bat` keeps its machine paths as placeholders because it is in a public repository; this
+  one names no person, and it was given to be used.
+- **Source**: the checkout beside the script, or `SRC_SHARE`, a placeholder for the share that
+  reaches this worktree - it has to be set on the games PC, as `Deploy.bat`'s is.
+- **The probe is `FamilySurface` only.** `FamilyProbe` and `FamilyIconSheet`, which `Deploy.bat`
+  carries, stop at Mists in their `.toc` files and would not load on Midnight.
+
+Not run here: this machine has no Windows. Its first run should be with `/test`.
