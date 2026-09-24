@@ -1,0 +1,6 @@
+name: a line's heading does not say its rank
+file: addons/Family_UI/Professions.lua
+--- old
+				.. (rank and ("  |cff888888" .. rank .. "|r") or "")
+--- new
+				.. ""

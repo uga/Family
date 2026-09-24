@@ -2964,3 +2964,23 @@ written down while the window is open - which is when Family reads recipes anywa
 
 What the professions slice now has to go on: the line of every recipe (any time), the category and
 its parent line with its rank (window open), and every line's rank (window open).
+
+## 63. A profession laid out by expansion line (2026-09-24)
+
+Written against §62. With a profession's window open, `readModernRecipes` now writes on every
+recipe its **line** (`GetTradeSkillLineForRecipe`, the id) and its **category** (the name
+`GetCategoryInfo` gives for the row's `categoryID`, asked once per category, never for 0), and
+hands back the profession's **lines**: `GetChildProfessionInfos()` in the client's order - id,
+name, rank, cap - followed by any line a recipe named and that list did not, with no rank. The
+lines are stored beside the recipes, `professions[id].lines`, and replaced with them.
+
+The panel groups a profession **only when its recipes span two lines or more**: a heading per line
+with its name and rank (*Kul Tiran Mining 157/175*), in the stored order, then a heading per
+category, by name, with the recipes that have none first under the line alone. Within a category
+the player's sort holds. A list on one line - every Classic one, and Mists, where a profession is
+one line (§9) whatever these calls answer there - is drawn flat, as before.
+
+Chosen here and not measured: categories by name, because the two subheaders read carry
+`uiOrder` 0 and so order nothing; headings not foldable, as the game's are, which can follow if a
+long list asks for it. What to look at in the game: Mining and Engineering on Ahia, each line under
+its heading with the rank the game's dropdown shows, and the recipes under the game's categories.

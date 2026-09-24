@@ -1,0 +1,6 @@
+name: a profession's lines are not stored with its recipes
+file: addons/Family/Scanners/Professions.lua
+--- old
+			entry.lines = lines
+--- new
+			entry.lines = nil

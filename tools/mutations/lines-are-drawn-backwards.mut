@@ -1,0 +1,8 @@
+name: lines are drawn in reverse of the game's order
+file: addons/Family_UI/Professions.lua
+--- old
+		local first, second = position[a] or LAST, position[b] or LAST
+		if first ~= second then return first < second end
+--- new
+		local first, second = position[a] or LAST, position[b] or LAST
+		if first ~= second then return first > second end

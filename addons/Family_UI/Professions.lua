@@ -281,6 +281,92 @@ local function rankText(skill)
 	return string.format("%d/%d", skill.rank, skill.maxRank)
 end
 
+-- **A profession in expansion lines, laid out as the game's window lays it out** (`docs/
+-- MIDNIGHT.md` §62): each line under a heading with its own rank - *Kul Tiran Mining* 157/175,
+-- *Classic Mining* 300/300 - and its recipes under their categories, *Mining Techniques*,
+-- *Smelting*. Answers the recipes in their new order and, for each recipe that opens a heading,
+-- the headings drawn above it; `nil` where there is nothing to group, and the list is drawn flat
+-- as it always was.
+--
+-- **Only a record spanning two lines or more is grouped.** Mists reads through the same modern
+-- reader and has one line per profession (§9); one heading over the whole list would say
+-- nothing the status line does not.
+--
+-- Lines in the order the record keeps, which is the game's dropdown; a line it does not list
+-- goes after, by id. Categories by name, and a recipe with none first, under its line alone.
+-- Within a category, the order the list was already sorted in, which the player chose.
+local function groupByLine(shown, record)
+	local spanned, count = {}, 0
+	for _, recipe in ipairs(record.recipes or {}) do
+		if recipe.line and not spanned[recipe.line] then
+			spanned[recipe.line] = true
+			count = count + 1
+		end
+	end
+	if count < 2 then return nil end
+
+	local known, position = {}, {}
+	for index, line in ipairs(record.lines or {}) do
+		if type(line) == "table" and line.id and not position[line.id] then
+			known[line.id], position[line.id] = line, index
+		end
+	end
+
+	local buckets, order = {}, {}
+	for _, recipe in ipairs(shown) do
+		local line = recipe.line or false
+		if not buckets[line] then
+			buckets[line] = { categories = {}, names = {} }
+			order[#order + 1] = line
+		end
+		local bucket = buckets[line]
+		local category = recipe.category or false
+		if not bucket.categories[category] then
+			bucket.categories[category] = {}
+			bucket.names[#bucket.names + 1] = category
+		end
+		local list = bucket.categories[category]
+		list[#list + 1] = recipe
+	end
+
+	local LAST = math.huge
+	table.sort(order, function(a, b)
+		if a == false or b == false then return b == false and a ~= false end
+		local first, second = position[a] or LAST, position[b] or LAST
+		if first ~= second then return first < second end
+		return a < b
+	end)
+
+	local sorted, before = {}, {}
+	for _, line in ipairs(order) do
+		local bucket = buckets[line]
+		table.sort(bucket.names, function(a, b)
+			if a == false or b == false then return a == false and b ~= false end
+			return a < b
+		end)
+
+		local lineHeading
+		if line ~= false then
+			local entry = known[line] or {}
+			local rank = rankText(entry)
+			lineHeading = "|cffffd700" .. Family:ProfessionName(line, entry.name) .. "|r"
+				.. (rank and ("  |cff888888" .. rank .. "|r") or "")
+		end
+
+		for _, category in ipairs(bucket.names) do
+			local list = bucket.categories[category]
+			local headings = {}
+			if lineHeading then headings[#headings + 1] = lineHeading; lineHeading = nil end
+			if category ~= false then headings[#headings + 1] = "    |cffbbbbbb" .. category .. "|r" end
+			if headings[1] then before[list[1]] = headings end
+			for _, recipe in ipairs(list) do sorted[#sorted + 1] = recipe end
+		end
+	end
+
+	return sorted, before
+end
+UI.__groupByLine = groupByLine
+
 --------------------------------------------------------------------------------------------
 -- Opening a profession from here
 --
@@ -1007,6 +1093,22 @@ local function build(frame)
 	-- that the quantity ends up on the picture.
 	UI.__recipeRowFor, UI.__showRecipeMaterials = row, showMaterials
 
+	-- The headings of a profession laid out by expansion line (`groupByLine`). A plain frame
+	-- and not a row: a heading selects nothing, opens nothing and describes nothing, so it has
+	-- no click and no tooltip to answer wrongly with.
+	local headings = {}
+	local function heading(index)
+		if headings[index] then return headings[index] end
+		local h = CreateFrame("Frame", nil, list)
+		h:SetHeight(ROW)
+		h.text = h:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+		h.text:SetPoint("LEFT", 4, 0)
+		h.text:SetJustifyH("LEFT")
+		headings[index] = h
+		return h
+	end
+	UI.__professionHeadingPool = headings
+
 	-- The gap between two pictures, so that a check can say what *the boxes meet* means in
 	-- the panel's own number rather than in one written again beside it.
 	UI.__materialGap = MATERIAL_GAP
@@ -1086,6 +1188,9 @@ local function build(frame)
 
 		for _, button in ipairs(skillButtons) do button:Hide() end
 		for index = 1, #rows do rows[index]:Hide() end
+		-- Every heading too, on every draw: a profession laid out flat, the search, and a page
+		-- with nothing on it draw none, and whichever draws some shows its own.
+		for index = 1, #headings do headings[index]:Hide() end
 
 		----------------------------------------------------------------------------------
 		-- Searching everybody
@@ -1851,6 +1956,11 @@ local function build(frame)
 
 		table.sort(shown, order.sort)
 
+		-- By expansion line and category where the record has lines; `before` names the
+		-- headings drawn above a recipe, and is empty where the list stays flat.
+		local grouped, before = groupByLine(shown, record)
+		shown, before = grouped or shown, before or {}
+
 		layOutSort(sortRow, familySortRow)
 		markSort(ORDERS, order)
 
@@ -1874,7 +1984,21 @@ local function build(frame)
 		local used, y = 0, 0
 		list:SetWidth(UI:ListWidth(scroll))
 
+		-- What was drawn as headings, in order, so a check can read the page.
+		local headed = {}
+		UI.__professionHeadings = headed
+
 		for _, recipe in ipairs(shown) do
+			for _, text in ipairs(before[recipe] or {}) do
+				local h = heading(#headed + 1)
+				h:SetPoint("TOPLEFT", 0, -y)
+				h:SetPoint("TOPRIGHT", 0, -y)
+				h.text:SetText(text)
+				h:Show()
+				headed[#headed + 1] = text
+				y = y + ROW
+			end
+
 			used = used + 1
 			local r = row(used)
 			r:SetPoint("TOPLEFT", 0, -y)

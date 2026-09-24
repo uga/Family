@@ -1,0 +1,6 @@
+name: the panel draws no headings
+file: addons/Family_UI/Professions.lua
+--- old
+			for _, text in ipairs(before[recipe] or {}) do
+--- new
+			for _, text in ipairs({}) do

@@ -1,0 +1,6 @@
+name: a profession on one line, Mists', is grouped under a heading
+file: addons/Family_UI/Professions.lua
+--- old
+	if count < 2 then return nil end
+--- new
+	if count < 1 then return nil end

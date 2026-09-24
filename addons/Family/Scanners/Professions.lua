@@ -768,6 +768,34 @@ local function readModernRecipes()
 		return rank, total
 	end
 
+	-- **Where each recipe sits: its expansion line and its heading** (`docs/MIDNIGHT.md` §62).
+	-- Midnight's profession is a parent with a line per expansion, each with its own rank, and
+	-- the game's window lists recipes under those lines and under a category within each. Read
+	-- on Ahia 2026-09-24: `GetTradeSkillLineForRecipe(id)` answers the line's id and name at any
+	-- time - 2657 Smelt Copper is 2572 *Classic Mining* - and the row's `categoryID` names the
+	-- heading through `GetCategoryInfo`, 264 *Smelting*, but only with this profession's window
+	-- open, which is when this runs. Asked once per line and per category. A client that answers
+	-- neither writes neither, and its list is drawn as it always was.
+	local lineNames, categoryNames = {}, {}
+	local function lineOf(id)
+		local line, lineName = Family:TryCall(C_TradeSkillUI.GetTradeSkillLineForRecipe, id)
+		line = tonumber(line)
+		if line and lineNames[line] == nil then
+			lineNames[line] = (type(lineName) == "string" and lineName ~= "") and lineName or false
+		end
+		return line
+	end
+	local function categoryOf(info)
+		local category = tonumber(info.categoryID)
+		if not category or category == 0 then return nil end
+		if categoryNames[category] == nil then
+			local answer = Family:TryCall(C_TradeSkillUI.GetCategoryInfo, category)
+			local named = type(answer) == "table" and answer.name
+			categoryNames[category] = (type(named) == "string" and named ~= "") and named or false
+		end
+		return categoryNames[category] or nil
+	end
+
 	for _, id in ipairs(ids) do
 		local info = infoOf(id)
 		local higher = type(info) == "table" and infoOf(info.nextRecipeID)
@@ -803,10 +831,42 @@ local function readModernRecipes()
 				recipes[#recipes].rank = rank
 				recipes[#recipes].ranks = ranks
 			end
+
+			recipes[#recipes].line = lineOf(id)
+			recipes[#recipes].category = categoryOf(info)
 		end
 	end
 
-	return name, recipes
+	-- **And every line's rank**, which `GetChildProfessionInfos()` answers with the window open:
+	-- eight tables for Ahia's Mining, *Kul Tiran Mining* 157/175 down to *Classic Mining* 300/300,
+	-- in the order of the game's own dropdown, which is the order kept. The line's name is taken
+	-- from here rather than from the category above a heading, which for Classic calls itself
+	-- only *Mining*. A line a recipe named and this did not is added after, with no rank.
+	local lines, listed = {}, {}
+	local children = Family:TryCall(C_TradeSkillUI.GetChildProfessionInfos)
+	for _, child in ipairs(type(children) == "table" and children or {}) do
+		local line = type(child) == "table" and tonumber(child.professionID)
+		if line and not listed[line] then
+			listed[line] = true
+			lines[#lines + 1] = {
+				id = line,
+				name = type(child.professionName) == "string" and child.professionName
+					or lineNames[line] or nil,
+				rank = tonumber(child.skillLevel),
+				maxRank = tonumber(child.maxSkillLevel),
+			}
+		end
+	end
+	local unlisted = {}
+	for line in pairs(lineNames) do
+		if not listed[line] then unlisted[#unlisted + 1] = line end
+	end
+	table.sort(unlisted)
+	for _, line in ipairs(unlisted) do
+		lines[#lines + 1] = { id = line, name = lineNames[line] or nil }
+	end
+
+	return name, recipes, next(lines) and lines or nil
 end
 
 -- Returns the profession's name, its recipes, the skill line the window reported if it did,
@@ -818,10 +878,10 @@ end
 -- and no skill line anywhere. The Craft frame is shared with a hunter's pet training, so it
 -- has to say more than its own name before it is believed.
 function Professions:ReadRecipes()
-	local name, recipes, line
+	local name, recipes, line, lines
 
 	if C_TradeSkillUI then
-		name, recipes = readModernRecipes()
+		name, recipes, lines = readModernRecipes()
 	end
 	if not recipes then
 		name, recipes = readClassicRecipes()
@@ -832,7 +892,8 @@ function Professions:ReadRecipes()
 		-- open smelting by casting Smelting. It is the one thing needed to offer a way
 		-- back into a profession from inside Family, and it can only be learnt while the
 		-- window is open - so it is written down while it is.
-		return name, recipes, nil, false, type(name) == "string" and name or nil
+		-- Last, the profession's expansion lines with their ranks, where the client has them.
+		return name, recipes, nil, false, type(name) == "string" and name or nil, lines
 	end
 
 	local craftName = Family:TryCall(GetCraftName)
@@ -1101,11 +1162,11 @@ function Professions:ScanNow(includeRecipes)
 	-- Declared out here because the block below is not the only place they are used: what
 	-- opens a profession is filed with the recipes further down, and a local declared inside
 	-- an if is a different variable from the one read after it.
-	local recipeName, recipes, openWith
+	local recipeName, recipes, openWith, lines
 
 	if includeRecipes then
 		local line, fromCraftFrame
-		recipeName, recipes, line, fromCraftFrame, openWith = self:ReadRecipes()
+		recipeName, recipes, line, fromCraftFrame, openWith, lines = self:ReadRecipes()
 
 		-- Only the Craft frame has to prove itself, and it does so either by being a
 		-- skill the member has or by reporting the skill line it belongs to. Beast
@@ -1422,6 +1483,9 @@ function Professions:ScanNow(includeRecipes)
 			entry.recipesSeen = time()
 			entry.locale = Family.locale
 			entry.openWith = openWith or entry.openWith
+			-- Replaced with the list, never kept past it: the lines are what these recipes
+			-- are grouped under, and a list read where the client names none has none.
+			entry.lines = lines
 			Family:Debug("scanned %d recipes for %s", #recipes, recipeName)
 		end
 		stored[recipeKey] = entry

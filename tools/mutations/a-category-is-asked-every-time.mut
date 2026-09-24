@@ -1,0 +1,6 @@
+name: a category is asked for once per recipe instead of once
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if categoryNames[category] == nil then
+--- new
+		if true then

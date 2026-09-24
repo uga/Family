@@ -1,0 +1,6 @@
+name: a recipe with no category is drawn after the categories
+file: addons/Family_UI/Professions.lua
+--- old
+			if a == false or b == false then return a == false and b ~= false end
+--- new
+			if a == false or b == false then return b == false and a ~= false end

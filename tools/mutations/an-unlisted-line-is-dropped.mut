@@ -1,0 +1,6 @@
+name: a line a recipe names and the rank list does not is dropped
+file: addons/Family/Scanners/Professions.lua
+--- old
+		lines[#lines + 1] = { id = line, name = lineNames[line] or nil }
+--- new
+		local _ = line

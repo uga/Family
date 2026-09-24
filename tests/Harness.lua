@@ -3633,8 +3633,9 @@ print("professions on the fourth pretend client")
 			supportsQualities = false },
 		-- **This file's**: a chain of two whose higher rank is not learnt, which no reading has
 		-- shown - the lower is then the one used, and is rank one of two.
+		-- `categoryID = 0` is what a row answers read from another profession's window (§62).
 		[9900201] = { learned = true, name = "A Ranked Recipe Of This File's", icon = 1391897,
-			recipeID = 9900201, nextRecipeID = 9900202 },
+			recipeID = 9900201, nextRecipeID = 9900202, categoryID = 0 },
 		[9900202] = { learned = false, name = "A Ranked Recipe Of This File's", icon = 1391897,
 			recipeID = 9900202, previousRecipeID = 9900201 },
 		[9900101] = { categoryID = 2385, icon = 7422725, isGatheringRecipe = true,
@@ -3659,7 +3660,7 @@ print("professions on the fourth pretend client")
 			supportsCraftingStats = true, supportsQualities = false },
 	}
 
-	local looked = 0
+	local looked, askedCategory = 0, {}
 	set("C_TradeSkillUI", {
 		-- Absent on this client. Named here as nil on purpose: it is the one call the whole
 		-- section turns on, and leaving it out of the stub would say the same thing quietly.
@@ -3676,6 +3677,39 @@ print("professions on the fourth pretend client")
 				maxSkillLevel = 805, profession = 8, professionID = 202,
 				professionName = "Engineering", skillLevel = 305, skillModifier = 0,
 				sourceCounter = 1 }
+		end,
+		-- **Where a recipe sits** (§62). 199005's answer is the run's: 2500, *Legion
+		-- Engineering*, 202. **This file's**: every other recipe on 2499, and 9900201 on a line
+		-- the rank list below does not name, 9900299.
+		GetTradeSkillLineForRecipe = function(id)
+			if id == 199005 then return 2500, "Legion Engineering", 202 end
+			if id == 9900201 then return 9900299, "A Line Of This File's", 202 end
+			return 2499, "Kul Tiran Engineering", 202
+		end,
+		-- The shape of the run's row for 1079, *Mining Techniques*. **This file's**: the names -
+		-- *Goggles* for 470 is the heading in Alberto's screenshot (§61), not a reading.
+		GetCategoryInfo = function(id)
+			askedCategory[id] = (askedCategory[id] or 0) + 1
+			local names = { [470] = "Goggles", [2385] = "Devices" }
+			if not names[id] then return nil end
+			return { categoryID = id, enabled = true, hasProgressBar = false,
+				name = names[id], parentCategoryID = 1065, skillLineID = 202,
+				type = "subheader", uiOrder = 0 }
+		end,
+		-- The run's row for Kul Tiran Engineering, 2499 at 55/180 (§12), with the keys of the
+		-- eight Mining rows of §62. **This file's**: Legion Engineering's 100/100.
+		GetChildProfessionInfos = function()
+			return {
+				{ expansionName = "Kul Tiran", isPrimaryProfession = true, maxSkillLevel = 180,
+					parentProfessionID = 202, parentProfessionName = "Engineering",
+					profession = 8, professionID = 2499,
+					professionName = "Kul Tiran Engineering", skillLevel = 55,
+					skillModifier = 0, sourceCounter = 17 },
+				{ expansionName = "Legion", isPrimaryProfession = true, maxSkillLevel = 100,
+					parentProfessionID = 202, parentProfessionName = "Engineering",
+					profession = 8, professionID = 2500, professionName = "Legion Engineering",
+					skillLevel = 100, skillModifier = 0, sourceCounter = 17 },
+			}
 		end,
 	})
 
@@ -3731,6 +3765,32 @@ print("professions on the fourth pretend client")
 	check("and a recipe with no ranks carries none",
 		byID[255393] and byID[255393].rank == nil and byID[255393].ranks == nil)
 
+	-- **Lines and headings** (§62): every recipe says which expansion line it is on and which
+	-- heading it is under, and the profession brings each line's rank.
+	check("a recipe on Midnight records the expansion line it is on",
+		byID[199005] and byID[199005].line == 2500
+			and byID[255393] and byID[255393].line == 2499,
+		byID[199005] and tostring(byID[199005].line) or "none")
+	check("and the heading it sits under, asked once per category",
+		byID[199005] and byID[199005].category == "Goggles"
+			and byID[255393] and byID[255393].category == "Devices"
+			and askedCategory[2385] == 1,
+		byID[199005] and tostring(byID[199005].category) .. " " .. tostring(askedCategory[2385]))
+	check("while a row with no category has no heading, and nothing was asked for it",
+		byID[9900201] and byID[9900201].category == nil and askedCategory[0] == nil)
+
+	local lines = select(6, midnight.Professions:ReadRecipes())
+	check("the profession brings every line's rank, in the client's order",
+		type(lines) == "table" and lines[1] and lines[1].id == 2499
+			and lines[1].name == "Kul Tiran Engineering"
+			and lines[1].rank == 55 and lines[1].maxRank == 180
+			and lines[2] and lines[2].id == 2500 and lines[2].rank == 100,
+		type(lines) == "table" and tostring(lines[1] and lines[1].id) or tostring(lines))
+	check("and a line a recipe named and the list did not comes after, with no rank",
+		type(lines) == "table" and #lines == 3 and lines[3].id == 9900299
+			and lines[3].name == "A Line Of This File's" and lines[3].rank == nil,
+		type(lines) == "table" and tostring(#lines) or "none")
+
 	-- **With the window shut the same call answers, zeroed** - `professionName = ""`,
 	-- `professionID = 0` - and an empty word is no name. Measured 2026-09-20 at login.
 	local open = _G.C_TradeSkillUI.GetBaseProfessionInfo
@@ -3774,6 +3834,10 @@ print("professions on the fourth pretend client")
 	check("and the window is reopened by the profession's name",
 		engineering and engineering.openWith == "Engineering",
 		engineering and tostring(engineering.openWith) or "no entry")
+	check("and its expansion lines are kept with the recipes",
+		engineering and type(engineering.lines) == "table" and #engineering.lines == 3
+			and engineering.lines[1].id == 2499,
+		engineering and tostring(engineering.lines) or "no entry")
 
 	-- The one that was worse than an empty record, until 2026-09-22.
 	--
@@ -12659,6 +12723,71 @@ do
 		end
 	end
 	Family.UI:ShowProfessionFor(key, "Blacksmithing")
+end
+
+-- **A profession in expansion lines is drawn under them** (§62): each line a heading with its
+-- rank, in the record's order, and the recipes under their categories. **This file's**: the
+-- lines, put on a Classic record whose recipes carry none; the names are Midnight's.
+do
+	local group = Family.UI.__groupByLine
+	local a = { name = "A", line = 2572, category = "Smelting" }
+	local b = { name = "B", line = 2565, category = "Mining Techniques" }
+	local c = { name = "C", line = 2572 }
+	local d = { name = "D", line = 2572, category = "Smelting" }
+	local record = { recipes = { a, b, c, d }, lines = {
+		{ id = 2565, name = "Kul Tiran Mining", rank = 157, maxRank = 175 },
+		{ id = 2572, name = "Classic Mining", rank = 300, maxRank = 300 } } }
+	local sorted, before = group({ a, b, c, d }, record)
+	local names = {}
+	for _, recipe in ipairs(sorted or {}) do names[#names + 1] = recipe.name end
+	check("recipes are laid out by line in the record's order, then by category",
+		table.concat(names, " ") == "B C A D", table.concat(names, " "))
+	check("and a line opens with its name and rank, a category with its name",
+		before and before[b] and before[b][1]:find("Kul Tiran Mining", 1, true)
+			and before[b][1]:find("157/175", 1, true)
+			and before[b][2]:find("Mining Techniques", 1, true)
+			and before[c] and #before[c] == 1 and before[c][1]:find("Classic Mining", 1, true)
+			and before[a] and #before[a] == 1 and before[a][1]:find("Smelting", 1, true)
+			and before[d] == nil,
+		before and before[c] and table.concat(before[c], " | ") or "none")
+	check("while a list on one line stays flat, as Mists draws it",
+		group({ a, c }, { recipes = { a, c } }) == nil)
+
+	local book = (Family.UI:Payload(key) or {}).professions
+	local smithing
+	for _, entry in pairs(book or {}) do
+		if type(entry) == "table" and entry.recipes and #entry.recipes >= 2 and not smithing
+			and entry.openWith == "Blacksmithing" then
+			smithing = entry
+		end
+	end
+	if smithing then
+		for index, recipe in ipairs(smithing.recipes) do
+			recipe.line = (index == 1) and 2499 or 2500
+		end
+		smithing.lines = { { id = 2500, name = "Legion Blacksmithing", rank = 20, maxRank = 100 },
+			{ id = 2499, name = "Kul Tiran Blacksmithing" } }
+	end
+	Family.UI:ShowProfessionFor(key, "Blacksmithing")
+	local drawn = Family.UI.__professionHeadings or {}
+	check("and the panel draws the lines as headings above their recipes",
+		smithing ~= nil and #drawn == 2 and drawn[1]:find("Legion Blacksmithing|r", 1, true)
+			and drawn[1]:find("20/100", 1, true)
+			and drawn[2]:find("Kul Tiran Blacksmithing", 1, true),
+		table.concat(drawn, " | "))
+	if smithing then
+		for _, recipe in ipairs(smithing.recipes) do recipe.line = nil end
+		smithing.lines = nil
+	end
+	Family.UI:ShowProfessionFor(key, "Blacksmithing")
+	local left = 0
+	for _, h in ipairs(Family.UI.__professionHeadingPool or {}) do
+		if h.__shown == true then left = left + 1 end
+	end
+	check("and none once the record has no lines, none left on screen from before",
+		#(Family.UI.__professionHeadings or { 1 }) == 0 and left == 0
+			and #(Family.UI.__professionHeadingPool or {}) >= 2,
+		tostring(left) .. " still shown")
 end
 
 -- Armed is not the same as able. Attributes on a plain frame are decoration: the game reads

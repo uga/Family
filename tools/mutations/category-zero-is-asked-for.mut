@@ -1,0 +1,6 @@
+name: category 0, a row read from another window, is asked for
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if not category or category == 0 then return nil end
+--- new
+		if not category then return nil end

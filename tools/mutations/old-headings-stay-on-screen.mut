@@ -1,0 +1,6 @@
+name: headings from a grouped profession stay on a flat one
+file: addons/Family_UI/Professions.lua
+--- old
+		for index = 1, #headings do headings[index]:Hide() end
+--- new
+		local _ = headings
