@@ -1,0 +1,6 @@
+name: the status line names the profession, not the line its rank is
+file: addons/Family_UI/Professions.lua
+--- old
+				shownProfession = Family:ProfessionName(line.id, line.name)
+--- new
+				local _ = line

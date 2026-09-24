@@ -2003,9 +2003,18 @@ local function build(frame)
 		local pieces = {}
 		for _, entry in ipairs(breakdown) do pieces[#pieces + 1] = entry.text end
 
+		-- The line the rank is, where the profession comes in lines: with every line listed
+		-- below with its own rank, *Engineering 55/180* reads as the whole profession's.
+		local shownProfession = Family:ProfessionName(chosen, skill.name)
+		for _, line in ipairs(record.lines or {}) do
+			if type(line) == "table" and line.current then
+				shownProfession = Family:ProfessionName(line.id, line.name)
+			end
+		end
+
 		status:SetText(string.format(L["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s"
 			.. "   |cff888888|||r   seen %s"],
-			Family:ProfessionName(chosen, skill.name), rankText(skill) or "", #recipes,
+			shownProfession, rankText(skill) or "", #recipes,
 			table.concat(pieces, "  "), UI:Ago(record.recipesSeen)))
 
 		local used, y = 0, 0

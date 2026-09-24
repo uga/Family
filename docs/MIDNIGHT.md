@@ -3037,3 +3037,21 @@ Alberto's screenshot of Ahia's Mining after redeploying and opening the window: 
 with *Empyrium Deposit* 2/3, *Empyrium Seam* 1/3, *Felslate Deposit* 2/3 under its own *Mining
 Techniques*. The `+ Mining (14)` line is gone. So 1080's line is *Legion Mining*, as the walk
 expected: §65's one unread step is now seen.
+
+## 67. The status line names the line the rank is (2026-09-24)
+
+Alberto on the buttons showing *Engineering 55*: *does this make sense? Maybe yes.* The number is
+the client's own answer for the profession, and it is one line's - *Kul Tiran Engineering* 55/180,
+line 2499, which `GetProfessionChildSkillLineID()` answers with the window open (§12). The button
+keeps it. The status line under the sort buttons said *Engineering 55/180* above a list of every
+line with its own rank, which reads as the whole profession's; asked for and done, it now names the
+line. The scan marks that line `current` among the stored lines, and the panel names it where one
+is marked.
+
+**Cooking's six *Way of* lines** answered Alberto's `/run` with their recipes' lines and parent:
+104298 *Charbroiled Tiger Steak* category 64, `975 Way of the Grill 185`; 104301 *Sauteed Carrots*
+65, 976 *Wok*; 104304 *Swirling Mist Soup* 66, 977 *Pot*; 104307 *Shrimp Dumplings* 67, 978
+*Steamer*; 104310 *Wildfowl Roast* 68, 979 *Oven*; 124052 *Ginseng Tea* 69, 980 *Brew*. Each is a
+child line of 185 *Cooking* with a parent, so the category walk of §65 is never asked for them, and
+none is in `GetChildProfessionInfos()`, which is why they were drawn after every listed line. Where
+they belong - under *Pandaria Cooking* or beside it - waits on what categories 64 to 69 sit under.

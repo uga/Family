@@ -1,0 +1,6 @@
+name: the line the profession's rank belongs to is not marked
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if line.id == current then line.current = true end
+--- new
+		local _ = current

@@ -890,6 +890,15 @@ local function readModernRecipes()
 			}
 		end
 	end
+	-- **Which line the profession's own rank is.** The rank the skill sheet gives - Ahia's
+	-- Engineering 55/180 - is one line's, *Kul Tiran Engineering*, and with the window open
+	-- `GetProfessionChildSkillLineID()` answers that line, 2499 (`docs/MIDNIGHT.md` §12). Marked
+	-- so the panel can name the line the number belongs to.
+	local current = tonumber((Family:TryCall(C_TradeSkillUI.GetProfessionChildSkillLineID)))
+	for _, line in ipairs(lines) do
+		if line.id == current then line.current = true end
+	end
+
 	local unlisted = {}
 	for line in pairs(lineNames) do
 		if not listed[line] then unlisted[#unlisted + 1] = line end

@@ -3714,6 +3714,8 @@ print("professions on the fourth pretend client")
 		end,
 		-- The run's row for Kul Tiran Engineering, 2499 at 55/180 (§12), with the keys of the
 		-- eight Mining rows of §62. **This file's**: Legion Engineering's 100/100.
+		-- The run's answer with the engineering window open: Kul Tiran's line (§12).
+		GetProfessionChildSkillLineID = function() return 2499 end,
 		GetChildProfessionInfos = function()
 			return {
 				{ expansionName = "Kul Tiran", isPrimaryProfession = true, maxSkillLevel = 180,
@@ -3802,6 +3804,10 @@ print("professions on the fourth pretend client")
 			and lines[1].rank == 55 and lines[1].maxRank == 180
 			and lines[2] and lines[2].id == 2500 and lines[2].rank == 100,
 		type(lines) == "table" and tostring(lines[1] and lines[1].id) or tostring(lines))
+	check("and the line the profession's own rank belongs to is marked, and only that one",
+		type(lines) == "table" and lines[1] and lines[1].current == true
+			and lines[2] and lines[2].current == nil,
+		type(lines) == "table" and tostring(lines[1] and lines[1].current) or "none")
 	check("a technique that answers its profession takes its line from the category above it",
 		byID[9900101] and byID[9900101].line == 2565
 			and byID[9900101].category == "Mining Techniques",
@@ -12815,7 +12821,8 @@ do
 		for index, recipe in ipairs(smithing.recipes) do
 			recipe.line = (index == 1) and 2499 or 2500
 		end
-		smithing.lines = { { id = 2500, name = "Legion Blacksmithing", rank = 20, maxRank = 100 },
+		smithing.lines = { { id = 2500, name = "Legion Blacksmithing", rank = 20, maxRank = 100,
+			current = true },
 			{ id = 2499, name = "Kul Tiran Blacksmithing" } }
 	end
 	Family.UI:ShowProfessionFor(key, "Blacksmithing")
@@ -12824,6 +12831,9 @@ do
 	for _, f in ipairs(frames) do
 		if f.__shown == true and f.recipeName and f.profession then shown = shown + 1 end
 	end
+	-- The status line names the line the profession's rank is, not the whole profession.
+	check("and the status line names the line the profession's rank belongs to",
+		visibleText("|cffffd700Legion Blacksmithing|r"), "not on screen")
 	check("and the panel draws the lines as headings, shut, with no recipe under them",
 		smithing ~= nil and #drawn == 2 and drawn[1]:find("+ Legion Blacksmithing|r", 1, true)
 			and drawn[1]:find("20/100", 1, true)
