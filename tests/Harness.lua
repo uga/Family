@@ -3974,8 +3974,8 @@ print("the auction house on the fourth pretend client")
 	midnight.OnDatabaseReady = function(_, _, fn) fn() end
 	midnight.After = function(_, _, _, fn) if type(fn) == "function" then fn() end end
 
-	local function fire(event)
-		for _, fn in pairs(live[event] or {}) do fn() end
+	local function fire(event, ...)
+		for _, fn in pairs(live[event] or {}) do fn(event, ...) end
 	end
 	midnight.Debug = function() end
 	midnight.Database = {
@@ -4057,6 +4057,23 @@ print("the auction house on the fourth pretend client")
 	check("and it runs out when the client says, to the second",
 		row and math.abs(row.expiresBy - (time() + 85813)) <= 1,
 		tostring(row and row.expiresBy))
+
+	-- **A post asks for the list again**, since nothing else will: on Midnight 2026-09-24 the
+	-- client said *Auction created.* and sent no `OWNED_AUCTIONS_UPDATED` until the Auctions
+	-- tab was opened (§49). The message is matched by the client's own string for it.
+	set("ERR_AUCTION_STARTED", "Auction created.")
+	asked.query = 0
+	fire("CHAT_MSG_SYSTEM", "Auction created.")
+	check("an auction created asks the house for the owned list again", asked.query == 1,
+		tostring(asked.query))
+	asked.query = 0
+	fire("CHAT_MSG_SYSTEM", "Some other system message.")
+	check("while any other system message asks for nothing", asked.query == 0,
+		tostring(asked.query))
+	asked.query = 0
+	fire("AUCTION_HOUSE_AUCTION_CREATED", 963244796)
+	check("and the house's own event for a new auction asks the same, where a client sends it",
+		asked.query == 1, tostring(asked.query))
 
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()

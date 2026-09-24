@@ -2614,3 +2614,37 @@ checkout and Midnight would not load it.
   carries, stop at Mists in their `.toc` files and would not load on Midnight.
 
 Not run here: this machine has no Windows. Its first run should be with `/test`.
+
+## 49. A posted auction was not seen until the house was opened again (2026-09-24)
+
+From the first in-game test (§46), Alberto: an auction posted on Ahia was not in the Summary
+until the house was closed and reopened. With `/family debug` on, the chat said it in order:
+
+| Moment | Family |
+|---|---|
+| house opened | `scanned auctions: 1 selling` |
+| auction posted - *Auction created.* | no read; bags and currencies only |
+| Auctions tab opened | `scanned auctions: 2 selling` |
+
+The probe, beside it, printed no `auctionOwned` after *Auction created.*: **the client sends no
+`OWNED_AUCTIONS_UPDATED` for a post.** The owned list comes back when it is asked for, and Family
+asked only a second after the house opened (`Scanners/Auctions.lua`, `AUCTION_HOUSE_SHOW`).
+
+So a post now asks, the same way: `QueryOwnedAuctions` a second after either of two signals -
+`CHAT_MSG_SYSTEM` carrying the client's own `ERR_AUCTION_STARTED`, which is the *Auction created.*
+Midnight printed, matched by the client's string and never the English (as `ERR_AUCTION_WON_S`
+already is); and `AUCTION_HOUSE_AUCTION_CREATED`, **not measured on any client**, which answers
+false where it is unknown. Both are handled on the one `CHAT_MSG_SYSTEM` registration the scanner
+already had, rather than a second under the same key (L-068). The newer house only; the older one
+sends its own owner-list event after a post.
+
+**Not measured either: that `ERR_AUCTION_STARTED` exists on Midnight.** If it does not, the message
+never matches and nothing changes from before. The game says which: post with `/family debug` on
+and a `scanned auctions` line should follow *Auction created.* within a couple of seconds.
+
+The fourth-client auction section's `fire` now passes the event and its arguments, as
+`Core.lua:98` does, and three checks and three mutations cover the two signals and an unrelated
+system message. Harness 3876.
+
+This probably happens on Mists as well, which reads owned auctions from the same house; that is
+for `main` to look at.

@@ -1,0 +1,6 @@
+name: the client's auction-created message asks for nothing, so a new auction waits for the next visit
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if type(started) == "string" and started ~= "" and message == started then
+--- new
+		if false then

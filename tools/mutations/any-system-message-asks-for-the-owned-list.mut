@@ -1,0 +1,6 @@
+name: every system message asks the house for the owned list, not only an auction created
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		if type(started) == "string" and started ~= "" and message == started then
+--- new
+		if type(started) == "string" and started ~= "" then

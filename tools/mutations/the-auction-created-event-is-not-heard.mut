@@ -1,0 +1,6 @@
+name: the house's own event for a new auction is never listened for
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	Family:RegisterEvent("AUCTION_HOUSE_AUCTION_CREATED", "auctions.posted", askAfterPost)
+--- new
+	Family:RegisterEvent("NO_SUCH_EVENT", "auctions.posted", askAfterPost)

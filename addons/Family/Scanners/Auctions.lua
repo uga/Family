@@ -2699,10 +2699,34 @@ Family:OnDatabaseReady("auctions", function()
 		Family:Debug("no way to watch auction bids on this client")
 	end
 
+	-- **A new auction is asked for, not waited for.** On Midnight, 2026-09-24, with `/family
+	-- debug` on: the house opened and was read, *1 selling*; an auction was posted, the client
+	-- said *Auction created.*, and nothing was read - no `OWNED_AUCTIONS_UPDATED` came; the
+	-- Auctions tab was opened and only then *2 selling* (`docs/MIDNIGHT.md` §49). The owned list
+	-- comes back when it is asked for, so a post asks for it the way opening the house does.
+	-- The newer house only: the older one sends its own owner-list event after a post.
+	local function askAfterPost()
+		Family:After(1, "auctions.ask", function()
+			if C_AuctionHouse then
+				Family:TryCall(C_AuctionHouse.QueryOwnedAuctions, {})
+			end
+		end)
+	end
+
+	-- Two signals, each silent where it does not apply. The event is not measured on any client
+	-- and answers false where it is unknown; the message is the one Midnight printed, matched by
+	-- the client's own string for it, never by the English.
+	Family:RegisterEvent("AUCTION_HOUSE_AUCTION_CREATED", "auctions.posted", askAfterPost)
+
 	Family:RegisterEvent("CHAT_MSG_SYSTEM", "auctions", function(_, message)
 		local pattern = wonPattern()
 		if pattern and type(message) == "string" and message:match(pattern) then
 			Auctions:NoteWon()
+		end
+
+		local started = _G.ERR_AUCTION_STARTED
+		if type(started) == "string" and started ~= "" and message == started then
+			askAfterPost()
 		end
 	end)
 end)
