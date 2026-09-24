@@ -1,0 +1,6 @@
+name: a tooltip script the client refuses is hooked unasked, and the refusal stops Tooltip.lua
+file: addons/Family_UI/Tooltip.lua
+--- old
+	Family:TryCall(tooltip.HookScript, tooltip, "OnTooltipSetItem", function(self) onItem(self) end)
+--- new
+	tooltip:HookScript("OnTooltipSetItem", function(self) onItem(self) end)

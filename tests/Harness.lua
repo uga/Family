@@ -4146,6 +4146,47 @@ print("the quest history on the fourth pretend client")
 end)()
 
 print()
+print("the tooltip hooks on the fourth pretend client")
+
+-- The first error Family raised in a running Midnight client, 2026-09-24: `HookScript` refuses
+-- `OnTooltipSetItem`, which that client does not have, and says so by throwing. Unasked, it threw
+-- inside `OnDatabaseReady`, stopped `Tooltip.lua` where it stood and left the window with no tabs
+-- (§47). The harness never saw it, because every pretend tooltip here accepted any script.
+;(function()
+	local function tooltip(refuses)
+		local hooked = {}
+		return {
+			hooked = hooked,
+			HookScript = function(_, script, fn)
+				if refuses[script] then
+					error("bad argument #2 to '?' (Usage: local success = "
+						.. "self:HookScript(scriptTypeName, script [, bindingType]))", 2)
+				end
+				hooked[script] = fn
+				return true
+			end,
+		}
+	end
+
+	local MIDNIGHT = { OnTooltipSetItem = true, OnTooltipSetSpell = true }
+	local refusing = tooltip(MIDNIGHT)
+	local ok, err = pcall(Family.UI.__hookSetItem, refusing)
+	check("a tooltip that refuses the old item script is asked, and nothing is thrown", ok,
+		tostring(err))
+	ok, err = pcall(Family.UI.__hookSetSpell, refusing)
+	check("and the same for the old spell script", ok, tostring(err))
+
+	-- And where the script is there, the hook still goes in: asking must not cost the three
+	-- clients that answer.
+	local accepting = tooltip({})
+	Family.UI.__hookSetItem(accepting)
+	Family.UI.__hookSetSpell(accepting)
+	check("while a tooltip that has them is hooked on both, as before",
+		type(accepting.hooked.OnTooltipSetItem) == "function"
+			and type(accepting.hooked.OnTooltipSetSpell) == "function")
+end)()
+
+print()
 print("the mailbox on the fourth pretend client")
 
 -- The shortest section here, and the finding is the short one: **nothing is missing**.

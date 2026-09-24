@@ -2109,15 +2109,29 @@ local function hookClears(tooltip)
 	tooltip:HookScript("OnHide", forget)
 end
 
+-- **Asked, not assumed**: Midnight has no `OnTooltipSetItem` script, and `HookScript` refuses one
+-- it does not know with an error - *bad argument #2 ... Usage: local success =
+-- self:HookScript(scriptTypeName, script [, bindingType])*, read in the game 2026-09-24. This runs
+-- inside `OnDatabaseReady`, which calls straight through when the database is already up, so the
+-- error stopped this whole file where it stood: everything below it, `AttachTooltip` among it, was
+-- never defined, every tab of the window died registering itself and the window came up empty
+-- (`docs/MIDNIGHT.md` §47). Where the script is refused, the modern route registered beside it is
+-- the one that fires.
 local function hookSetItem(tooltip)
 	if not tooltip or not tooltip.HookScript then return end
-	tooltip:HookScript("OnTooltipSetItem", function(self) onItem(self) end)
+	Family:TryCall(tooltip.HookScript, tooltip, "OnTooltipSetItem", function(self) onItem(self) end)
 end
 
 local function hookSetSpell(tooltip)
 	if not tooltip or not tooltip.HookScript then return end
-	tooltip:HookScript("OnTooltipSetSpell", function(self) onSpell(self) end)
+	Family:TryCall(tooltip.HookScript, tooltip, "OnTooltipSetSpell",
+		function(self) onSpell(self) end)
 end
+
+-- Kept reachable so the harness can hand them a tooltip that refuses the old scripts, as
+-- Midnight's does.
+UI.__hookSetItem = hookSetItem
+UI.__hookSetSpell = hookSetSpell
 
 Family:OnDatabaseReady("tooltips", function()
 	local tooltips = { _G.GameTooltip, _G.ItemRefTooltip,

@@ -2552,3 +2552,46 @@ Midnight, by hand as the probe was. What step 3 left for the game to confirm:
 
 A red error on screen, or a panel empty where it should not be, is the finding; a screenshot with
 the character's name is enough to start from.
+
+## 47. The first run in the game: an empty window, and the tooltip hook that caused it (2026-09-24)
+
+Family loaded on Midnight for the first time (§46) and its window came up with every tab button in
+the same place and no panel. The broker's tooltip worked - Ahia, level 50, item level 49, money -
+so the records were there. With `/console scriptErrors 1` the client named the cause:
+
+1. **`Family_UI/Tooltip.lua:2114`** - `tooltip:HookScript("OnTooltipSetItem", …)` throws *bad
+   argument #2 to '?' (Usage: local success = self:HookScript(scriptTypeName, script [,
+   bindingType]))*. Midnight has no such script and refuses to hook one.
+2. **That error stopped the whole file.** The hook runs in an `OnDatabaseReady` callback, and
+   `Family:OnDatabaseReady` (`Core.lua:764`) calls the function **straight through** when the
+   database is already up - which it is by the time `Family_UI` loads. So the error travelled up
+   into `Tooltip.lua`'s main chunk at line 2122 and nothing after it was defined, `UI:AttachTooltip`
+   (line 2552) included.
+3. **`Family_UI/Window.lua:626`** - *attempt to call a nil value*: `RegisterTab` calls
+   `UI:AttachTooltip` for each tab's star. Every tab died there, after its button had been made and
+   labelled and before it was recorded, so every button took index 1 - the top slot - and the
+   window had no tab to open. That is the screenshot.
+
+**The fix is at the first error**: both old hooks, `OnTooltipSetItem` and `OnTooltipSetSpell`, go
+through `Family:TryCall`. Where the client refuses them, the modern route registered just above
+(`TooltipDataProcessor.AddTooltipPostCall`, already in a `pcall`) is what fires. The two installers
+are reachable as `UI.__hookSetItem` and `UI.__hookSetSpell`, the way `UI.__modernCallback` is, and a
+fourth-client section hands them a tooltip that refuses the old scripts with the client's own error
+text - and one that accepts them, to see the hook still go in. Two mutations, both caught. Harness
+3873. **The harness could not have seen this before**: every pretend tooltip accepted any script.
+
+**Also in the error list, and not a fault:** *Error loading* for `Libs/LibStub`, `LibSerialize` and
+`LibDeflate` (`Family.toc:39-41`). The `.toc` says why (lines 36-37): the libraries are absent from
+a git clone and present in a release, and a file the client cannot find is skipped. A copy taken
+from this worktree runs Wide Family without compression.
+
+**Two things this leaves open.**
+
+- **Everything after line 2122 of `Tooltip.lua` has never run on Midnight.** The next run may
+  well show the next refusal; `scriptErrors` should stay on for the whole test.
+- **`OnDatabaseReady` does not isolate its callbacks when it calls them straight through**, while
+  event handlers are isolated (`Window.lua`'s comment on `ShowTab` says so). One refusal in one
+  callback took out a whole file and, through it, the window. Isolating it would have left the
+  window standing with only item tooltips missing - but it is `Core.lua`, shared with `main`, and
+  changes what an error does on all four clients, so it is a question for `main` rather than a
+  change made here.
