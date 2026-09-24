@@ -81,6 +81,16 @@ local function stubs(interface)
 		-- A schematic two levels deep, as the real one is said to be: a slot table, and inside
 		-- it the list of reagents. The probe prints one level, so this is what shows whether
 		-- the reader goes down to the item.
+		GetChildProfessionInfos = function()
+			return { { professionID = 2499, professionName = "A Line", skillLevel = 55,
+				maxSkillLevel = 180, parentProfessionID = 202 } }
+		end,
+		GetTradeSkillLineForRecipe = function(id) return 2499, "A Line", 202 end,
+		GetRecipeInfo = function(id) return { recipeID = id, categoryID = 470 } end,
+		GetCategoryInfo = function(id)
+			if id == 470 then return { categoryID = 470, name = "Goggles", parentCategoryID = 469 } end
+			return { categoryID = id, name = "A Parent" }
+		end,
 		GetRecipeSchematic = function(id)
 			return { recipeID = id, reagentSlotSchematics = {
 				{ quantityRequired = 2, reagents = { { itemID = 2770 } } },
@@ -252,6 +262,12 @@ end
 check("a recipe's materials are read down to the item, one keyable line a slot",
 	slotLine ~= nil and slotLine:find("itemID=2770", 1, true) ~= nil
 		and slotLine:match("^(.-%)) ([a-z]+ ?.*)$") ~= nil, tostring(slotLine))
+-- Version 20: a recipe's line and its category with the one above it, keyed like the rest.
+local asked20 = table.concat(midnight.windows.brief or {}, "\n")
+check("a recipe's profession line and its category, and the category above, are asked by id",
+	asked20:find("GetTradeSkillLineForRecipe(199005) answers 2499", 1, true) ~= nil
+		and asked20:find('GetCategoryInfo(470) answers {', 1, true) ~= nil
+		and asked20:find('GetCategoryInfo(469) answers {', 1, true) ~= nil, asked20)
 local answered = table.concat(midnight.windows.pvp, "\n")
 	.. "\n" .. table.concat(midnight.windows.lockouts, "\n")
 check("and so are the second brief's, in both of its blocks",

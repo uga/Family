@@ -268,6 +268,7 @@ local function firstBankBag() return (_G.NUM_BAG_SLOTS or 4) + 1 end
 
 -- Defined below, after `ask`, and used by the windows.
 local ask, sweep, namedReads, discover, professionLines, briefCalls, schematicLines
+local professionLineLines
 
 -- Asked two seconds after the window's own event, so that what it lists has arrived. Only
 -- reads: nothing here queries the server, and the auction house calls read what the window
@@ -289,6 +290,8 @@ local WINDOWS = {
 		if first then
 			for _, line in ipairs(schematicLines(first)) do lines[#lines + 1] = line end
 		end
+		-- The profession's lines and a recipe's line and category, with the window open (v20).
+		for _, line in ipairs(professionLineLines(first)) do lines[#lines + 1] = line end
 		return lines
 	end, calls = {
 		{ "GetProfessions" }, { "C_TradeSkillUI.GetTradeSkillLine" },
@@ -664,6 +667,48 @@ function schematicLines(id)
 	return lines
 end
 
+-- Version 20. What the professions slice needs to lay a Midnight profession out as the game does:
+-- one line per expansion with its own rank, and recipes under the game's categories
+-- (MIDNIGHT.md §61). Three questions, and the usage lines of two were read by version 18's sweep:
+-- *GetTradeSkillLineForRecipe(recipeID)* and *GetCategoryInfo(categoryID [,tableToUse])*.
+--
+-- 199005 is Blink-Trigger Headgun's top rank and 2657 Smelt Copper, both read on Ahia (§59, §53),
+-- one on a Kul Tiran-era engineering line and one on the Classic mining line.
+local LINE_RECIPE_IDS = { 2657, 199005 }
+
+-- Each child line on its own line of the run, since a list of tables prints as `table`.
+-- `GetChildProfessionInfos()` answered eight tables with a window open and none at login (§12).
+function professionLineLines(first)
+	local lines = {}
+	local api = _G.C_TradeSkillUI
+	local ok, children = pcall(function() return api.GetChildProfessionInfos() end)
+	if ok and type(children) == "table" then
+		for index, child in ipairs(children) do
+			lines[#lines + 1] = ("C_TradeSkillUI.GetChildProfessionInfos(entry %d) answers %s")
+				:format(index, show(child))
+		end
+	end
+	local ids = { first }
+	for _, id in ipairs(LINE_RECIPE_IDS) do ids[#ids + 1] = id end
+	for _, id in ipairs(ids) do
+		if id then
+			lines[#lines + 1] = ask({ "C_TradeSkillUI.GetTradeSkillLineForRecipe", id })
+			-- And the category the recipe row names, and the one above it, by name.
+			local got, info = pcall(function() return api.GetRecipeInfo(id) end)
+			local category = got and type(info) == "table" and info.categoryID
+			if category then
+				lines[#lines + 1] = ask({ "C_TradeSkillUI.GetCategoryInfo", category })
+				local had, row = pcall(function() return api.GetCategoryInfo(category) end)
+				local parent = had and type(row) == "table" and row.parentCategoryID
+				if parent then
+					lines[#lines + 1] = ask({ "C_TradeSkillUI.GetCategoryInfo", parent })
+				end
+			end
+		end
+	end
+	return lines
+end
+
 function briefCalls()
 	local lines = { ask(QUEST_CALL) }
 	if not mayDiscover() then
@@ -676,6 +721,8 @@ function briefCalls()
 	for _, id in ipairs(SCHEMATIC_IDS) do
 		for _, line in ipairs(schematicLines(id)) do lines[#lines + 1] = line end
 	end
+	-- At login too, window shut, to see which of these answer without it.
+	for _, line in ipairs(professionLineLines(nil)) do lines[#lines + 1] = line end
 	return lines
 end
 

@@ -2912,3 +2912,25 @@ and Mining from 65 to 46**, one row per recipe: *Blink-Trigger Headgun 3/3* with
 the game's own figure; *Bolt-Action Headgun 3/3*; *F.R.I.E.D. 2/3*, two stars of three in the game's
 window; *Crow's Nest Scope 1/3*; and on Mining *Felslate Deposit 2/3*, *Infernal Brimstone 3/3*,
 *Empyrium Seam 1/3*. The tinkers still draw a question mark, which is §59's spell-picture gap.
+
+## 61. Probe version 20: a profession's lines, and where a recipe sits in them (2026-09-24)
+
+The professions slice is to lay a Midnight profession out as the game's window does: one line per
+expansion with its own rank - Kul Tiran Mining 157/175, Legion 100/100, Classic 300/300 in Alberto's
+screenshot - and recipes under the game's categories, *Goggles* under *Legion Engineering*,
+*Smelting*, *Mining Techniques*. Family knows none of it today: one rank per profession, the parent's
+or a child's (§12 found the summary showing Kul Tiran's 55/180), and a flat list.
+
+Three questions, asked with the window open and at login, where the brief runs:
+
+1. **Each line's rank.** `GetChildProfessionInfos()` answered eight tables with the window open and
+   none at login (§12); version 20 prints each table on its own line.
+2. **Which line a recipe is on.** `GetTradeSkillLineForRecipe(recipeID)` - its usage line read in
+   version 18 - for the first recipe listed, Smelt Copper (2657) and Blink-Trigger Headgun's top
+   rank (199005).
+3. **What a category is called.** The recipe row carries `categoryID` (470 for the Headgun, §59);
+   `GetCategoryInfo(categoryID [,tableToUse])` for it and for the category above it, if it names
+   one.
+
+A selftest claim covers the second and third and was seen to fail with the reader switched off;
+thirty-seven claims.

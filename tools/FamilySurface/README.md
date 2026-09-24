@@ -31,6 +31,7 @@ So for each name it asks the question that can actually be answered:
 | every profession skill line the client lists | its details, its concentration currency and that currency's details; `GetProfessionInfo` 1 to 6; the specialisation count of classes 1 to 14; every currency in the list; the treasure quest 89117 | filed as `professions` |
 | the merchant, a second time | asked the moment the vendor opens as well as two seconds later, with `MerchantFrame:IsShown()` each time | filed as `merchantAtOnce` and `merchant` |
 | the PvP reads of the second brief (`UnitHonor`, `UnitHonorMax`, `UnitHonorLevel`, `UnitPVPRank`, `GetPVPRankInfo`, `GetPVPLifetimeStats`, `GetPVPSessionStats`, `GetPVPYesterdayStats`) | looked up on every client; called **only where the sweep is allowed**; honour and conquest asked by id, 1792 and 1602, everywhere | filed as `pvp` |
+| a profession's lines and a recipe's place in them (version 20) | `GetChildProfessionInfos()`, each line of it on a line of its own, and for the first listed recipe, 2657 and 199005 `GetTradeSkillLineForRecipe(id)` and `GetCategoryInfo` for the recipe's category and the one above; at login where the sweep is allowed, and with a profession window open | filed under `brief` and `tradeSkill` |
 | a recipe's materials with no window open (version 19) | `C_TradeSkillUI.GetRecipeSchematic(id, false)` for 2657 and 1260349 at login, **only where the sweep is allowed**, and for the first recipe listed with a profession window open; each reagent slot a line of its own, `…(id \| false \| slot n) answers …`, reading down to the item | filed under `brief` and `tradeSkill` |
 | the whole quest log (version 18) | `C_QuestLog.GetNumQuestLogEntries()` with everything it returns, then `GetInfo` for every row to two hundred, at login and on `/familysurface` | filed as `questLog` |
 | version 16's step 3 questions: an ordinary faction and an ordinary quest row (`GetFactionDataByIndex` 3 and 4, `C_QuestLog.GetInfo` 2 and 3), the quest history (`C_QuestLog.GetAllCompletedQuestIDs`) and what an owned auction's `itemKey` holds | the first three with the brief's calls, **only where the sweep is allowed**; the last with the auction house open, handing the first owned row's `itemKey` to `C_AuctionHouse.GetItemKeyInfo`, so that the key prints whole as the argument | filed under `brief` and `auctionHouse` |
@@ -137,7 +138,7 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Thirty-six claims: that an action whose name begins with a read
+interface 50504 and at 120100. Thirty-seven claims: that an action whose name begins with a read
 word is not called even where the sweep runs, that the predicate which only looks like it still
 is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a
