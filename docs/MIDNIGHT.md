@@ -2904,3 +2904,11 @@ Records made before this carry every rank until the profession's window is opene
 item, the client gave its row the question-mark picture (134400), and the game's own window draws
 the **spell's** picture, a gear. `recipeIcon` would take the spell's picture last, through
 `GetSpellInfo` - which Midnight does not have. That belongs with the spellbook gap (§23), not here.
+
+## 60. §59 seen in the game (2026-09-24)
+
+Alberto redeployed and reopened both windows on Ahia. **Engineering went from 440 recipes to 403
+and Mining from 65 to 46**, one row per recipe: *Blink-Trigger Headgun 3/3* with 30 Shal'dorei Silk,
+the game's own figure; *Bolt-Action Headgun 3/3*; *F.R.I.E.D. 2/3*, two stars of three in the game's
+window; *Crow's Nest Scope 1/3*; and on Mining *Felslate Deposit 2/3*, *Infernal Brimstone 3/3*,
+*Empyrium Seam 1/3*. The tinkers still draw a question mark, which is §59's spell-picture gap.
