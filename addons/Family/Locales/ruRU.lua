@@ -280,6 +280,7 @@ Family.locales.ruRU = {
 	["|cff888888CTRL: what the family's lot is worth|r"] = "|cff888888CTRL: сколько стоит всё, что есть у семьи|r",
 	["|cff888888CTRL: what the stack and the family's lot is worth|r"] = "|cff888888CTRL: сколько стоят стопка и всё, что есть у семьи|r",
 	["Sell price"] = "Цена продажи",
+	["%s (each)"] = "%s (за штуку)",
 	["Vendor price"] = "Цена у торговца",
 	["what the client's spellbook says, and what Family takes from it"] = "что говорит книга заклинаний клиента и что Family из неё берёт",
 	["This client has no spellbook that Family can read."] = "У этого клиента нет книги заклинаний, которую Family может прочитать.",

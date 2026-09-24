@@ -4204,6 +4204,66 @@ print("the tooltip hooks on the fourth pretend client")
 end)()
 
 print()
+print("the sell price where the client already shows one")
+
+-- Midnight writes its own *Sell Price:* on an item's tooltip, for the whole stack under the
+-- pointer, and Family's line beside it is for one item: *1g 10s* against *22s* on five Salty Dog
+-- Crackers, 2026-09-24. Where the client's line is there, Family's says *each* (§50).
+do
+	local was = { _G.SELL_PRICE, FamilyDB.prices, GetItemInfo }
+	SELL_PRICE = "Sell Price"
+	FamilyDB.prices = true
+
+	-- The item from the screenshot, 161053, at 22s each: the eleventh return is the sell price.
+	local CRACKERS = 161053
+	GetItemInfo = function(id)
+		if id == CRACKERS then
+			return "Salty Dog Crackers", "|Hitem:161053|h", 1, 1, 0, "Consumable", "Food & Drink",
+				20, "", nil, 2200
+		end
+		return was[3](id)
+	end
+
+	local function tooltip(name, texts)
+		for index, text in ipairs(texts) do
+			_G[name .. "TextLeft" .. index] = { GetText = function() return text end }
+		end
+		return {
+			GetName = function() return name end,
+			NumLines = function() return #texts end,
+		}, function()
+			for index = 1, #texts do _G[name .. "TextLeft" .. index] = nil end
+		end
+	end
+
+	local priced, clear = tooltip("FamilyPricedTip", { "Salty Dog Crackers", "Sell Price: 1 10" })
+	local lines = Family.UI.__priceLines(priced, CRACKERS)
+	clear()
+	check("where the client has written its own sell price, Family's says it is for one",
+		lines and lines[1] and lines[1][1] == "Sell Price (each)",
+		lines and lines[1] and tostring(lines[1][1]) or "no line")
+
+	local bare
+	bare, clear = tooltip("FamilyBareTip", { "Salty Dog Crackers" })
+	lines = Family.UI.__priceLines(bare, CRACKERS)
+	clear()
+	check("and where it has not, Family's line is the plain sell price, as before",
+		lines and lines[1] and lines[1][1] == "Sell Price",
+		lines and lines[1] and tostring(lines[1][1]) or "no line")
+
+	-- Its own line, which has no colon, is not mistaken for the client's.
+	local ours
+	ours, clear = tooltip("FamilyOwnTip", { "Salty Dog Crackers", "Sell Price" })
+	lines = Family.UI.__priceLines(ours, CRACKERS)
+	clear()
+	check("and Family's own line, drawn before, does not count as the client's",
+		lines and lines[1] and lines[1][1] == "Sell Price",
+		lines and lines[1] and tostring(lines[1][1]) or "no line")
+
+	SELL_PRICE, FamilyDB.prices, GetItemInfo = was[1], was[2], was[3]
+end
+
+print()
 print("the mailbox on the fourth pretend client")
 
 -- The shortest section here, and the finding is the short one: **nothing is missing**.

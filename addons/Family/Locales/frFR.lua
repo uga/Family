@@ -280,6 +280,7 @@ Family.locales.frFR = {
 	["|cff888888CTRL: what the family's lot is worth|r"] = "|cff888888CTRL : ce que vaut le lot de la famille|r",
 	["|cff888888CTRL: what the stack and the family's lot is worth|r"] = "|cff888888CTRL : ce que valent la pile et le lot de la famille|r",
 	["Sell price"] = "Prix de vente",
+	["%s (each)"] = "%s (à l'unité)",
 	["Vendor price"] = "Prix du marchand",
 	["what the client's spellbook says, and what Family takes from it"] = "ce que dit le grimoire du client, et ce que Family en retient",
 	["This client has no spellbook that Family can read."] = "Ce client n'a pas de grimoire que Family puisse lire.",

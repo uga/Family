@@ -2648,3 +2648,25 @@ system message. Harness 3876.
 
 This probably happens on Mists as well, which reads owned auctions from the same house; that is
 for `main` to look at.
+
+## 50. The sell price, per item beside the client's per stack (2026-09-24)
+
+Midnight writes its own *Sell Price:* on an item's tooltip, and for **the stack under the
+pointer**: on five Salty Dog Crackers (161053) it read *1g 10s*, and Family's line under it *0g
+22s 00c* - one of them. Both right, and side by side they read as a contradiction. Alberto chose,
+of three options, to mark Family's line only where the client has written its own: **"Sell Price
+(each)"** there, the plain word everywhere else, so the Classic tooltips are unchanged unless a
+Classic client prices the stack too.
+
+Decided by the tooltip, not by the client: `clientShowsSellPrice` walks the tooltip's lines as
+`requiredSkill` does and looks for the client's own `SELL_PRICE` followed by a colon. The colon is
+what tells the client's line from Family's, which has none. One new sentence, `%s (each)`, in all
+four locale files - the translation gate demands it. `UI.__priceLines` is reachable for the
+harness, which prices the same crackers at 22s on three tooltips: one the client has priced, one it
+has not, and one holding only Family's own earlier line. Three mutations.
+
+Whether Midnight has a setting that switches its line to one item was asked and is not known here.
+
+**Also from the test, and recorded rather than chased:** an `ADDON_ACTION_FORBIDDEN` for Family
+arrived once, on turning on recipe materials; it did not happen again, so nothing is known of its
+cause. `/console taintLog 1` is the way to name it if it returns.

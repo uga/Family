@@ -1,0 +1,6 @@
+name: the client's own sell price line is never found on the tooltip
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if type(text) == "string" and text:sub(1, #prefix) == prefix then return true end
+--- new
+		if type(text) == "string" and text == prefix then return true end

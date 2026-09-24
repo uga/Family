@@ -1030,6 +1030,29 @@ local function spellCostLines(spellID)
 		and Family.Recipes:CostOfSpell(spellID) or nil)
 end
 
+-- Whether the client has already written its own sell price on this tooltip.
+--
+-- Midnight does, 2026-09-24, and for **the stack under the pointer**: *Sell Price: 1g 10s* on
+-- five Salty Dog Crackers, where Family's line says what one of them fetches, 22s. Both are right,
+-- and side by side they read as a contradiction, so where the client's line is there Family's
+-- says *each* (Alberto chose that over marking it on every client). Found by the client's own
+-- word followed by a colon - its line has one and Family's has not - so nothing here knows the
+-- English and nothing depends on which client this is.
+local function clientShowsSellPrice(tooltip)
+	local word = _G.SELL_PRICE
+	local name = tooltip and tooltip.GetName and tooltip:GetName()
+	if type(word) ~= "string" or word == "" or not name then return false end
+
+	local prefix = word .. ":"
+	local lines = tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0
+	for index = 1, lines do
+		local widget = _G[name .. "TextLeft" .. index]
+		local text = widget and widget.GetText and widget:GetText()
+		if type(text) == "string" and text:sub(1, #prefix) == prefix then return true end
+	end
+	return false
+end
+
 local function priceLines(tooltip, itemID, variant)
 	if not (FamilyDB and FamilyDB.prices) then return nil end
 
@@ -1039,8 +1062,9 @@ local function priceLines(tooltip, itemID, variant)
 	-- itself the proof this item is in the client's cache - it is showing its name.
 	local sell = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
 	if sell and sell > 0 then
-		lines[#lines + 1] = { Family:GameWord("SELL_PRICE", L["Sell price"]),
-			UI:MoneyLine(sell), 0.4, 0.73, 1, 1, 1, 1 }
+		local label = Family:GameWord("SELL_PRICE", L["Sell price"])
+		if clientShowsSellPrice(tooltip) then label = string.format(L["%s (each)"], label) end
+		lines[#lines + 1] = { label, UI:MoneyLine(sell), 0.4, 0.73, 1, 1, 1, 1 }
 	end
 
 	local buy = Family.Merchant and Family.Merchant:PriceOf(itemID)
@@ -1190,6 +1214,9 @@ local function priceLines(tooltip, itemID, variant)
 
 	return #lines > 0 and lines or nil
 end
+
+-- Kept reachable so the harness can hand it a tooltip the client has already priced.
+UI.__priceLines = priceLines
 
 --------------------------------------------------------------------------------------------
 -- Hooking

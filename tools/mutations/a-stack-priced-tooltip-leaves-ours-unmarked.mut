@@ -1,0 +1,6 @@
+name: where the client has priced the stack, Family's per-item sell price is left unmarked
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if clientShowsSellPrice(tooltip) then label = string.format(L["%s (each)"], label) end
+--- new
+		if false then label = string.format(L["%s (each)"], label) end
