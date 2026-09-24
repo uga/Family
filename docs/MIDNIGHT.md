@@ -2934,3 +2934,33 @@ Three questions, asked with the window open and at login, where the brief runs:
 
 A selftest claim covers the second and third and was seen to fail with the reader switched off;
 thirty-seven claims.
+
+## 62. Probe version 20 answered: lines, ranks and categories (2026-09-24)
+
+Ahia, Mining's window open last (a window's block is replaced when another opens, so this run's
+`tradeSkill` block is Mining's).
+
+**Each line's rank, with the window open** - `GetChildProfessionInfos()`, eight tables of eleven
+keys, one per expansion: `professionID` 2565 *Kul Tiran Mining* 157/175, 2566 *Legion* 100/100,
+2567 *Draenor* 100/100 (`skillModifier` 10), 2568 *Pandaria*, 2569 *Cataclysm*, 2570 *Northrend*,
+2571 *Outland* 75/75 each, 2572 *Classic* 300/300; every one `parentProfessionID` 186, *Mining*, with
+`expansionName`, `skillLevel`, `maxSkillLevel`. Exactly the game's dropdown.
+
+**Which line a recipe is on, window open or shut** - `GetTradeSkillLineForRecipe(id)` answers three
+values, the line, its name and the parent, **at login as well**: 296147 → 2565 *Kul Tiran Mining*
+186; 2657 Smelt Copper → 2572 *Classic Mining* 186; 199005 Blink-Trigger Headgun → 2500 *Legion
+Engineering* 202 - asked from the Mining window, so a recipe of another profession answers too.
+
+**Categories are a tree, and the line is in it.** Mining's first recipe, 296147, is in category 1079
+*Mining Techniques* (`type` subheader), whose parent 1065 is *Kul Tiran Mining* - with
+`hasProgressBar` true, `skillLineID` 2565, `skillLineCurrentLevel` 157, `skillLineMaxLevel` 175 -
+whose parent is 1064. Smelt Copper is in 264 *Smelting*, parent 1078 *Mining* on line 2572 at
+300/300. So a recipe's category names the heading, and the category above it is the expansion line
+with its rank.
+
+**A recipe's `categoryID` is 0 unless its own profession's window is open**: 199005 read from the
+Mining window, and both ids at login, gave `GetCategoryInfo(0)` and nothing. The category has to be
+written down while the window is open - which is when Family reads recipes anyway.
+
+What the professions slice now has to go on: the line of every recipe (any time), the category and
+its parent line with its rank (window open), and every line's rank (window open).
