@@ -711,6 +711,28 @@ local function lockoutReads()
 	return guarded(LOCKOUT_READS, "lockout")
 end
 
+-- Version 18. The whole quest log, row by row, with the count asked the same way so that what
+-- it returns after its first value is written down too.
+--
+-- §41 read a row right after a shut heading and took it for proof that a shut heading hides
+-- nothing on this client. That row was hidden, and its heading, *Broken Shore*, is not drawn in
+-- the player's log at all - while Alberto's screenshots of 2026-09-24 show Drustvar shut with no
+-- quests under it and open with two. So one reading could not tell *shut headings hide nothing*
+-- from *hidden rows are always listed*. Every row, with a heading shut that has visible quests
+-- under it, tells them apart. Only reads, and only the two Family itself makes.
+local QUEST_LOG_LIMIT = 200
+
+local function questLogWalk()
+	local lines = { ask({ "C_QuestLog.GetNumQuestLogEntries" }) }
+	local api = _G.C_QuestLog
+	local ok, count = pcall(function() return api.GetNumQuestLogEntries() end)
+	count = ok and tonumber(count) or 0
+	for index = 1, math.min(count, QUEST_LOG_LIMIT) do
+		lines[#lines + 1] = ask({ "C_QuestLog.GetInfo", index })
+	end
+	return lines
+end
+
 -- Thirteen event names the brief uses that Family does not. They are asked with the generated
 -- literals and written into the same block, because that is the block the report compares against
 -- the control - and because a name no Family file mentions is marked `(no file found)` there,
@@ -923,6 +945,8 @@ local function probe()
 	run.windows.pvp = ok and lines or { "pvpReads throws " .. show(lines, ERROR_LIMIT) }
 	ok, lines = pcall(lockoutReads)
 	run.windows.lockouts = ok and lines or { "lockoutReads throws " .. show(lines, ERROR_LIMIT) }
+	ok, lines = pcall(questLogWalk)
+	run.windows.questLog = ok and lines or { "questLogWalk throws " .. show(lines, ERROR_LIMIT) }
 	ok, lines = pcall(projectConstants)
 	run.windows.project = ok and lines or { "projectConstants throws " .. show(lines, ERROR_LIMIT) }
 	for _, space in ipairs(matching()) do

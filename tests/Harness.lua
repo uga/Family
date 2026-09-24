@@ -3210,12 +3210,15 @@ print("the quest log on the fourth pretend client")
 	set("GetQuestLogTitle", nil)
 	set("SelectQuestLogEntry", nil)
 
-	-- The log, with a heading that starts shut. **Its rows are listed all the same**: on
-	-- 2026-09-24 Ahia's index 2 was a shut heading and index 3, right after it, a quest - so
-	-- this client does not hide what is under a shut heading the way the Classic ones do, and
-	-- until then this fixture had it hiding them, which nothing had measured (L-209). The scan
-	-- still opens every heading and shuts again the ones it found shut; whether that is needed
-	-- here is not a question this section can answer.
+	-- The log, with a heading that starts shut, and **what is under it listed only once it is
+	-- opened**. Whether this client does that is not known. Ahia's index 3 followed a shut
+	-- heading on 2026-09-24, but it was a *hidden* row, and Alberto's screenshots the same day
+	-- show the player's log hiding Drustvar's quests while it is shut - so one reading cannot tell
+	-- *shut hides nothing* from *hidden rows are always listed* (§43; §41 said the first, and was
+	-- wrong to). Until probe version 18's walk of the whole log says, the section models the
+	-- stricter case, because it is the one where a scan that did not open every heading would
+	-- lose quests; the looser case needs nothing of the scan. The hidden row is listed either
+	-- way, which is the one thing that was read.
 	local open, expanded, shut = false, {}, {}
 	set("ExpandQuestHeader", function(index) expanded[#expanded + 1] = index open = true end)
 	set("CollapseQuestHeader", function(index) shut[#shut + 1] = index open = false end)
@@ -3262,15 +3265,18 @@ print("the quest log on the fourth pretend client")
 		return row
 	end
 	local function rows()
-		return {
+		local list = {
 			MEASURED,
 			like(MEASURED, { title = "A Row Of This File's", questID = 910001, level = 70,
 				isHeader = false, questLogIndex = 2 }),
 			like(BROKEN_SHORE, { isCollapsed = not open, questLogIndex = 3 }),
 			like(LEGIONFALL, { questLogIndex = 4 }),
-			like(MEASURED, { title = "A Row Under It", questID = 910002, level = 80,
-				isHeader = false, questLogIndex = 5 }),
 		}
+		if open then
+			list[5] = like(MEASURED, { title = "A Row Under It", questID = 910002, level = 80,
+				isHeader = false, questLogIndex = 5 })
+		end
+		return list
 	end
 
 	local asked = 0
@@ -3339,7 +3345,7 @@ print("the quest log on the fourth pretend client")
 	check("a quest keeps its title, level and heading",
 		byTitle["A Row Of This File's"] and byTitle["A Row Of This File's"].level == 70
 			and byTitle["A Row Of This File's"].category == "Dragonflight")
-	check("and one under a heading that started shut is filed under it",
+	check("and one under a heading that started shut is found, because it was opened",
 		byTitle["A Row Under It"] and byTitle["A Row Under It"].category
 			== "Broken Shore")
 	check("its id is the row's own, with no search through quest links",

@@ -2364,9 +2364,10 @@ heading, **shut** (`isCollapsed = true`), twenty-five keys with no `campaignID`.
 right after it, is *Armies of Legionfall*, 48641, level 50 - **with `isHidden = true`**, a bounty,
 twenty-five keys with `frequency` in place of `headerSortKey`. So:
 
-- **A shut heading does not keep the row after it out of the list.** §37's fixture had the rows
-  under a shut heading appear only once it was opened, which is what the Classic clients do and
-  what nothing here had measured. The fixture now lists them either way. The scan still opens
+- ~~**A shut heading does not keep the row after it out of the list.**~~ **Retracted in §43**: the
+  row was hidden, so this one reading cannot tell a shut heading that hides nothing from a hidden
+  row that is always listed. §37's fixture had the rows under a shut heading appear only once it
+  was opened, which is what the Classic clients do and what nothing here had measured. The scan still opens
   every heading and shuts again the ones it found shut; whether that is needed on this client is
   not something a list can say.
 - **Hidden rows are real, and the first one read is a bounty** - not a quest the player's log
@@ -2419,3 +2420,25 @@ history; the smoke row is where two characters' counts are compared.
 **Step 3's list of five is done.** What each slice still owes the game is written in §37 to §42;
 the merchant through `C_MerchantFrame.GetItemInfo` was never on the list and is not done.
 Harness 3870.
+
+## 43. §41 retracted on the shut heading, and probe version 18 walks the whole log (2026-09-24)
+
+§41 read Ahia's quest index 3 right after a shut heading and wrote that a shut heading does not
+keep what follows it out of the list. **That was one row, and a hidden one.** Alberto's
+screenshots of the log the same day show Drustvar shut with nothing under it and open with two
+quests, Vol'dun and Artifact the same, and *Broken Shore* - the shut heading index 2 was - is not
+drawn at all, which fits a heading holding only hidden rows. So the reading cannot tell *a shut
+heading hides nothing* from *a hidden row is listed whatever its heading does*. What the player's
+log draws is the interface's choice and not an answer from `C_QuestLog`, so the screenshots do not
+settle it either; they show where the claim went further than its evidence.
+
+The fixture goes back to hiding what is under a shut heading until it is opened - not as a claim
+about this client, but because that is the case where a scan that failed to open every heading
+would lose quests. The hidden bounty stays listed either way, which is what was read. The six
+quest mutations of §37 were run again: all caught.
+
+**Version 18** adds a login block, `questLog`: `C_QuestLog.GetNumQuestLogEntries()` with
+everything it returns - its second value has never been seen - and `GetInfo` for every row, to two
+hundred. Read with a heading shut that has visible quests under it, it answers the question
+directly. `/familysurface` asks again without a relog. A selftest claim covers the block and was
+seen to fail with the walk turned off; thirty-five claims.

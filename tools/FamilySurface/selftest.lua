@@ -99,7 +99,8 @@ local function stubs(interface)
 				name = "A Named Faction" }
 		end,
 	}
-	_G.C_QuestLog = { GetInfo = function() return { title = "A Quest" } end }
+	_G.C_QuestLog = { GetInfo = function(index) return { title = "A Quest", questLogIndex = index } end,
+		GetNumQuestLogEntries = function() return 2, 1 end }
 	-- The second brief's domains (§14): looked up on every client, called only where the sweep
 	-- is allowed. One name from each block is enough to count; the rest are absent, which is
 	-- itself what the probe writes down on a client that lacks them.
@@ -228,6 +229,12 @@ check("and there the brief's own calls are made",
 -- record carries begins with `at`, `can`, `has` or `is` (L-210).
 check("and a record's name survives the default cut, with nothing asked for",
 	asked:find('name="A Named Faction"', 1, true) ~= nil, asked)
+-- Version 18: the whole quest log, every row, and the count with all it returns.
+local log = midnight.windows.questLog or {}
+check("the quest log is walked whole, the count first with everything it returns",
+	#log == 3 and log[1]:find("GetNumQuestLogEntries() answers 2 | 1", 1, true) ~= nil
+		and log[3]:find("C_QuestLog.GetInfo(2) answers", 1, true) ~= nil,
+	table.concat(log, "\n"))
 local answered = table.concat(midnight.windows.pvp, "\n")
 	.. "\n" .. table.concat(midnight.windows.lockouts, "\n")
 check("and so are the second brief's, in both of its blocks",

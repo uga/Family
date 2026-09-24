@@ -135,7 +135,7 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Thirty-four claims: that an action whose name begins with a read
+interface 50504 and at 120100. Thirty-five claims: that an action whose name begins with a read
 word is not called even where the sweep runs, that the predicate which only looks like it still
 is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a
