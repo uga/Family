@@ -2794,3 +2794,12 @@ as `isHidden` was (§37, borne out in §45). If the nodes are still listed after
 window is opened, the key is not what marks them. The professions section of the fourth pretend
 client gains a learnt node of its own making, and its two existing checks - one recipe kept, one
 recorded - now hold it out. One mutation. Harness 3888.
+
+## 56. Recipe names: Midnight lists them as Era does, and nothing changes (2026-09-24)
+
+From the in-game test Alberto noticed Midnight's mining list reading *Smelt Copper* where he
+remembered the crafted item, and asked whether the names had changed. Checked on Era the same day,
+on Verysolid, in the client's own window through Skillet and in Family's: **Era lists *Smelt
+Copper*, *Smelt Iron*, *Smelt Thorium*** - the recipe's name - with the product, *Copper Bar*, on
+its tooltip. Midnight does the same, and engineering, where a recipe is named after what it makes,
+reads the same on both. So there is no difference to port, and the item is closed with no change.
