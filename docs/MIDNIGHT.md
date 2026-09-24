@@ -2670,3 +2670,15 @@ Whether Midnight has a setting that switches its line to one item was asked and 
 **Also from the test, and recorded rather than chased:** an `ADDON_ACTION_FORBIDDEN` for Family
 arrived once, on turning on recipe materials; it did not happen again, so nothing is known of its
 cause. `/console taintLog 1` is the way to name it if it returns.
+
+## 51. §49 and §50 seen in the game (2026-09-24)
+
+Alberto redeployed with `tools/DeployMidnight.bat` and tried both on Ahia:
+
+- **§49, the posted auction:** *Auction created.*, then the probe's `auctionOwnedAtOnce` - so the
+  client did send `OWNED_AUCTIONS_UPDATED`, because Family asked - and `scanned auctions: 3 selling`,
+  without the Auctions tab being opened. Which of the two signals made the request, the system
+  message or `AUCTION_HOUSE_AUCTION_CREATED`, the chat does not say; one of them did, so the owned
+  list now follows a post.
+- **§50, the sell price:** five Salty Dog Crackers, the client's *Sell Price: 1g 10s* and under it
+  Family's **Sell Price (each)** *0g 22s 00c*.
