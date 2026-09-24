@@ -2442,3 +2442,37 @@ everything it returns - its second value has never been seen - and `GetInfo` for
 hundred. Read with a heading shut that has visible quests under it, it answers the question
 directly. `/familysurface` asks again without a relog. A selftest claim covers the block and was
 seen to fail with the walk turned off; thirty-five claims.
+
+## 44. Probe version 17: the owned auction, whole, and why version 16 missed it (2026-09-24)
+
+Ahia with one auction up, the house opened and then its Auctions tab. Two readings of the same
+row, a few seconds apart, say what §41 guessed:
+
+| When | `GetNumOwnedAuctions()` |
+|---|---|
+| two seconds after `AUCTION_HOUSE_SHOW` (`auctionHouse`) | **0** |
+| on `OWNED_AUCTIONS_UPDATED`, at once and two seconds on (`auctionOwned…`) | **1** |
+
+**The owned list is the client's only once that event has come.** Family reads the house on the
+same event (§30), so the addon was never exposed to this; the probe was.
+
+The row is the six keys of §35 again - `auctionID` 963244795, `buyoutAmount` 17400, `quantity` 1,
+`status` 0, `timeLeftSeconds` 85813 - and its key, printed whole as `GetItemKeyInfo`'s argument:
+
+```
+itemKey = {battlePetSpeciesID=0, itemID=2770, itemLevel=10, itemSuffix=0}
+GetItemKeyInfo(itemKey) -> {itemID=2770, itemName="Copper Ore", isCommodity=true,
+                            isEquipment=false, isPet=false, quality=1, iconFileID=134566, ...}
+```
+
+**`itemID` is in the key**, which is the only field `readModernOwned` takes from it, so a Midnight
+owned row is recorded and §35's worry - a key without an id, dropped in silence - does not happen
+on this row. It is also a **commodity**, listed by `GetOwnedAuctionInfo` like any other auction,
+so the owned list is not split by kind on this client.
+
+The fourth pretend client's auction section now uses this row whole; §35's made-up id is gone,
+and nothing in that section is the harness's own any more. `a-midnight-owned-row-needs-a-link.mut`
+is still caught.
+
+The rest of the file repeats version 16: the same 8410 completed ids, the same faction and quest
+rows. Version 18's walk of the log was not in this run.
