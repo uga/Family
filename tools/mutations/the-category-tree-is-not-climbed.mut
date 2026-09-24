@@ -1,0 +1,6 @@
+name: the category tree is not walked up past the heading
+file: addons/Family/Scanners/Professions.lua
+--- old
+			category, steps = answer.parentCategoryID, steps + 1
+--- new
+			category, steps = nil, steps + 1

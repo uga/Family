@@ -1,0 +1,6 @@
+name: the first category naming a skill line is taken, the profession's own
+file: addons/Family/Scanners/Professions.lua
+--- old
+			if answer.hasProgressBar and line then
+--- new
+			if line then

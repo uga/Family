@@ -3638,7 +3638,8 @@ print("professions on the fourth pretend client")
 			recipeID = 9900201, nextRecipeID = 9900202, categoryID = 0 },
 		[9900202] = { learned = false, name = "A Ranked Recipe Of This File's", icon = 1391897,
 			recipeID = 9900202, previousRecipeID = 9900201 },
-		[9900101] = { categoryID = 2385, icon = 7422725, isGatheringRecipe = true,
+		-- In 1079 *Mining Techniques*, as Monelite Deposit is (§65).
+		[9900101] = { categoryID = 1079, icon = 7422725, isGatheringRecipe = true,
 			learned = true, name = "A Deposit Of This File's", recipeID = 9900101 },
 		[1260349] = { alwaysUsesLowestQuality = true, canCreateMultiple = true,
 			canSkillUp = true, categoryID = 2385, craftable = true, disabled = false,
@@ -3683,6 +3684,9 @@ print("professions on the fourth pretend client")
 		-- the rank list below does not name, 9900299.
 		GetTradeSkillLineForRecipe = function(id)
 			if id == 199005 then return 2500, "Legion Engineering", 202 end
+			-- A gathering technique's answer, as Monelite Deposit's was: the profession
+			-- itself, and no parent (§65).
+			if id == 9900101 then return 202, "Engineering", nil end
 			if id == 9900201 then return 9900299, "A Line Of This File's", 202 end
 			return 2499, "Kul Tiran Engineering", 202
 		end,
@@ -3690,6 +3694,18 @@ print("professions on the fourth pretend client")
 		-- *Goggles* for 470 is the heading in Alberto's screenshot (§61), not a reading.
 		GetCategoryInfo = function(id)
 			askedCategory[id] = (askedCategory[id] or 0) + 1
+			-- The run's rows for 1079 and 1065, as read (§62).
+			if id == 1079 then
+				return { categoryID = 1079, enabled = true, hasProgressBar = false,
+					name = "Mining Techniques", parentCategoryID = 1065, skillLineID = 186,
+					type = "subheader", uiOrder = 0 }
+			end
+			if id == 1065 then
+				return { categoryID = 1065, enabled = true, hasProgressBar = true,
+					name = "Kul Tiran Mining", parentCategoryID = 1064,
+					skillLineCurrentLevel = 157, skillLineID = 2565, skillLineMaxLevel = 175,
+					skillLineStartingRank = 1, type = "subheader", uiOrder = 930 }
+			end
 			local names = { [470] = "Goggles", [2385] = "Devices" }
 			if not names[id] then return nil end
 			return { categoryID = id, enabled = true, hasProgressBar = false,
@@ -3774,8 +3790,8 @@ print("professions on the fourth pretend client")
 	check("and the heading it sits under, asked once per category",
 		byID[199005] and byID[199005].category == "Goggles"
 			and byID[255393] and byID[255393].category == "Devices"
-			and askedCategory[2385] == 1,
-		byID[199005] and tostring(byID[199005].category) .. " " .. tostring(askedCategory[2385]))
+			and askedCategory[2385] == 1 and askedCategory[1079] == 1,
+		byID[199005] and tostring(byID[199005].category) .. " " .. tostring(askedCategory[1079]))
 	check("while a row with no category has no heading, and nothing was asked for it",
 		byID[9900201] and byID[9900201].category == nil and askedCategory[0] == nil)
 
@@ -3786,9 +3802,15 @@ print("professions on the fourth pretend client")
 			and lines[1].rank == 55 and lines[1].maxRank == 180
 			and lines[2] and lines[2].id == 2500 and lines[2].rank == 100,
 		type(lines) == "table" and tostring(lines[1] and lines[1].id) or tostring(lines))
+	check("a technique that answers its profession takes its line from the category above it",
+		byID[9900101] and byID[9900101].line == 2565
+			and byID[9900101].category == "Mining Techniques",
+		byID[9900101] and tostring(byID[9900101].line) or "none")
 	check("and a line a recipe named and the list did not comes after, with no rank",
-		type(lines) == "table" and #lines == 3 and lines[3].id == 9900299
-			and lines[3].name == "A Line Of This File's" and lines[3].rank == nil,
+		type(lines) == "table" and #lines == 4 and lines[3].id == 2565
+			and lines[3].name == "Kul Tiran Mining" and lines[3].rank == nil
+			and lines[4].id == 9900299
+			and lines[4].name == "A Line Of This File's" and lines[4].rank == nil,
 		type(lines) == "table" and tostring(#lines) or "none")
 
 	-- **With the window shut the same call answers, zeroed** - `professionName = ""`,
@@ -3835,7 +3857,7 @@ print("professions on the fourth pretend client")
 		engineering and engineering.openWith == "Engineering",
 		engineering and tostring(engineering.openWith) or "no entry")
 	check("and its expansion lines are kept with the recipes",
-		engineering and type(engineering.lines) == "table" and #engineering.lines == 3
+		engineering and type(engineering.lines) == "table" and #engineering.lines == 4
 			and engineering.lines[1].id == 2499,
 		engineering and tostring(engineering.lines) or "no entry")
 

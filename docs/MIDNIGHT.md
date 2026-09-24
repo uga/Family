@@ -3005,3 +3005,26 @@ so a profession opens as the list of its expansions; open, `-`, with its categor
 under it. Every line starts shut, and is shut again whenever the page changes, by the rule
 `Window.lua` gives every unfold. A search opens them all, because a match hidden under a shut
 heading is a match not found. The marker is text: a texture cannot be probed.
+
+## 65. The `/run` of §64 answered: a technique's line is its profession (2026-09-24)
+
+Ahia, Mining window open, every learnt recipe not named *Smelt*: `id name categoryID` and what
+`GetTradeSkillLineForRecipe` answers.
+
+- **Every gathering technique answers `186 Mining nil`** - the profession itself, and no parent.
+  Kul Tiran's (*Monelite Deposit* 253333-5, *Monelite Seam*, *Platinum Deposit*, *Storm Silver
+  Deposit* and *Seam*) are in category **1079**; Legion's (*Empyrium*, *Felslate*, *Infernal
+  Brimstone*, *Leystone*, *Living Felslate*, *Living Leystone*) in **1080**.
+- **Everything else answers a line with its parent**: *Earth Shatter* 35750 and *Fire Sunder*
+  35751, category 265, `2571 Outland Mining 186`; *Enchanted Thorium Bar* 70524, 264, `2572
+  Classic Mining 186`.
+
+So §62's 296147 → 2565 is not what a technique answers. The panel's `+ Mining (14)` at the foot of
+Alberto's screenshot after the fold landed is these fourteen, filed under line 186.
+
+**The fix: where the answer has no parent, the line is read from the category tree** - walked up
+from the recipe's category to the first with `hasProgressBar`, whose `skillLineID` is the line: 1079
+→ 1065 *Kul Tiran Mining* 2565 (§62). Not the first with a `skillLineID`, because 1079 carries 186
+without a bar. **1080's parent has not been read**; that it is *Legion Mining* 2566 is what the
+walk expects, and the panel will show whether it is. Where the walk finds nothing, the answer is
+kept as it was, which the harness does not exercise.

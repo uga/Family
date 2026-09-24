@@ -776,24 +776,57 @@ local function readModernRecipes()
 	-- heading through `GetCategoryInfo`, 264 *Smelting*, but only with this profession's window
 	-- open, which is when this runs. Asked once per line and per category. A client that answers
 	-- neither writes neither, and its list is drawn as it always was.
-	local lineNames, categoryNames = {}, {}
-	local function lineOf(id)
-		local line, lineName = Family:TryCall(C_TradeSkillUI.GetTradeSkillLineForRecipe, id)
+	local lineNames, categories = {}, {}
+	local function categoryInfo(category)
+		category = tonumber(category)
+		if not category or category == 0 then return nil end
+		if categories[category] == nil then
+			local answer = Family:TryCall(C_TradeSkillUI.GetCategoryInfo, category)
+			categories[category] = type(answer) == "table" and answer or false
+		end
+		return categories[category] or nil
+	end
+	local function categoryOf(info)
+		local answer = categoryInfo(info.categoryID)
+		local named = answer and answer.name
+		return (type(named) == "string" and named ~= "") and named or nil
+	end
+
+	-- **A gathering technique answers the profession, not its line.** Ahia's Mining, read
+	-- 2026-09-24 (`docs/MIDNIGHT.md` §65): *Monelite Deposit* and *Leystone Seam* answer 186
+	-- *Mining* with no parent, where a smelt answers 2572 *Classic Mining* under 186. Their line
+	-- is in the category tree instead: 1079 *Mining Techniques* sits under 1065 *Kul Tiran
+	-- Mining*, the one with a progress bar and `skillLineID` 2565 (§62). So where the answer has
+	-- no parent, the categories are walked up to the first with a bar. Not the first with a
+	-- `skillLineID`: 1079 carries 186 too, without one.
+	local CATEGORY_DEPTH = 10
+	local function lineFromCategories(info)
+		local category, steps = info.categoryID, 0
+		while steps < CATEGORY_DEPTH do
+			local answer = categoryInfo(category)
+			if not answer then return nil end
+			local line = tonumber(answer.skillLineID)
+			if answer.hasProgressBar and line then
+				if lineNames[line] == nil and type(answer.name) == "string" and answer.name ~= "" then
+					lineNames[line] = answer.name
+				end
+				return line
+			end
+			category, steps = answer.parentCategoryID, steps + 1
+		end
+		return nil
+	end
+
+	local function lineOf(id, info)
+		local line, lineName, parent = Family:TryCall(C_TradeSkillUI.GetTradeSkillLineForRecipe, id)
 		line = tonumber(line)
+		if line and parent == nil then
+			return lineFromCategories(info) or line
+		end
 		if line and lineNames[line] == nil then
 			lineNames[line] = (type(lineName) == "string" and lineName ~= "") and lineName or false
 		end
 		return line
-	end
-	local function categoryOf(info)
-		local category = tonumber(info.categoryID)
-		if not category or category == 0 then return nil end
-		if categoryNames[category] == nil then
-			local answer = Family:TryCall(C_TradeSkillUI.GetCategoryInfo, category)
-			local named = type(answer) == "table" and answer.name
-			categoryNames[category] = (type(named) == "string" and named ~= "") and named or false
-		end
-		return categoryNames[category] or nil
 	end
 
 	for _, id in ipairs(ids) do
@@ -832,7 +865,7 @@ local function readModernRecipes()
 				recipes[#recipes].ranks = ranks
 			end
 
-			recipes[#recipes].line = lineOf(id)
+			recipes[#recipes].line = lineOf(id, info)
 			recipes[#recipes].category = categoryOf(info)
 		end
 	end
