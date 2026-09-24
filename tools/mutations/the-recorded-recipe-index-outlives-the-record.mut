@@ -1,0 +1,6 @@
+name: the index of recorded recipes is never rebuilt, so a forgotten member's recipes still match
+file: addons/Family/Recipes.lua
+--- old
+			Family.Database:OnChanged("recipes.recorded", function() recorded = nil end)
+--- new
+			Family.Database:OnChanged("recipes.recorded", function() end)

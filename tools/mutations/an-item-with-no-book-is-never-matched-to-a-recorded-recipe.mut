@@ -1,0 +1,6 @@
+name: with no book shipped, an item is never matched to a recipe a member is recorded as knowing
+file: addons/Family/Recipes.lua
+--- old
+		return recordedMaker(tonumber(itemID))
+--- new
+		return nil

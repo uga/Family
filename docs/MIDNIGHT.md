@@ -2709,3 +2709,42 @@ has not learned, at login where the brief runs; and the first listed recipe with
 window open, to compare. The materials are two levels down, so each slot is a line of its own
 naming its first reagent, keyed as a pseudo-call. A selftest claim covers the reader and was seen
 to fail with it broken; thirty-six claims.
+
+## 53. Recipe materials asked of the client, and an item matched to a recorded recipe (2026-09-24)
+
+**Probe version 19 answered §52's question: yes.** At login, with no window open, on Ahia:
+
+| Recipe | `GetRecipeSchematic(id, false)` |
+|---|---|
+| 2657, *Smelt Copper* - the id written from memory was right | makes 2840; one slot, **1 × 2770** |
+| 1260349, which Ahia has **not** learnt | five slots: 42 × 251768, 30 × 152579, 35 × 152512, 20 × 163569, 5 × 166970 |
+
+With the engineering window open, 1260349 answered the same. Each slot is ten keys -
+`quantityRequired`, `reagentType`, `required`, `reagents` (a list of `{ itemID }`) among them - and
+every slot read was `required = true, reagentType = 1`.
+
+So on Midnight **the client is asked, and nothing is generated**: no data source is added, and the
+question §52 left for DATASOURCES does not arise.
+
+- **`Recipes:Reagents`** reads the shipped table where the client has a book in it, exactly as
+  before, and where it has none - told by `RecipeReagents[expansion]` - asks `GetRecipeSchematic`
+  through `TryCall`. A slot's first alternative is taken; a slot marked not required is left out,
+  since a recipe does not cost what it may optionally be given. Kept for the session, with `false`
+  for a recipe the client would not describe so it is not asked again.
+- **`Recipes:MadeBy`**, which the item tooltip starts from, had no route either: every table it
+  reads is generated. Where there is no book - told by `RecipeProducts`, which has one for every
+  generated client, and **not** by `RecipeMadeBy`, which has Era's alone: a first version asked the
+  wrong table and would have taken Burning Crusade and Mists off their own route, which a mutation
+  now holds - it matches the item to the lowest recipe any member is recorded as knowing, from the
+  recipe and product ids `readModernRecipes` keeps (§38). That covers what somebody in the family
+  can make; an item nobody has learnt to make has no recipe named on Midnight. The index is built
+  once and dropped whenever the database says a record changed.
+
+The fourth-client section uses the two measured schematics and one of the harness's own - two
+alternatives in a slot and an optional slot, neither of which a run has shown - and a member
+recorded as knowing Smelt Copper, forgotten again at the end. Eight checks, seven mutations.
+Harness 3887.
+
+**Not done and not known**: `BoundReagents`, which says which materials no money can buy, is
+generated for the same three clients; on Midnight every material is priced as if it could be
+bought. And whether a slot's first alternative is the lowest quality is the game's to say.

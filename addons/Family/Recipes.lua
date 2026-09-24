@@ -224,11 +224,48 @@ end
 local madeBy = {}
 local productOf = {}
 
+-- **Where no book is shipped, the recipes the family has been seen to know.** Midnight's recipes
+-- are recorded with both ids - `readModernRecipes` keeps the recipe's and the product's
+-- (`docs/MIDNIGHT.md` §38) - so an item is matched to the lowest recipe any member knows for it.
+-- That covers what somebody here can make, and nothing else: a Midnight item nobody has learnt to
+-- make has no recipe Family can name, where the shipped tables would have had one. Built once and
+-- again whenever the database says something changed, since it walks every member's record.
+local recorded, watching = nil, false
+
+local function recordedMaker(itemID)
+	if not recorded then
+		recorded = {}
+		if not watching then
+			watching = true
+			Family.Database:OnChanged("recipes.recorded", function() recorded = nil end)
+		end
+		for key in pairs(Family.Database:Members()) do
+			local payload = Family.Database:Payload(key)
+			for _, book in pairs(type(payload) == "table" and payload.professions or {}) do
+				for _, recipe in ipairs(type(book) == "table" and book.recipes or {}) do
+					local item = type(recipe) == "table" and tonumber(recipe.itemID)
+					local spell = type(recipe) == "table" and tonumber(recipe.spellID)
+					if item and spell and (recorded[item] == nil or spell < recorded[item]) then
+						recorded[item] = spell
+					end
+				end
+			end
+		end
+	end
+	return recorded[itemID]
+end
+
 function Recipes:MadeBy(itemID)
 	if not itemID then return nil end
 
 	local expansion = Family.Capabilities and Family.Capabilities.expansion
 	if not expansion then return nil end
+
+	-- No book at all is told by `RecipeProducts`, which has one for every client it was generated
+	-- for; `RecipeMadeBy` has Era's alone, and Burning Crusade and Mists answer below without it.
+	if not (Family.RecipeProducts or {})[expansion] then
+		return recordedMaker(tonumber(itemID))
+	end
 
 	local shipped = (Family.RecipeMadeBy or {})[expansion]
 	local direct = shipped and shipped[itemID]
@@ -558,13 +595,52 @@ end
 -- The shipped table is flat pairs - `{ itemID, count, itemID, count }` - because it is three
 -- hundred kilobytes and a table constructor per reagent would be a good deal more. Unpacked
 -- here so that nothing above ever has to know that.
+-- **Where the shipped table has no book, the client is asked.** Midnight has none - the table
+-- is generated for expansions 1, 2 and 5 - and on Midnight `GetRecipeSchematic` describes any
+-- recipe at any time: probe version 19, 2026-09-24, read Smelt Copper and an engineering recipe
+-- Ahia has not learned, with no window open, and got the same answer with the window open
+-- (`docs/MIDNIGHT.md` §53). Its answer is a list of slots, each with a count and a list of the
+-- items that fill it, alternatives of one material in different qualities; the first is taken,
+-- and a slot marked not required - an optional reagent - is left out, since a recipe does not
+-- cost what it may be given.
+--
+-- Kept for the session, since a recipe's materials do not change under it, and `false` for a
+-- recipe the client would not describe so that it is not asked again.
+local described = {}
+
+local function fromClient(spellID)
+	if described[spellID] ~= nil then return described[spellID] or nil end
+
+	local schematic = Family:TryCall((_G.C_TradeSkillUI or {}).GetRecipeSchematic, spellID, false)
+	local slots = type(schematic) == "table" and schematic.reagentSlotSchematics
+	local flat = {}
+	for _, slot in ipairs(type(slots) == "table" and slots or {}) do
+		local reagents = type(slot) == "table" and slot.required ~= false and slot.reagents
+		local first = type(reagents) == "table" and reagents[1]
+		local item = type(first) == "table" and tonumber(first.itemID)
+		local count = tonumber(slot.quantityRequired)
+		if item and count and count > 0 then
+			flat[#flat + 1] = item
+			flat[#flat + 1] = count
+		end
+	end
+
+	described[spellID] = #flat > 0 and flat or false
+	return described[spellID] or nil
+end
+
 function Recipes:Reagents(spellID)
 	spellID = tonumber(spellID)
 	local expansion = expansionHere()
 	if not (spellID and expansion) then return nil end
 
 	local shipped = (Family.RecipeReagents or {})[expansion]
-	local flat = shipped and shipped[spellID]
+	local flat
+	if shipped then
+		flat = shipped[spellID]
+	else
+		flat = fromClient(spellID)
+	end
 	if not flat then return nil end
 
 	local out = {}

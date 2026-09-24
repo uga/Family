@@ -4264,6 +4264,95 @@ do
 end
 
 print()
+print("recipe materials on the fourth pretend client")
+
+-- Family ships a recipe's materials in a table generated for expansions 1, 2 and 5, and Midnight
+-- has no book in it, so nothing showed (§52). Probe version 19 read `GetRecipeSchematic` answering
+-- with no window open, for a recipe Ahia knows and one she has not learned (§53); where there is
+-- no book, the client is asked.
+;(function()
+	local was = { GetBuildInfo = GetBuildInfo, C_TradeSkillUI = _G.C_TradeSkillUI }
+	GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
+	Family.Capabilities:Detect()
+
+	local function slot(index, count, items, fields)
+		local reagents = {}
+		for _, item in ipairs(items) do reagents[#reagents + 1] = { itemID = item } end
+		local row = { dataSlotIndex = index, dataSlotType = 1, hiddenInCraftingForm = false,
+			orderSource = 0, quantityRequired = count, reagentType = 1, reagents = reagents,
+			required = true, slotIndex = index, variableQuantities = {} }
+		for k, v in pairs(fields or {}) do row[k] = v end
+		return row
+	end
+
+	-- **The two measured answers**, keys and values as read: Smelt Copper, and 1260349 with its
+	-- five slots. **9900001 is the harness's own**: a second alternative in a slot and an optional
+	-- slot, neither of which a run has shown.
+	local SCHEMATICS = {
+		[2657] = { hasCraftingOperationInfo = false, icon = 0, isRecraft = false,
+			name = "Smelt Copper", outputItemID = 2840, quantityMax = 1, quantityMin = 1,
+			reagentSlotSchematics = { slot(1, 1, { 2770 }) }, recipeID = 2657, recipeType = 1 },
+		[1260349] = { hasCraftingOperationInfo = true, icon = 0, isRecraft = false,
+			name = "Deactivated Atomic Recalibrator", outputItemID = 246604, quantityMax = 1,
+			quantityMin = 1, reagentSlotSchematics = { slot(1, 42, { 251768 }),
+				slot(2, 30, { 152579 }), slot(3, 35, { 152512 }), slot(4, 20, { 163569 }),
+				slot(5, 5, { 166970 }) }, recipeID = 1260349, recipeType = 1 },
+		[9900001] = { name = "A Recipe Of This File's", reagentSlotSchematics = {
+			slot(1, 3, { 9900011, 9900012 }),
+			slot(2, 1, { 9900013 }, { required = false, reagentType = 0 }) } },
+	}
+	local asked = 0
+	_G.C_TradeSkillUI = { GetRecipeSchematic = function(id)
+		asked = asked + 1
+		return SCHEMATICS[id]
+	end }
+
+	local copper = Family.Recipes:Reagents(2657)
+	check("with no book shipped for this client, a recipe's materials are asked of the client",
+		copper and #copper == 1 and copper[1].item == 2770 and copper[1].count == 1,
+		copper and (#copper .. " part(s)") or "nil")
+
+	local unlearnt = Family.Recipes:Reagents(1260349)
+	check("and a recipe nobody here has learnt is described as well, all five of its slots",
+		unlearnt and #unlearnt == 5 and unlearnt[1].item == 251768 and unlearnt[1].count == 42
+			and unlearnt[5].item == 166970 and unlearnt[5].count == 5,
+		unlearnt and (#unlearnt .. " part(s)") or "nil")
+
+	local mine = Family.Recipes:Reagents(9900001)
+	check("a slot's first alternative is the one taken, and an optional slot is not counted",
+		mine and #mine == 1 and mine[1].item == 9900011 and mine[1].count == 3,
+		mine and (#mine .. " part(s)") or "nil")
+
+	asked = 0
+	Family.Recipes:Reagents(2657)
+	Family.Recipes:Reagents(4242424)
+	Family.Recipes:Reagents(4242424)
+	check("and each recipe is asked once a session, one the client will not describe included",
+		asked == 1, asked .. " ask(s)")
+
+	-- **And the item's own tooltip, which starts from the item.** No book says what makes a
+	-- Copper Bar here, so it is found among the recipes a member is recorded as knowing - the shape
+	-- `readModernRecipes` writes, recipe id and product id (§38).
+	local miner = "Mirror-Midnight-Miner"
+	check("an item no member is recorded as making has no recipe on this client",
+		Family.Recipes:MadeBy(2840) == nil, tostring(Family.Recipes:MadeBy(2840)))
+	Family.Database:SetPayload(miner, { professions = {
+		[186] = { recipes = { { spellID = 22967, itemID = 17771 }, { spellID = 2657, itemID = 2840 } } },
+	} }, { "professions" })
+	check("while one a member knows the recipe for is matched to it, once the record is written",
+		Family.Recipes:MadeBy(2840) == 2657, tostring(Family.Recipes:MadeBy(2840)))
+	local parts = Family.Recipes:Reagents(Family.Recipes:MadeBy(2840))
+	check("and from there to what it is made of, which is what the item's tooltip needs",
+		parts and parts[1] and parts[1].item == 2770 and parts[1].count == 1)
+	Family.Database:Forget(miner)
+	check("and forgetting the member forgets the match",
+		Family.Recipes:MadeBy(2840) == nil, tostring(Family.Recipes:MadeBy(2840)))
+
+	GetBuildInfo, _G.C_TradeSkillUI = was.GetBuildInfo, was.C_TradeSkillUI
+	Family.Capabilities:Detect()
+end)()
+
+print()
 print("the mailbox on the fourth pretend client")
 
 -- The shortest section here, and the finding is the short one: **nothing is missing**.

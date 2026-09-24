@@ -1,0 +1,6 @@
+name: a reagent slot is read as its last alternative rather than its first
+file: addons/Family/Recipes.lua
+--- old
+		local first = type(reagents) == "table" and reagents[1]
+--- new
+		local first = type(reagents) == "table" and reagents[#reagents]

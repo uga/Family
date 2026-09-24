@@ -1,0 +1,6 @@
+name: a client is taken to have no book when RecipeMadeBy has none, which is Burning Crusade and Mists
+file: addons/Family/Recipes.lua
+--- old
+	if not (Family.RecipeProducts or {})[expansion] then
+--- new
+	if not (Family.RecipeMadeBy or {})[expansion] then

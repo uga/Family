@@ -1,0 +1,6 @@
+name: an optional reagent slot is counted as something the recipe needs
+file: addons/Family/Recipes.lua
+--- old
+		local reagents = type(slot) == "table" and slot.required ~= false and slot.reagents
+--- new
+		local reagents = type(slot) == "table" and slot.reagents
