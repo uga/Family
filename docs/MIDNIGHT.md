@@ -2516,3 +2516,39 @@ is the harness's own any more. The six mutations of §37 still caught.
 The scan still opens every heading with `ExpandQuestHeader(0)` and shuts again what it found shut.
 On this client that is not needed to read the log; whether it disturbs the player's log is the
 smoke row's to see.
+
+## 46. Midnight's interface number goes into the `.toc` files now, to try Family at home (2026-09-24)
+
+`addons/Family/Family.toc` and `addons/Family_UI/Family_UI.toc` read
+`## Interface: 11509, 20506, 50504, 120100`. Until today they stopped at Mists, so Midnight would
+not load them.
+
+**This reverses step 4 of the branch's `CLAUDE.md`**, which put the number in only with the 5.0.0
+merge so that the branch would not be installable on Midnight *by anyone who is not looking for
+it*. Alberto, 2026-09-24: before any beta the software has to be tried on his own installations,
+so it has to load there. The reason for the rule does not reach this case - `midnight` has no
+remote branch and exists on this machine only - and a beta or the merge, which would carry the
+number out, are both Alberto's.
+
+The cost: when `main` changes its interface numbers for a Classic patch, the merge conflicts on
+line 1 of both files, and is resolved here by keeping `120100` beside `main`'s new numbers.
+
+### What to look at in the game
+
+Copy `addons/Family` and `addons/Family_UI` from this worktree into `Interface/AddOns/` on
+Midnight, by hand as the probe was. What step 3 left for the game to confirm:
+
+1. **The quest log** (§37, §45): the member's quests are listed, including those under a heading
+   shut in the player's log, and none of the hidden bounties; the log the player sees is left as
+   it was found, shut headings still shut.
+2. **Reputations** (§39): the factions are listed under their headings, *The Cartels of Undermine*
+   among them; the reputation window is left as it was found.
+3. **Professions** (§38): with a profession's window open, its recipes are recorded, and Family's
+   way back into the profession opens the window.
+4. **Auctions** (§44): an owned auction appears once the Auctions tab has been opened.
+5. **Quest history** (§42): a quest's tooltip says who has done it, and two characters on the same
+   account show different counts - or the same, which would mean the list is the account's.
+6. **Everything that already worked** (§31): bags, bank, currencies, mail.
+
+A red error on screen, or a panel empty where it should not be, is the finding; a screenshot with
+the character's name is enough to start from.
