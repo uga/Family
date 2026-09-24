@@ -1,6 +1,6 @@
 name: a recipe the client will not describe is asked about again on every lookup
 file: addons/Family/Recipes.lua
 --- old
-	described[spellID] = #flat > 0 and flat or false
+		and { reagents = #flat > 0 and flat or nil, output = output } or false
 --- new
-	described[spellID] = #flat > 0 and flat or nil
+		and { reagents = #flat > 0 and flat or nil, output = output } or nil

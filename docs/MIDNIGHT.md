@@ -2803,3 +2803,31 @@ on Verysolid, in the client's own window through Skillet and in Family's: **Era 
 Copper*, *Smelt Iron*, *Smelt Thorium*** - the recipe's name - with the product, *Copper Bar*, on
 its tooltip. Midnight does the same, and engineering, where a recipe is named after what it makes,
 reads the same on both. So there is no difference to port, and the item is closed with no change.
+
+## 57. A Midnight recipe's picture, from what the client says it makes (2026-09-24)
+
+A dozen engineering rows on Ahia - *Cardboard Assassin*, *Frag Belt*, *Goblin Glider* - drew a
+question mark. `recipeIcon` (`Family_UI/Professions.lua`) takes the product's picture, then the
+recorded icon, then the spell's: those rows were recorded with no product, `Recipes:Product` reads
+only the generated `RecipeProducts`, which has no book for Midnight, and the spell's picture comes
+through `GetSpellInfo`, which Midnight does not have.
+
+The schematic the client answers carries the product - `outputItemID`, 2840 for Smelt Copper and
+246604 for 1260349 (§53) - so the client reader now keeps it beside the materials, one cached answer
+per recipe, and `Recipes:Product` asks it where there is no book. The reader moved above `Product`
+in the file, since a local function is not seen from above its definition. One check, two
+mutations; two §53 mutations and `main`'s `recipe-spell-names-no-product.mut` were anchored on the
+lines rewritten and were moved to them, `mutate.py` having refused them as moved anchors rather than
+passing them. Harness 3889.
+
+**Also from the same test, and open:** the Mining list still carries its deposits and seams after
+the window was opened again (§55). Either the copy in the game predates the filter, or
+`isGatheringRecipe` is not what marks them - the game files them under *Mining Techniques*, with
+ranks. A `/run` asking the client about *Monelite Deposit*'s row settles which. And the same window
+shows Mining's per-expansion ranks, the shape the professions slice needs: Kul Tiran 157/175, Legion
+100/100, Draenor 100/100, Pandaria to Outland 75/75, Classic 300/300.
+
+**And slowness, not yet measured:** opening Engineering, 440 recipes, took fifteen to twenty
+seconds to draw its pictures, every session. The list draws every row on each refresh, and on
+Midnight each row asks the client for its schematic the first time in a session. That is the
+suspect, not the finding.

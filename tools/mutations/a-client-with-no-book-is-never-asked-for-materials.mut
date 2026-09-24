@@ -1,6 +1,7 @@
 name: a client with no shipped book of materials is never asked, so Midnight shows no materials
 file: addons/Family/Recipes.lua
 --- old
-		flat = fromClient(spellID)
+		local answer = fromClient(spellID)
+		flat = answer and answer.reagents
 --- new
 		flat = nil

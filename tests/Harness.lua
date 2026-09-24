@@ -4318,6 +4318,12 @@ print("recipe materials on the fourth pretend client")
 		copper and #copper == 1 and copper[1].item == 2770 and copper[1].count == 1,
 		copper and (#copper .. " part(s)") or "nil")
 
+	-- **And what it makes**, which the same answer carries - `outputItemID` - and which a row's
+	-- picture starts from: a Midnight recipe recorded with no product drew a question mark (§57).
+	check("and what a recipe makes is the client's answer too, where no book says",
+		Family.Recipes:Product(2657) == 2840 and Family.Recipes:Product(1260349) == 246604,
+		tostring(Family.Recipes:Product(2657)) .. " / " .. tostring(Family.Recipes:Product(1260349)))
+
 	local unlearnt = Family.Recipes:Reagents(1260349)
 	check("and a recipe nobody here has learnt is described as well, all five of its slots",
 		unlearnt and #unlearnt == 5 and unlearnt[1].item == 251768 and unlearnt[1].count == 42

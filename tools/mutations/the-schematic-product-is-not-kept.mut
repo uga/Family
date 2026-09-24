@@ -1,0 +1,6 @@
+name: what a recipe makes is dropped from the client's answer
+file: addons/Family/Recipes.lua
+--- old
+	local output = type(schematic) == "table" and tonumber(schematic.outputItemID) or nil
+--- new
+	local output = nil

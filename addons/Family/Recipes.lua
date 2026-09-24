@@ -221,6 +221,46 @@ end
 -- spell anyway and this is the last resort rather than the first.
 --
 -- Where two patterns make the same thing the lower id wins, so two draws of one page agree.
+-- **Where the shipped table has no book, the client is asked.** Midnight has none - the table
+-- is generated for expansions 1, 2 and 5 - and on Midnight `GetRecipeSchematic` describes any
+-- recipe at any time: probe version 19, 2026-09-24, read Smelt Copper and an engineering recipe
+-- Ahia has not learned, with no window open, and got the same answer with the window open
+-- (`docs/MIDNIGHT.md` §53). Its answer is a list of slots, each with a count and a list of the
+-- items that fill it, alternatives of one material in different qualities; the first is taken,
+-- and a slot marked not required - an optional reagent - is left out, since a recipe does not
+-- cost what it may be given.
+--
+-- Kept for the session, since a recipe does not change under it, and `false` for a recipe the
+-- client would not describe so that it is not asked again. `Recipes:Product` reads the same
+-- answer for what the recipe makes.
+local described = {}
+
+local function fromClient(spellID)
+	if described[spellID] ~= nil then return described[spellID] or nil end
+
+	local schematic = Family:TryCall((_G.C_TradeSkillUI or {}).GetRecipeSchematic, spellID, false)
+	local slots = type(schematic) == "table" and schematic.reagentSlotSchematics
+	local flat = {}
+	for _, slot in ipairs(type(slots) == "table" and slots or {}) do
+		local reagents = type(slot) == "table" and slot.required ~= false and slot.reagents
+		local first = type(reagents) == "table" and reagents[1]
+		local item = type(first) == "table" and tonumber(first.itemID)
+		local count = tonumber(slot.quantityRequired)
+		if item and count and count > 0 then
+			flat[#flat + 1] = item
+			flat[#flat + 1] = count
+		end
+	end
+
+	-- And what it makes, which the same answer carries: `outputItemID`, 2840 for Smelt Copper.
+	local output = type(schematic) == "table" and tonumber(schematic.outputItemID) or nil
+	if output and output <= 0 then output = nil end
+
+	described[spellID] = (#flat > 0 or output)
+		and { reagents = #flat > 0 and flat or nil, output = output } or false
+	return described[spellID] or nil
+end
+
 local madeBy = {}
 local productOf = {}
 
@@ -355,9 +395,13 @@ function Recipes:Product(spellID)
 	if not spellID then return nil end
 
 	local expansion = Family.Capabilities and Family.Capabilities.expansion
-	local here = expansion and (Family.RecipeProducts or {})[expansion]
+	if not expansion then return nil end
+	local here = (Family.RecipeProducts or {})[expansion]
+	if here then return here[spellID] end
 
-	return here and here[spellID] or nil
+	-- No book for this client: what the client says the recipe makes (§57).
+	local answer = fromClient(tonumber(spellID))
+	return answer and answer.output or nil
 end
 
 -- Whether this item is the one that teaches that recipe.
@@ -595,40 +639,6 @@ end
 -- The shipped table is flat pairs - `{ itemID, count, itemID, count }` - because it is three
 -- hundred kilobytes and a table constructor per reagent would be a good deal more. Unpacked
 -- here so that nothing above ever has to know that.
--- **Where the shipped table has no book, the client is asked.** Midnight has none - the table
--- is generated for expansions 1, 2 and 5 - and on Midnight `GetRecipeSchematic` describes any
--- recipe at any time: probe version 19, 2026-09-24, read Smelt Copper and an engineering recipe
--- Ahia has not learned, with no window open, and got the same answer with the window open
--- (`docs/MIDNIGHT.md` §53). Its answer is a list of slots, each with a count and a list of the
--- items that fill it, alternatives of one material in different qualities; the first is taken,
--- and a slot marked not required - an optional reagent - is left out, since a recipe does not
--- cost what it may be given.
---
--- Kept for the session, since a recipe's materials do not change under it, and `false` for a
--- recipe the client would not describe so that it is not asked again.
-local described = {}
-
-local function fromClient(spellID)
-	if described[spellID] ~= nil then return described[spellID] or nil end
-
-	local schematic = Family:TryCall((_G.C_TradeSkillUI or {}).GetRecipeSchematic, spellID, false)
-	local slots = type(schematic) == "table" and schematic.reagentSlotSchematics
-	local flat = {}
-	for _, slot in ipairs(type(slots) == "table" and slots or {}) do
-		local reagents = type(slot) == "table" and slot.required ~= false and slot.reagents
-		local first = type(reagents) == "table" and reagents[1]
-		local item = type(first) == "table" and tonumber(first.itemID)
-		local count = tonumber(slot.quantityRequired)
-		if item and count and count > 0 then
-			flat[#flat + 1] = item
-			flat[#flat + 1] = count
-		end
-	end
-
-	described[spellID] = #flat > 0 and flat or false
-	return described[spellID] or nil
-end
-
 function Recipes:Reagents(spellID)
 	spellID = tonumber(spellID)
 	local expansion = expansionHere()
@@ -639,7 +649,8 @@ function Recipes:Reagents(spellID)
 	if shipped then
 		flat = shipped[spellID]
 	else
-		flat = fromClient(spellID)
+		local answer = fromClient(spellID)
+		flat = answer and answer.reagents
 	end
 	if not flat then return nil end
 

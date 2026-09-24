@@ -1,0 +1,6 @@
+name: with no book shipped, a recipe's product is not asked of the client, and its row draws a question mark
+file: addons/Family/Recipes.lua
+--- old
+	return answer and answer.output or nil
+--- new
+	return nil
