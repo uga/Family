@@ -3028,3 +3028,12 @@ from the recipe's category to the first with `hasProgressBar`, whose `skillLineI
 without a bar. **1080's parent has not been read**; that it is *Legion Mining* 2566 is what the
 walk expects, and the panel will show whether it is. Where the walk finds nothing, the answer is
 kept as it was, which the harness does not exercise.
+
+## 66. §65 seen in the game (2026-09-24)
+
+Alberto's screenshot of Ahia's Mining after redeploying and opening the window: *Kul Tiran Mining
+157/175* first, open, with *Monelite Deposit* 3/3, *Monelite Seam* 3/3, *Platinum Deposit* 2/3,
+*Storm Silver Deposit* 3/3 and *Seam* 3/3 under *Mining Techniques*; then *Legion Mining 100/100*
+with *Empyrium Deposit* 2/3, *Empyrium Seam* 1/3, *Felslate Deposit* 2/3 under its own *Mining
+Techniques*. The `+ Mining (14)` line is gone. So 1080's line is *Legion Mining*, as the walk
+expected: §65's one unread step is now seen.
