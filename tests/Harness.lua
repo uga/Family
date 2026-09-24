@@ -3598,6 +3598,11 @@ print("professions on the fourth pretend client")
 	-- and the run has no learned row written down, so the change is named here rather than
 	-- passed off as a reading.
 	local ROWS = {
+		-- A mining node among the learnt, which Midnight lists (2026-09-24, *Monelite Deposit*)
+		-- and nothing is made from. **This file's**: no node's row has been read, so its
+		-- `isGatheringRecipe = true` is what the key's name says and not a reading (§55).
+		[9900101] = { categoryID = 2385, icon = 7422725, isGatheringRecipe = true,
+			learned = true, name = "A Deposit Of This File's", recipeID = 9900101 },
 		[1260349] = { alwaysUsesLowestQuality = true, canCreateMultiple = true,
 			canSkillUp = true, categoryID = 2385, craftable = true, disabled = false,
 			favorite = false, firstCraft = false, hasSingleItemOutput = true,
@@ -3623,7 +3628,7 @@ print("professions on the fourth pretend client")
 		-- Absent on this client. Named here as nil on purpose: it is the one call the whole
 		-- section turns on, and leaving it out of the stub would say the same thing quietly.
 		GetTradeSkillLine = nil,
-		GetAllRecipeIDs = function() return { 1260349, 255393 } end,
+		GetAllRecipeIDs = function() return { 1260349, 255393, 9900101 } end,
 		GetRecipeInfo = function(id) looked = looked + 1 return ROWS[id] end,
 		GetRecipeItemLink = function() return nil end,
 		-- What the window really answers, and the name is in here. With the window shut it
@@ -3638,7 +3643,7 @@ print("professions on the fourth pretend client")
 
 	check("the namespace this client answers with is in front of the scanner",
 		type(_G.C_TradeSkillUI) == "table"
-			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 2
+			and #_G.C_TradeSkillUI.GetAllRecipeIDs() == 3
 			and _G.C_TradeSkillUI.GetBaseProfessionInfo().professionName == "Engineering",
 		"C_TradeSkillUI is not set up")
 
@@ -3665,7 +3670,8 @@ print("professions on the fourth pretend client")
 	check("a recipe read on Midnight is named from the base profession",
 		name == "Engineering" and recipes and #recipes == 1,
 		tostring(name) .. " / " .. (recipes and #recipes or "nil"))
-	check("and keeps the learned recipe and only that one, after reading both", looked == 2
+	check("and keeps the learned recipe and only that one, not the node, after reading all three",
+		looked == 3
 		and recipes and recipes[1] and recipes[1].spellID == 255393,
 		tostring(looked) .. " looked up")
 

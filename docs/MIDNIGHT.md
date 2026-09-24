@@ -2770,3 +2770,27 @@ asks the table first. The secure attributes are untouched, so whether the button
 window on Midnight by that route alone is the game's to show; the dialog should not come back
 either way. One check beside the existing ones, on the fourth pretend client's build, and two
 mutations: the cast made regardless, and the Classic clients told they may not. Harness 3888.
+
+## 55. Materials seen in the game, and gathering nodes left out of the recipes (2026-09-24)
+
+**§53 seen on Ahia after redeploying.** The recipe list draws every recipe's materials on the right
+of its row - *Smelt Copper* one Copper Ore, the three *Bolt-Action Headgun* rows 40, 50 and 30
+Stormscale - and an item's tooltip carries *Made with*: Copper Bar, one Copper Ore; Bolt-Action
+Headgun, Stormscale ×50, Sniping Scope ×2, Loose Trigger ×2, "Twirling Bottom" Repeater ×1. The
+three rows of one name are **ranks with their own materials**, which is what the professions slice
+needs to show them apart.
+
+**Every price there reads *unknown*, and that is a reading, not a broken link.** Family prices a
+material from a vendor seen selling it or from the auction house as searched, and on Midnight
+neither has been seen: Possessions' header says *0 at auction prices*. Whether a search at the house
+fills them on this client is not yet known - Copper Ore is a commodity, and the browse results
+`ReadModernPrices` reads were measured on Mists and not here.
+
+**Gathering nodes are recorded as recipes on Midnight.** Mining lists *Monelite Deposit*, *Storm
+Silver Seam*, *Platinum Deposit*, *Living Leystone* - learnt, and nothing made from them.
+`readModernRecipes` now leaves out a row whose `isGatheringRecipe` is true. The key is on every row
+read (§26) and false on the engineering ones; **that it is true on a node is taken from its name**,
+as `isHidden` was (§37, borne out in §45). If the nodes are still listed after the next mining
+window is opened, the key is not what marks them. The professions section of the fourth pretend
+client gains a learnt node of its own making, and its two existing checks - one recipe kept, one
+recorded - now hold it out. One mutation. Harness 3888.
