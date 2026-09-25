@@ -3317,3 +3317,7 @@ build not taking the route with Midnight's answers in front of it.
 
 Alberto's screenshot of Summary / Miscellaneous after deploying: Ahia's Mount column reads
 *Skyriding*. Deiana's is empty, not played since. The switch to *Steady* is not in this reading.
+
+Alberto's second screenshot, after switching the style in the Mounts tab: Ahia's column reads
+*Steady*, **with no reload** - a scan that runs on the switch recomputes it, so the style follows
+the switch in play.
