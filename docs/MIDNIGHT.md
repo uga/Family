@@ -3254,3 +3254,9 @@ to read expansion riding skills*.** §80 reads the riding spell right and prices
 `RidingLadder`, which it said was unmeasured on Midnight; Midnight's riding is evidently not that
 table. What the column should say there, and where the game shows it, is asked of Alberto before
 anything is read. Deiana, not played since the deploy, has no answer yet.
+
+## 82. §79 seen: the tinker draws its gear (2026-09-25)
+
+Alberto's screenshot on the PTR: *Cardboard Assassin* under *Cataclysm Engineering 80/80*, *Tinkers*,
+drawn with the spell's gear picture where it drew a question mark, and its tooltip saying *Made with
+Tinker's Kit x1*.
