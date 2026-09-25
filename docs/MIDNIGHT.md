@@ -3393,3 +3393,15 @@ is answered; the part of the chat pasted does not say whether it came within thr
 Taking 56,345 prices from 351,260 rows says only that the positions read give numbers. Whether they
 are Mists' - quantity at 3, the lot's price at 10, the item at 17 - is still the check of §88: a
 price Family now shows against the one the auction house shows for the same item.
+
+## 92. §91's prices checked: Heart of Fire at 3 silver, as the house says (2026-09-25)
+
+Heart of Fire's tooltip on live, after §91's read, had two auction lines: another addon's saved
+*Auction 1g 04s 00c*, and Family's *Auction (1m ago) 0g 03s 00c*. Alberto then searched the house
+with that addon: **Heart of Fire, 3 silver each, 5,767 available.** Family's number is the house's.
+The other addon's line was its own older reading.
+
+A price for each item that matches the house to the copper comes from the right lot price divided
+by the right quantity, on the right item. So the Mists positions - quantity at 3, the lot's price at
+10, the item at 17 - hold on Midnight 12.1.0. One item is the whole of this evidence. A second one
+seen to disagree would reopen it.
