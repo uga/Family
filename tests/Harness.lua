@@ -28782,6 +28782,88 @@ print("how fast a character can get about")
 		Family.Bags:Scan()
 	end
 
+	-- **Midnight: the flying style, in the game's own word** (§85). Ahia on the PTR, 12.1.5: Master
+	-- Riding 90265 the one riding spell known, `IsDragonridingUnlocked()` true, and the style an
+	-- aura at index 4 - 404464 *Flight Style: Skyriding*, or 404468 *Flight Style: Steady* once
+	-- switched - with a moment where neither is on. No riding skill on the sheet and nothing in
+	-- the journal usable, as there.
+	do
+		local was = {}
+		local function set(name, value)
+			was[name] = was[name] or { _G[name] }
+			_G[name] = value
+		end
+		local heldSkills = Family.Database:Meta(key).skills
+		local style = 404464
+		set("GetBuildInfo", function() return "12.1.5", "69952", "Sep 21 2026", 120105 end)
+		set("IsSpellKnown", function(spell) return spell == 90265 end)
+		set("C_MountJournal", {
+			GetMountIDs = function() return {} end,
+			GetMountInfoByID = function() return nil end,
+			IsDragonridingUnlocked = function() return true end,
+		})
+		set("C_UnitAuras", { GetAuraDataByIndex = function(_, index)
+			if index > 4 then return nil end
+			if index == 4 and style then return { spellId = style } end
+			return { spellId = 1000 + index }
+		end })
+		local names = { [404464] = "Flight Style: Skyriding", [404468] = "Flight Style: Steady" }
+		local spell = Family.Names.Spell
+		Family.Names.Spell = function(_, id) return names[id] end
+		Family.Capabilities:Detect()
+		Family.Database:SetMeta(key, { skills = Family.CLEAR })
+
+		Family.Mounts:Recompute(key)
+		local meta = Family.Database:Meta(key)
+		check("on Midnight the style of flight chosen is recorded, and the ground from the riding spell",
+			meta.flightStyle == "skyriding" and meta.mount == 100 and meta.mountFly == nil,
+			tostring(meta.flightStyle) .. " " .. tostring(meta.mount))
+		check("and the Mount column says it in the game's own word, what follows the colon",
+			Family.UI.__summaryCell.mount(meta) == "Skyriding",
+			tostring(Family.UI.__summaryCell.mount(meta)))
+
+		style = 404468
+		Family.Mounts:Recompute(key)
+		meta = Family.Database:Meta(key)
+		check("and Steady once the style is switched",
+			meta.flightStyle == "steady" and Family.UI.__summaryCell.mount(meta) == "Steady",
+			tostring(meta.flightStyle))
+
+		-- The moment with neither aura on: nothing is said about flying, not a guess.
+		style = nil
+		Family.Mounts:Recompute(key)
+		meta = Family.Database:Meta(key)
+		check("while with neither style's aura on, nothing is said about flying",
+			meta.flightStyle == nil and meta.mount == 100
+				and Family.UI.__summaryCell.mount(meta) ~= "Skyriding",
+			tostring(meta.flightStyle))
+
+		-- Nor about somebody else: a spell known and an aura on are this player's.
+		style = 404464
+		local playing = Family.CurrentMember
+		Family.CurrentMember = function() return "Someone-Else" end
+		Family.Mounts:Recompute(key)
+		Family.CurrentMember = playing
+		meta = Family.Database:Meta(key)
+		check("and another member's record is not read off this player's riding",
+			meta.flightStyle == nil and meta.mount == nil, tostring(meta.flightStyle))
+
+		-- And a client whose game has no skyriding does not take the route, whatever it answers:
+		-- the same answers, on Mists' build.
+		_G.GetBuildInfo = function() return "5.5.4", "69585", "Sep 1 2026", 50504 end
+		Family.Capabilities:Detect()
+		Family.Mounts:Recompute(key)
+		check("and a client with no skyriding in its game never takes this route",
+			Family.Database:Meta(key).flightStyle == nil,
+			tostring(Family.Database:Meta(key).flightStyle))
+
+		Family.Names.Spell = spell
+		for name, saved in pairs(was) do _G[name] = saved[1] end
+		Family.Capabilities:Detect()
+		Family.Database:SetMeta(key, { skills = heldSkills })
+		Family.Bags:Scan()
+	end
+
 	-- §2.2: nothing, and not nought. A record with neither read says so, and the panel is what
 	-- turns that into a dash rather than into *on foot*.
 	check("a record with neither answers nothing rather than nought",

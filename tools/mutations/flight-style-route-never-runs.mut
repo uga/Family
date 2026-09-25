@@ -1,0 +1,6 @@
+name: Midnight's riding is never read, and the Mount column stays empty
+file: addons/Family/Mounts.lua
+--- old
+		ground, style = self:Styled()
+--- new
+		local _ = self

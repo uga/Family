@@ -65,6 +65,8 @@ Family.Capabilities = Capabilities
 -- Expansion, from the interface number rather than a project constant: 11509 -> 1,
 -- 20506 -> 2, 50504 -> 5. Version-agnostic, and it needs no constant per client.
 local VANILLA, TBC, MISTS = 1, 2, 5
+-- And the Retail client this branch ports to: 120100 live and 120105 on the PTR, both 12.
+local MIDNIGHT = 12
 
 local function expansion()
 	local _, _, _, interface = GetBuildInfo()
@@ -131,6 +133,11 @@ local EXPECTED = {
 	-- a `TryCall` can catch - the client stops the call and asks the player what to do - so the
 	-- call is not made where the table says no. Midnight has no column, so the answer there is no.
 	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+
+	-- **Skyriding and Steady Flight**, Midnight's two flying styles, and no Classic client's. Seen
+	-- on the PTR, 12.1.5, 2026-09-25: `C_MountJournal.IsDragonridingUnlocked()` true on Ahia and
+	-- the chosen style an aura on the character, 404464 or 404468 (`docs/MIDNIGHT.md` §85).
+	skyriding    = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -148,6 +155,7 @@ local CONFIRMED = {
 	-- 2026-09-11, Burning Crusade: *cast Leatherworking, callWorked true, windowNow
 	-- Leatherworking*, measured from inside the click (Family_UI/Professions.lua).
 	addonCasts   = {                   [TBC] = true                 },
+	skyriding    = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

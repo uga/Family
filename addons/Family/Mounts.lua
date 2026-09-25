@@ -152,6 +152,61 @@ end
 -- One field, so it costs a Wide Family link a number rather than a spellbook - which is the whole
 -- reason it is worked out here and not in the panel: a sibling shares no bags and no spells, and
 -- would otherwise have no answer at all.
+-- **Midnight: ground speed from the riding spell, flying as its style.** The skill sheet there
+-- lists professions only, and the game shows no flying speed anywhere - Mists' `RidingLadder`
+-- priced Master Riding at 310% and Alberto called it wrong (`docs/MIDNIGHT.md` §81). What the
+-- client does say, read on Ahia on the PTR, 12.1.5, 2026-09-25 (§80, §85):
+--
+-- - only the highest riding spell learnt answers known - Master Riding 90265 true, Apprentice
+--   33388, Journeyman 33391 and Expert 34090 false - and the mount's aura is +100% on the ground
+--   from Journeyman up, +60% at Apprentice;
+-- - `C_MountJournal.IsDragonridingUnlocked()` answers whether this character flies at all;
+-- - the flying style chosen is an aura on the character, 404464 *Flight Style: Skyriding* or 404468
+--   *Flight Style: Steady*, and there are moments with neither, when nothing is said.
+--
+-- Asked of the character being played only, as everything here that is a question about this
+-- client's player.
+local RIDING_SPELLS = {
+	{ 90265, 100 }, -- Master Riding
+	{ 34090, 100 }, -- Expert Riding
+	{ 33391, 100 }, -- Journeyman Riding
+	{ 33388, 60 },  -- Apprentice Riding
+}
+
+local FLIGHT_STYLES = { [404464] = "skyriding", [404468] = "steady" }
+
+local function knows(spell)
+	local old = Family:TryCall(_G.IsSpellKnown, spell)
+	if old ~= nil then return old end
+	return Family:TryCall(_G.C_SpellBook and _G.C_SpellBook.IsSpellKnown, spell)
+end
+
+-- An aura's id is looked up inside `pcall`: Midnight hands some values over as secrets, and a
+-- secret cannot be used as a key (§75).
+local AURAS_AT_MOST = 60
+local function flightStyle()
+	local auras = _G.C_UnitAuras
+	for index = 1, AURAS_AT_MOST do
+		local aura = Family:TryCall(auras and auras.GetAuraDataByIndex, "player", index, "HELPFUL")
+		if type(aura) ~= "table" then return nil end
+		local ok, style = pcall(function() return FLIGHT_STYLES[aura.spellId] end)
+		if ok and style then return style end
+	end
+	return nil
+end
+
+function Mounts:Styled()
+	local ground
+	for _, row in ipairs(RIDING_SPELLS) do
+		if knows(row[1]) then ground = row[2] break end
+	end
+	if not ground then return nil end
+
+	local journal = _G.C_MountJournal
+	local unlocked = Family:TryCall(journal and journal.IsDragonridingUnlocked)
+	return ground, unlocked and flightStyle() or nil
+end
+
 function Mounts:Recompute(key)
 	if not key then return end
 
@@ -166,8 +221,15 @@ function Mounts:Recompute(key)
 
 	local ground, flying = self:FromJournal(riding and riding.rank, payload)
 	if not ground then ground, flying = self:Fastest(payload) end
+
+	local style
+	if not ground and Family.Capabilities:Has("skyriding") and key == Family:CurrentMember() then
+		ground, style = self:Styled()
+	end
+
 	Family.Database:SetMeta(key, {
 		mount = ground or Family.CLEAR,
 		mountFly = flying or Family.CLEAR,
+		flightStyle = style or Family.CLEAR,
 	})
 end

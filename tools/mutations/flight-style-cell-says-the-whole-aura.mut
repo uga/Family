@@ -1,0 +1,6 @@
+name: the Mount column says the aura's whole name
+file: addons/Family_UI/Summary.lua
+--- old
+			return named:match("[:：]%s*(.-)%s*$") or named
+--- new
+			return named

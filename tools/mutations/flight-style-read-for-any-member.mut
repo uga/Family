@@ -1,0 +1,6 @@
+name: the player's riding is read for any member
+file: addons/Family/Mounts.lua
+--- old
+	if not ground and Family.Capabilities:Has("skyriding") and key == Family:CurrentMember() then
+--- new
+	if not ground and Family.Capabilities:Has("skyriding") then

@@ -3292,3 +3292,23 @@ Style* - the toggle, the same whichever mode is on, so it does not say the mode;
 `IsDragonridingUnlocked()` **true**; `GetCollectedDragonridingMounts()` a table of **136**, which is
 the account's collection. Where the mode itself is kept is asked next, among the character's own
 auras.
+
+## 85. Midnight's Mount column: the flying style, in the game's word (2026-09-25)
+
+Alberto's aura `/run` on Ahia, PTR 12.1.5, twice around a switch of style in the Mounts tab: once
+**404468 *Flight Style: Steady*** at index 4, once **404464 *Flight Style: Skyriding*** at index 4,
+and a first run before either that printed nothing - a moment with neither aura on. With §84:
+`IsDragonridingUnlocked()` true; with §80: only the highest riding spell answers known. Alberto's
+screenshots of the *Skyriding* tree - Skyriding Basics, Lift Off, Thrill of the Skies, Whirling Surge
+or Lightning Rush, Second Wind, Aerial Halt, Ride Along - are a feature for another day; nothing reads
+the tree.
+
+What is recorded on Midnight, for the character being played, where the older routes found nothing:
+the ground from the highest riding spell known (100% from Journeyman up, 60% at Apprentice, the
+mount aura's +100% in Alberto's hints), and **the flying style**, from the aura that is on, where
+skyriding is unlocked - `meta.flightStyle`, *skyriding* or *steady*, and nothing with neither aura on.
+No flying speed: the game shows none. The Mount column says the style in the game's own word - the
+aura's name after its colon, *Skyriding* or *Steady* on an English client - so no translation is
+Family's. `Capabilities.lua` has a Midnight column for the first time, `MIDNIGHT = 12`, and one
+feature in it, `skyriding`, seen in game; no Classic client has it, and the harness shows Mists'
+build not taking the route with Midnight's answers in front of it.

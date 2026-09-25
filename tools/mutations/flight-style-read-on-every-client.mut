@@ -1,0 +1,6 @@
+name: Midnight's riding route runs on a client with no skyriding
+file: addons/Family/Mounts.lua
+--- old
+	if not ground and Family.Capabilities:Has("skyriding") and key == Family:CurrentMember() then
+--- new
+	if not ground and key == Family:CurrentMember() then

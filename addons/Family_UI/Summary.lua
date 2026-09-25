@@ -1393,7 +1393,22 @@ end
 -- have never been looked at has no answer here, and a blank would say *on foot* about somebody
 -- nobody has asked. `bagsSeen` is what the mount would have been found in on Era, and it is set by
 -- the same scan that recomputes this.
+-- The auras that say which flying style a Midnight character has chosen (`Mounts.lua`).
+local FLIGHT_STYLE_SPELLS = { skyriding = 404464, steady = 404468 }
+
 CELL.mount = function(meta)
+	-- **Midnight: the flying style, which is the fact there.** The game shows no flying speed, and
+	-- everybody from Journeyman up rides at 100% on the ground, so the style is the whole answer
+	-- where one was read (`docs/MIDNIGHT.md` §85). In the game's own word: the style's aura is
+	-- called *Flight Style: Skyriding* on an English client, and what follows the colon is the
+	-- style, in whatever language the client speaks.
+	local styleSpell = FLIGHT_STYLE_SPELLS[meta.flightStyle]
+	if styleSpell then
+		local named = Family.Names:Spell(styleSpell)
+		if type(named) == "string" and named ~= "" then
+			return named:match("[:：]%s*(.-)%s*$") or named
+		end
+	end
 	-- Both numbers, because flying is a second speed on the same mount and not a faster one: a
 	-- gryphon is +60% on the ground and +60% in the air, so the larger of the two would call it
 	-- an ordinary mount and never say this character can fly. Reported from play for that.

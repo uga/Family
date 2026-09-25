@@ -1,0 +1,6 @@
+name: the flying style read is not stored
+file: addons/Family/Mounts.lua
+--- old
+		flightStyle = style or Family.CLEAR,
+--- new
+		flightStyle = Family.CLEAR,

@@ -1,0 +1,6 @@
+name: with neither style's aura on, skyriding is assumed
+file: addons/Family/Mounts.lua
+--- old
+		if type(aura) ~= "table" then return nil end
+--- new
+		if type(aura) ~= "table" then return "skyriding" end
