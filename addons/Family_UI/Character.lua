@@ -1037,13 +1037,13 @@ local function build(frame)
 								cell.itemID = item.id
 								cell.itemLink = item.item
 								cell.icon:SetTexture(
-									Family:TryCall(GetItemIcon, item.id)
+									Family:ItemIcon(item.id)
 									or "Interface\\Icons\\INV_Misc_QuestionMark")
 								cell.level:SetText(item.itemLevel
 									and ("|cffffd700" .. item.itemLevel .. "|r") or "")
 
 								local quality = select(3,
-									Family:TryCall(GetItemInfo, item.id))
+									Family:ItemInfo(item.id))
 								local colours = _G.ITEM_QUALITY_COLORS
 								local colour = quality and colours and colours[quality]
 								if colour then
@@ -1574,7 +1574,7 @@ local function build(frame)
 						if frame:IsShown() then frame:Refresh() end
 					end)
 
-					button.icon:SetTexture(Family:TryCall(GetItemIcon, item.id)
+					button.icon:SetTexture(Family:ItemIcon(item.id)
 						or "Interface\\Icons\\INV_Misc_QuestionMark")
 					if button.icon.SetDesaturated then
 						button.icon:SetDesaturated(false)
@@ -1586,7 +1586,7 @@ local function build(frame)
 					-- The quality colour round the edge, which is how the game says
 					-- the same thing. Asked for at display time by id, so it costs
 					-- nothing to store and is right in every language.
-					local quality = select(3, Family:TryCall(GetItemInfo, item.id))
+					local quality = select(3, Family:ItemInfo(item.id))
 					local colours = _G.ITEM_QUALITY_COLORS
 					local colour = quality and colours and colours[quality]
 					if colour then

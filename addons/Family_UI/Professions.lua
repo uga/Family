@@ -121,7 +121,7 @@ local DIFFICULTY = {
 
 local function craftedItemLevel(recipe)
 	if not recipe.itemID then return nil end
-	local _, _, _, level = Family:TryCall(GetItemInfo, recipe.itemID)
+	local _, _, _, level = Family:ItemInfo(recipe.itemID)
 	return level
 end
 
@@ -195,7 +195,7 @@ local ORDERS = {
 -- the spell's own - which is right for an enchant that makes nothing.
 local function recipeIcon(recipe)
 	local made = recipe.itemID or Family.Recipes:Product(recipe.spellID)
-	local icon = made and Family:TryCall(GetItemIcon, made) or recipe.icon
+	local icon = made and Family:ItemIcon(made) or recipe.icon
 	if not icon and recipe.spellID then
 		icon = select(2, Family.Names:Spell(recipe.spellID))
 	end
@@ -888,7 +888,7 @@ local function build(frame)
 				-(inset + (MATERIALS_MAX - slot) * (MATERIAL_ICON + MATERIAL_GAP)), 0)
 
 			if part then
-				cell.icon:SetTexture(Family:TryCall(GetItemIcon, part.item)
+				cell.icon:SetTexture(Family:ItemIcon(part.item)
 					or "Interface\\Icons\\INV_Misc_QuestionMark")
 				cell.icon:Show()
 				-- One of a thing needs no number on it, the way a bag draws a single item.

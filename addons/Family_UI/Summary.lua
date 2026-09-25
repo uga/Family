@@ -3646,7 +3646,7 @@ local function build(frame)
 
 						slot.itemID = carried.id
 						slot.itemLink = carried.item
-						slot.icon:SetTexture(Family:TryCall(GetItemIcon, carried.id)
+						slot.icon:SetTexture(Family:ItemIcon(carried.id)
 							or "Interface\\Icons\\INV_Misc_QuestionMark")
 						slot.count:SetText((carried.count or 1) > 1
 							and tostring(carried.count) or "")

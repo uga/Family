@@ -1,0 +1,6 @@
+name: an item's picture is not found where GetItemIcon is gone
+file: addons/Family/Core.lua
+--- old
+	return (self:TryCall(_G.C_Item and _G.C_Item.GetItemIconByID, itemID))
+--- new
+	return nil

@@ -1,0 +1,6 @@
+name: an item is described through C_Item even where GetItemInfo answers
+file: addons/Family/Core.lua
+--- old
+	local old = packed(self:TryCall(_G.GetItemInfo, item))
+--- new
+	local old = packed(nil)

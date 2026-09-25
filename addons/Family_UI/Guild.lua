@@ -863,14 +863,14 @@ local function build(frame)
 										c.itemID = item.id
 										c.itemLink = item.item
 										c.icon:SetTexture(
-											Family:TryCall(GetItemIcon, item.id)
+											Family:ItemIcon(item.id)
 											or "Interface\\Icons\\INV_Misc_QuestionMark")
 										c.level:SetText(item.itemLevel
 											and ("|cffffd700" .. item.itemLevel .. "|r")
 											or "")
 
 										local quality = select(3,
-											Family:TryCall(GetItemInfo, item.id))
+											Family:ItemInfo(item.id))
 										local colours = _G.ITEM_QUALITY_COLORS
 										local colour = quality and colours
 											and colours[quality]

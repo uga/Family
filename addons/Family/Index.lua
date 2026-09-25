@@ -292,7 +292,7 @@ local function nameOf(variant)
 	local name = nil
 	local text = variantStrings and variantStrings[variant]
 	if text then
-		local said = Family:TryCall(GetItemInfo, text)
+		local said = Family:ItemInfo(text)
 		if type(said) == "string" and said ~= "" then name = said end
 	end
 
@@ -502,7 +502,7 @@ local function sellPriceOf(itemID)
 	local held = FamilyDB.sellPrices[itemID]
 	if held ~= nil then return held end
 
-	local asked = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
+	local asked = tonumber((select(11, Family:ItemInfo(itemID))))
 	if asked == nil then return nil end
 
 	FamilyDB.sellPrices[itemID] = asked

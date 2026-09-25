@@ -1,0 +1,6 @@
+name: a spell's table is read back with its icon in the rank's place
+file: addons/Family/Core.lua
+--- old
+	return info.name, nil, info.iconID, info.castTime, info.minRange, info.maxRange,
+--- new
+	return info.name, info.iconID, nil, info.castTime, info.minRange, info.maxRange,

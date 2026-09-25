@@ -890,7 +890,7 @@ add("spellbook", L["what the client's spellbook says, and what Family takes from
 							Family:TryCall(GetFlyoutSlotInfo, id, slot)
 						Family:Print("        %s   |cff888888%s   %s|r",
 							tostring(spellID
-								and Family:TryCall(GetSpellInfo, spellID)
+								and Family:SpellInfo(spellID)
 								or "?"),
 							tostring(spellID), tostring(known))
 					end

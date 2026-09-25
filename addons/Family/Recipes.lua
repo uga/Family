@@ -80,13 +80,13 @@ end
 -- is something a stack of dust does not carry.
 function Recipes:ItemProfession(itemID)
 	local name, _, _, _, minLevel, _, subType, _, _, _, _, classID =
-		Family:TryCall(GetItemInfo, itemID)
+		Family:ItemInfo(itemID)
 
 	if type(name) ~= "string" or type(subType) ~= "string" then return nil end
 	if not knownProfessions()[subType] then return nil end
 
-	if not classID and GetItemInfoInstant then
-		classID = select(6, Family:TryCall(GetItemInfoInstant, itemID))
+	if not classID then
+		classID = select(6, Family:ItemInfoInstant(itemID))
 	end
 
 	return subType, tonumber(minLevel) or 0, tonumber(classID) == RECIPE_CLASS, name
@@ -514,7 +514,7 @@ local function guildCrafters(byName, order, needle, limit)
 				local name, icon
 				if itemID and itemID ~= 0 then
 					name = Family.Names:CachedItem(itemID)
-					icon = Family:TryCall(GetItemIcon, itemID)
+					icon = Family:ItemIcon(itemID)
 				end
 
 				if spellID ~= 0 then

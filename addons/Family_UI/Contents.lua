@@ -92,7 +92,7 @@ local function containerIcon(entry)
 	end
 
 	if entry.itemID then
-		local icon = Family:TryCall(GetItemIcon, entry.itemID)
+		local icon = Family:ItemIcon(entry.itemID)
 		if icon then return icon end
 	end
 
@@ -1120,7 +1120,7 @@ local function build(frame)
 
 					local heading = groupColumn ~= "item" or offset == 0
 					r.icon:SetTexture(heading
-						and (Family:TryCall(GetItemIcon, r.itemID)
+						and (Family:ItemIcon(r.itemID)
 							or "Interface\\Icons\\INV_Misc_QuestionMark")
 						or nil)
 					r.text:SetText(heading and line.item.name or "")
@@ -1395,7 +1395,7 @@ local function build(frame)
 						if frame:IsShown() then frame:Refresh() end
 					end)
 
-					button.icon:SetTexture(Family:TryCall(GetItemIcon, item.id)
+					button.icon:SetTexture(Family:ItemIcon(item.id)
 						or "Interface\\Icons\\INV_Misc_QuestionMark")
 					-- Charges in the corner where a stack count would be, which is where
 					-- the game itself puts them: an oil with five uses is one item, its

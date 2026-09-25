@@ -1,0 +1,6 @@
+name: an item is not described where GetItemInfo is gone
+file: addons/Family/Core.lua
+--- old
+	return self:TryCall(_G.C_Item and _G.C_Item.GetItemInfo, item)
+--- new
+	return nil

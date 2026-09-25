@@ -1,0 +1,6 @@
+name: a spell is described through C_Spell even where GetSpellInfo answers
+file: addons/Family/Core.lua
+--- old
+	local old = packed(self:TryCall(_G.GetSpellInfo, spell))
+--- new
+	local old = packed(nil)

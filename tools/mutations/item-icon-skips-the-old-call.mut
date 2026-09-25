@@ -1,0 +1,6 @@
+name: an item's picture comes from C_Item even where GetItemIcon answers
+file: addons/Family/Core.lua
+--- old
+	local icon = self:TryCall(_G.GetItemIcon, itemID)
+--- new
+	local icon = nil

@@ -3146,3 +3146,25 @@ question mark; `Names.lua` calls `GetItemInfo` and `GetSpellInfo` bare, and rais
 Asked next, before any code: what `C_Item.GetItemInfo(2840)`, `C_Item.GetItemIconByID(2840)`,
 `C_Item.GetItemInfoInstant(2840)` and `C_Spell.GetSpellInfo(2657)` answer on the PTR. The fix is
 one helper per call in `Core.lua`, old call first and the new one where it is gone.
+
+## 74. The new item and spell calls, read on the PTR, and Family moved onto them (2026-09-25)
+
+Alberto's `/run` on the PTR, 12.1.5 build 69952:
+
+- `C_Item.GetItemInfo(2840)`: `Copper Bar`, its link, `1 10 0 Tradeskill Metal & Stone 1000
+  INVTYPE_NON_EQUIP_IGNORE 133216 10 7 7 0 0 nil true` - the old call's seventeen places, in its
+  order.
+- `C_Item.GetItemIconByID(2840)`: `133216`.
+- `C_Item.GetItemInfoInstant(2840)`: `2840 Tradeskill Metal & Stone INVTYPE_NON_EQUIP_IGNORE 133216
+  7 7`, the old call's seven.
+- `C_Spell.GetSpellInfo(2657)`: a **table**, `castTime=1500, name="Smelt Copper", minRange=0,
+  originalIconID=136243, iconID=136243, maxRange=0, spellID=2657`.
+
+`Core.lua` has one helper per call - `Family:ItemInfo`, `ItemInfoInstant`, `ItemIcon`, `SpellInfo` -
+asking the old global first and the new call where the old answers nothing; `SpellInfo` hands the
+table back in the old call's places, with no rank. Every `TryCall` of the four old names now goes
+through them, thirty-five sites; `Names.lua` already asked `C_Item` and `C_Spell` first and is left
+as it was, and `Auctions.lua` already reached both instant calls. `Recipes.lua` no longer checks
+`GetItemInfoInstant` exists before asking for an item's class, which on the PTR skipped the ask; that
+path has no check of its own. `tools/surface.py` regenerated: `C_Item.GetItemIconByID` and the calls
+this branch added since the last regeneration are now on the probe's list.

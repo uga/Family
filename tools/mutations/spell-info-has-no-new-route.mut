@@ -1,0 +1,6 @@
+name: a spell is not described where GetSpellInfo is gone
+file: addons/Family/Core.lua
+--- old
+	local info = self:TryCall(_G.C_Spell and _G.C_Spell.GetSpellInfo, spell)
+--- new
+	local info = nil

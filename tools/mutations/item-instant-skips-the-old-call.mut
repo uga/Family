@@ -1,0 +1,6 @@
+name: an item's class is read through C_Item even where the old call answers
+file: addons/Family/Core.lua
+--- old
+	local old = packed(self:TryCall(_G.GetItemInfoInstant, item))
+--- new
+	local old = packed(nil)

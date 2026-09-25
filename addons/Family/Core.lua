@@ -131,6 +131,52 @@ function Family:TryCall(fn, ...)
 end
 
 --------------------------------------------------------------------------------------------
+-- The item and spell reads, wherever the client keeps them
+--
+-- **The Midnight PTR, 12.1.5 build 69952, has no `GetItemIcon`, `GetItemInfo`,
+-- `GetItemInfoInstant` or `GetSpellInfo`** (`docs/MIDNIGHT.md` §73); the live 12.1.0 had them,
+-- and every Classic client has. The `C_Item` calls answer the same values in the same places -
+-- `C_Item.GetItemInfo(2840)` *Copper Bar*, its link, 1, 10 ... 133216, 10, 7, 7 - and
+-- `C_Spell.GetSpellInfo(2657)` answers a table, `name`, `iconID`, `castTime`, `minRange`,
+-- `maxRange`, `spellID`, `originalIconID`, read on the PTR 2026-09-25 (§74).
+--
+-- **The old call first**, so a client that answers it is read as it was measured, and the new
+-- one only where the old answers nothing (`CLAUDE.md` step 3). An item the client has not cached
+-- answers nothing either way, and is asked twice for it.
+--------------------------------------------------------------------------------------------
+
+local function packed(...) return { n = select("#", ...), ... } end
+
+function Family:ItemInfo(item)
+	local old = packed(self:TryCall(_G.GetItemInfo, item))
+	if old[1] ~= nil then return unpack(old, 1, old.n) end
+	return self:TryCall(_G.C_Item and _G.C_Item.GetItemInfo, item)
+end
+
+function Family:ItemInfoInstant(item)
+	local old = packed(self:TryCall(_G.GetItemInfoInstant, item))
+	if old[1] ~= nil then return unpack(old, 1, old.n) end
+	return self:TryCall(_G.C_Item and _G.C_Item.GetItemInfoInstant, item)
+end
+
+function Family:ItemIcon(itemID)
+	local icon = self:TryCall(_G.GetItemIcon, itemID)
+	if icon ~= nil then return icon end
+	return (self:TryCall(_G.C_Item and _G.C_Item.GetItemIconByID, itemID))
+end
+
+-- In the old call's order: name, rank, icon, cast time, minimum and maximum range, id, original
+-- icon. The table has no rank, so the second place is empty.
+function Family:SpellInfo(spell)
+	local old = packed(self:TryCall(_G.GetSpellInfo, spell))
+	if old[1] ~= nil then return unpack(old, 1, old.n) end
+	local info = self:TryCall(_G.C_Spell and _G.C_Spell.GetSpellInfo, spell)
+	if type(info) ~= "table" then return nil end
+	return info.name, nil, info.iconID, info.castTime, info.minRange, info.maxRange,
+		info.spellID, info.originalIconID
+end
+
+--------------------------------------------------------------------------------------------
 -- When an id is not enough
 --
 -- Family stores ids (§2.1), and for nearly everything an id is the whole truth: the client
@@ -518,7 +564,7 @@ local NEEDS_THE_INSTANCE = { [2] = true, [3] = true }
 
 function Family:BindTypeOf(itemID)
 	if not itemID then return nil end
-	local kind = tonumber((select(14, self:TryCall(GetItemInfo, itemID))))
+	local kind = tonumber((select(14, self:ItemInfo(itemID))))
 	return kind
 end
 
@@ -570,7 +616,7 @@ end
 -- or another or not at all, whoever is holding it. Every return is handed back rather than one,
 -- because which position carries the bind type is exactly what has not been measured here.
 function Family:ItemInfoRow(itemID)
-	return { Family:TryCall(GetItemInfo, itemID) }
+	return { Family:ItemInfo(itemID) }
 end
 
 -- A slot in one of this character's own containers - a bag, or the bank.

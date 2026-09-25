@@ -36,7 +36,7 @@ local function itemLevelOf(link)
 		if level then return level end
 	end
 
-	local _, _, _, level = Family:TryCall(GetItemInfo, link)
+	local _, _, _, level = Family:ItemInfo(link)
 	return level
 end
 
@@ -404,7 +404,7 @@ local function fromFlyout(flyoutID, into, seen, told)
 		local spellID, _, known = Family:TryCall(GetFlyoutSlotInfo, flyoutID, slot)
 
 		spellID = tonumber(spellID)
-		local named = spellID and Family:TryCall(GetSpellInfo, spellID)
+		local named = spellID and Family:SpellInfo(spellID)
 
 		if spellID and known == true and type(named) == "string" and named ~= ""
 			and not seen[spellID] then

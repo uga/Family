@@ -1,0 +1,6 @@
+name: an item's class is not read where GetItemInfoInstant is gone
+file: addons/Family/Core.lua
+--- old
+	return self:TryCall(_G.C_Item and _G.C_Item.GetItemInfoInstant, item)
+--- new
+	return nil

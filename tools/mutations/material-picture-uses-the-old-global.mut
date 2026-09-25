@@ -1,0 +1,6 @@
+name: a material's picture is asked of GetItemIcon alone
+file: addons/Family_UI/Professions.lua
+--- old
+				cell.icon:SetTexture(Family:ItemIcon(part.item)
+--- new
+				cell.icon:SetTexture(Family:TryCall(GetItemIcon, part.item)

@@ -385,7 +385,7 @@ local STATE = {
 	-- branch's own name says why, and says which character to look for instead. The word comes
 	-- from the client, so it is in the reader's language and no list of branches is shipped.
 	branch  = function(who)
-		local name = who.needs and Family:TryCall(GetSpellInfo, who.needs)
+		local name = who.needs and Family:SpellInfo(who.needs)
 		if not name then return L["|cffff8040another branch|r"] end
 		return string.format(L["|cffff8040needs %s|r"], name)
 	end,
@@ -1060,7 +1060,7 @@ local function priceLines(tooltip, itemID, variant)
 
 	-- The eleventh return, and asked for without a guard because the tooltip being drawn is
 	-- itself the proof this item is in the client's cache - it is showing its name.
-	local sell = tonumber((select(11, Family:TryCall(GetItemInfo, itemID))))
+	local sell = tonumber((select(11, Family:ItemInfo(itemID))))
 	if sell and sell > 0 then
 		local label = Family:GameWord("SELL_PRICE", L["Sell price"])
 		if clientShowsSellPrice(tooltip) then label = string.format(L["%s (each)"], label) end

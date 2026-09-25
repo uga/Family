@@ -4646,6 +4646,78 @@ print("the mailbox on the fourth pretend client")
 end)()
 
 print()
+print("items and spells on the PTR, where the old globals are gone")
+
+-- **The Midnight PTR, 12.1.5 build 69952**, 2026-09-25 (`docs/MIDNIGHT.md` §73, §74): `GetItemIcon`,
+-- `GetItemInfo`, `GetItemInfoInstant` and `GetSpellInfo` are nil, and `C_Item` and `C_Spell` answer.
+-- Every value below is the run's, as Alberto's `/run` printed it for Copper Bar and Smelt Copper;
+-- the link is printed as its text there, so it stands here as that text.
+;(function()
+	local was = {}
+	-- The first value is the one put back: several of these are set twice below.
+	local function set(name, value)
+		was[name] = was[name] or { _G[name] }
+		_G[name] = value
+	end
+	set("GetItemIcon", nil)
+	set("GetItemInfo", nil)
+	set("GetItemInfoInstant", nil)
+	set("GetSpellInfo", nil)
+	set("C_Item", {
+		GetItemInfo = function(id)
+			if id ~= 2840 then return nil end
+			return "Copper Bar", "[Copper Bar]", 1, 10, 0, "Tradeskill", "Metal & Stone", 1000,
+				"INVTYPE_NON_EQUIP_IGNORE", 133216, 10, 7, 7, 0, 0, nil, true
+		end,
+		GetItemIconByID = function(id) return id == 2840 and 133216 or nil end,
+		GetItemInfoInstant = function(id)
+			if id ~= 2840 then return nil end
+			return 2840, "Tradeskill", "Metal & Stone", "INVTYPE_NON_EQUIP_IGNORE", 133216, 7, 7
+		end,
+	})
+	set("C_Spell", {
+		GetSpellInfo = function(id)
+			if id ~= 2657 then return nil end
+			return { castTime = 1500, name = "Smelt Copper", minRange = 0,
+				originalIconID = 136243, iconID = 136243, maxRange = 0, spellID = 2657 }
+		end,
+	})
+
+	local name, _, quality, _, _, _, _, _, _, icon, sell, class = Family:ItemInfo(2840)
+	check("an item is described through C_Item where GetItemInfo is gone, every place kept",
+		name == "Copper Bar" and quality == 1 and icon == 133216 and sell == 10 and class == 7,
+		tostring(name) .. " " .. tostring(sell))
+	check("and its sixteenth place, empty, does not cut the seventeenth off",
+		select(17, Family:ItemInfo(2840)) == true, tostring(select(17, Family:ItemInfo(2840))))
+	check("its picture through C_Item where GetItemIcon is gone",
+		Family:ItemIcon(2840) == 133216, tostring(Family:ItemIcon(2840)))
+	check("and its class without the server, through C_Item",
+		select(6, Family:ItemInfoInstant(2840)) == 7,
+		tostring(select(6, Family:ItemInfoInstant(2840))))
+
+	local spell, rank, spellIcon, cast, _, _, spellID = Family:SpellInfo(2657)
+	check("a spell's table is read back in the old call's places, with no rank",
+		spell == "Smelt Copper" and rank == nil and spellIcon == 136243 and cast == 1500
+			and spellID == 2657,
+		tostring(spell) .. " " .. tostring(spellIcon) .. " " .. tostring(spellID))
+	check("and an item or spell the client does not know answers nothing",
+		Family:ItemInfo(1) == nil and Family:ItemIcon(1) == nil and Family:SpellInfo(1) == nil)
+
+	-- **Where the old call answers, it is the one read**: the Classic clients keep the route they
+	-- were measured on. The two stand-ins answer differently so the check can tell which spoke.
+	set("GetItemIcon", function() return 999 end)
+	set("GetItemInfo", function() return "Old Bar" end)
+	set("GetItemInfoInstant", function() return 2840, nil, nil, nil, nil, 99 end)
+	set("GetSpellInfo", function() return "Old Smelt" end)
+	check("while a client that answers the old calls is read through them",
+		Family:ItemIcon(2840) == 999 and Family:ItemInfo(2840) == "Old Bar"
+			and select(6, Family:ItemInfoInstant(2840)) == 99
+			and Family:SpellInfo(2657) == "Old Smelt")
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+end)()
+
+print()
 print("identity")
 advance(3)
 
@@ -12128,6 +12200,21 @@ print("what a recipe is made of, beside the recipe")
 	shown, counts = slots()
 	check("while a recipe with no materials at all leaves an empty strip behind it",
 		shown == 0, tostring(shown) .. " still shown: " .. counts)
+
+	-- **And on the PTR, where `GetItemIcon` is gone** (§73), the strip draws the pictures
+	-- `C_Item` gives: the question mark in Alberto's screenshot of 2026-09-25 is what it drew.
+	do
+		local oldIcon, oldItem = _G.GetItemIcon, _G.C_Item
+		_G.GetItemIcon = nil
+		_G.C_Item = setmetatable({ GetItemIconByID = function(id)
+			return id == BAR and 133216 or nil
+		end }, { __index = oldItem })
+		Family.UI.__showRecipeMaterials(strip, { spellID = 910001 })
+		local drawn = strip.mats[6].icon.__texture
+		_G.GetItemIcon, _G.C_Item = oldIcon, oldItem
+		check("a material's picture is drawn through C_Item where GetItemIcon is gone",
+			drawn == 133216, tostring(drawn))
+	end
 
 	-- **And a picture answers about itself.**
 	--

@@ -1007,7 +1007,7 @@ function Professions:AgreesWithRow(id, row, mute)
 	if not id then return false end
 	if type(row) ~= "table" then return false end
 
-	local named = Family:TryCall(GetSpellInfo, id)
+	local named = Family:SpellInfo(id)
 	if type(named) == "string" and named ~= "" and type(row.name) == "string"
 		and named ~= row.name then
 		return false
@@ -1259,7 +1259,7 @@ function Professions:ScanNow(includeRecipes)
 			-- `GetSpellInfo("Beast Training")` answers 5149 on Era, measured 2026-09-07.
 			-- The word is kept beside it to be drawn, in the language it was read in,
 			-- which is what a heading is for.
-			local craftID = select(7, Family:TryCall(GetSpellInfo, recipeName))
+			local craftID = select(7, Family:SpellInfo(recipeName))
 			craftID = tonumber(craftID)
 
 			-- **What was read before is kept, and a new read fills its gaps.**
