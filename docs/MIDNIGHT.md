@@ -3205,3 +3205,11 @@ further than the model asks, and the PTR screenshot is the check.
 Alberto, after redeploying to the PTR, 12.1.5 build 69952: *it works* - the three things asked to be
 looked at: the Summary's Money column whole, item pictures drawn in Possessions, Character and the
 materials strip, and no secret-string error hovering creatures and gathering nodes.
+
+## 78. Housing: nothing recorded yet (2026-09-25)
+
+Alberto has housing and decor on the PTR. Asked what Family should do with it - nothing yet, decor
+as possessions, or a housing panel - he chose **nothing yet**: the panels Family already has come
+first on Midnight. Housing stays §10's brief and the question stays his; when it comes back, the
+first step is targeted `/run`s on the PTR, never the probe's sweep, which crashed there on a housing
+call (§72).
