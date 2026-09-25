@@ -1379,7 +1379,12 @@ local ASK_AGAIN = 0.1
 local REFUSAL_PATIENCE = 30
 
 local ROWS_PER_TICK = 500
-local READ_QUIET = 30
+-- **How long the whole list may take to arrive: three minutes.** It was thirty seconds, after
+-- Mists answered at once; the live Midnight client, 12.1.0, answered 349,479 rows **48 seconds**
+-- after `ReplicateItems` (2026-09-25, `docs/MIDNIGHT.md` §88), and the read had given up at thirty.
+-- Over three times the one reading, because a busier hour is slower and a read given up on is a
+-- read that has spent the server's allowance for nothing.
+local READ_QUIET = 180
 
 -- **How many rows the older house puts on one page**, which two things now need: the walk, to
 -- work out how many pages a house is, and the price reader below, to tell an ordinary browse from

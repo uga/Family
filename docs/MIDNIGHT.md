@@ -3343,3 +3343,16 @@ whether it arrives late, never, or is refused.
 The read now says what it is: *stopped after %d row(s)*, and for `quiet`, *the whole list was asked
 for and did not arrive within half a minute*, in the four languages; a check reads it and two
 mutations hold it.
+
+## 88. The live client's whole list: 349,479 rows after 48 seconds (2026-09-25)
+
+The same `/run` as §87 on the live client, 12.1.0, at the auction house: `IsThrottledMessageSystemReady()`
+true, `GetNumReplicateItems()` 0 on asking, and **`REPLICATE_ITEM_LIST_UPDATE` 48.2 seconds later,
+with 349,479 rows**. So live Midnight answers, and the read had simply stopped waiting at thirty
+seconds - its `quiet` limit, set on Mists, where the list came at once.
+
+`READ_QUIET` is now 180 seconds, over three times the one reading, and the stop sentence says three
+minutes. Reading the list is unchanged: 500 rows every 0.05 seconds is some seven hundred slices,
+upwards of thirty-five seconds, for a house this size. Whether the columns are Mists' - quantity at
+3, the lot's price at 10, the item at 17 (DATASOURCES) - is not read on Midnight yet; the prices the
+first full read files are the check, against the auction house's own.

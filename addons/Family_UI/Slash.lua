@@ -1487,7 +1487,7 @@ local function startReplicateRead()
 		-- for and never arrived* about a read that has no pages (`docs/MIDNIGHT.md` §87).
 		Family:Print(L["stopped after %d row(s) in %s: %s"], state.done or 0,
 			spanOf(Family.Auctions:WalkSeconds(state) or 0),
-			(reason == "quiet" and L["the whole list was asked for and did not arrive within half a minute"])
+			(reason == "quiet" and L["the whole list was asked for and did not arrive within three minutes"])
 				or WHY[reason] or tostring(reason))
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
 	end)

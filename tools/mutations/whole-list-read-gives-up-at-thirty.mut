@@ -1,0 +1,6 @@
+name: the whole-list read gives up at thirty seconds again
+file: addons/Family/Scanners/Auctions.lua
+--- old
+local READ_QUIET = 180
+--- new
+local READ_QUIET = 30

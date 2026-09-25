@@ -41204,8 +41204,13 @@ print("reading the newer house whole")
 	SlashCmdList["FAMILY"]("ah scan go")
 	check("a read whose list never arrives is running until it is not", 
 		Family.Auctions:ReplicateReading() ~= nil)
+	-- **Forty-eight seconds is still waiting** (§88): the live Midnight client took that long to
+	-- answer 349,479 rows, and the read used to give up at thirty.
 	local quietAt = #DEFAULT_CHAT_FRAME.messages
-	advance(31)
+	advance(48)
+	check("a list forty-eight seconds late is still waited for, as live Midnight's was",
+		Family.Auctions:ReplicateReading() ~= nil)
+	advance(133)
 	check("and a list that never arrives ends the read rather than hanging it",
 		Family.Auctions:ReplicateReading() == nil)
 
