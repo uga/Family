@@ -3381,3 +3381,15 @@ open, a list that lands is read then, and the read says *the whole list arrived 
 asking*. Closing the house forgets it. The stop sentence says so. Each press is then its own
 measurement. Alberto is changing character to see whether a new one is let ask at once, which would
 say the limit is per character.
+
+## 91. The first whole read on live: 351,260 rows (2026-09-25)
+
+Alberto, on another character with §90 deployed, pressed *read it all* and it ran to the end:
+*read the whole house: 351260 row(s) in 1 minute(s), 56345 price(s) taken, 17651 known here*. The
+progress lines came every 5,000 rows and the row count grew by 1,781 over §88's list, a few minutes
+older. So Family's own listener hears the list on live, and a character that has not asked recently
+is answered; the part of the chat pasted does not say whether it came within three minutes or late.
+
+Taking 56,345 prices from 351,260 rows says only that the positions read give numbers. Whether they
+are Mists' - quantity at 3, the lot's price at 10, the item at 17 - is still the check of §88: a
+price Family now shows against the one the auction house shows for the same item.
