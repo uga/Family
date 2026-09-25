@@ -3371,3 +3371,13 @@ mutations.
 had asked for the same list, and the server is said to allow this once in about fifteen minutes (not
 measured) - or Family's listener did not hear an answer that came. The next reading tells them
 apart: fifteen minutes on, the `/run` listener alone, then the button.
+
+## 90. A list that lands after the wait is read then (2026-09-25)
+
+The second press on live, a few minutes later, again stopped at three minutes - without a `/run`
+listener beside it, so it could not say whether the list came late or not at all. Rather than a
+listener every time, the read now keeps listening after it stops waiting: while the auction house is
+open, a list that lands is read then, and the read says *the whole list arrived late, N after
+asking*. Closing the house forgets it. The stop sentence says so. Each press is then its own
+measurement. Alberto is changing character to see whether a new one is let ask at once, which would
+say the limit is per character.

@@ -41230,6 +41230,30 @@ print("reading the newer house whole")
 			and quiet:find("page", 1, true) == nil,
 		quiet == "" and "nothing said" or quiet)
 
+	-- **A list that lands after the wait is read then** (§90): on live Midnight one call answered
+	-- in 48 seconds and the next not in three minutes, and a stop cannot tell late from never.
+	local lateAt = #DEFAULT_CHAT_FRAME.messages
+	fire("REPLICATE_ITEM_LIST_UPDATE")
+	advance(1)
+	local lateSaid = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", lateAt + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("a list that lands after the read stopped waiting is read then, and says it came late",
+		Family.Auctions:ReplicateReading() == nil
+			and lateSaid:find("arrived late", 1, true) ~= nil
+			and lateSaid:find("read the whole house", 1, true) ~= nil,
+		lateSaid == "" and "nothing said" or lateSaid)
+
+	-- But not once the house is closed: the list belongs to a visit that has ended.
+	Family.Auctions:ForgetVisit()
+	SlashCmdList["FAMILY"]("ah scan go")
+	advance(181)
+	fire("AUCTION_HOUSE_CLOSED")
+	fire("REPLICATE_ITEM_LIST_UPDATE")
+	check("while one that lands after the auction house was closed is not read",
+		Family.Auctions:ReplicateReading() == nil
+			or (Family.Auctions:ReplicateReading() or {}).rows == nil,
+		tostring((Family.Auctions:ReplicateReading() or {}).rows))
+
 	_G.C_AuctionHouse = realHouse
 	Family.Auctions:ForgetVisit()
 end)()

@@ -1468,7 +1468,12 @@ local function startReplicateRead()
 			-- this is the moment it starts doing something a player can see.
 			if not arrived then
 				arrived = true
-				Family:Print(L["the whole list arrived: %d row(s) - reading them"], state.rows or 0)
+				if state.late then
+					Family:Print(L["the whole list arrived late, %s after asking: %d row(s) - reading them"],
+						spanOf(Family.Auctions:WalkSeconds(state) or 0), state.rows or 0)
+				else
+					Family:Print(L["the whole list arrived: %d row(s) - reading them"], state.rows or 0)
+				end
 			end
 			-- Every so often rather than every slice: eighty-six lines is not progress.
 			if state.done - shown >= 5000 or state.done >= state.rows then
@@ -1493,7 +1498,7 @@ local function startReplicateRead()
 		-- for and never arrived* about a read that has no pages (`docs/MIDNIGHT.md` §87).
 		Family:Print(L["stopped after %d row(s) in %s: %s"], state.done or 0,
 			spanOf(Family.Auctions:WalkSeconds(state) or 0),
-			(reason == "quiet" and L["the whole list was asked for and did not arrive within three minutes"])
+			(reason == "quiet" and L["the whole list was asked for and did not arrive within three minutes - if it arrives while the auction house is open, it will be read then"])
 				or WHY[reason] or tostring(reason))
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
 	end)

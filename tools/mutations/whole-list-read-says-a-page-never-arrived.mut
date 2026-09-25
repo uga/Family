@@ -1,6 +1,6 @@
 name: the whole-list read says a page never arrived
 file: addons/Family_UI/Slash.lua
 --- old
-			(reason == "quiet" and L["the whole list was asked for and did not arrive within three minutes"])
+			(reason == "quiet" and L["the whole list was asked for and did not arrive within three minutes - if it arrives while the auction house is open, it will be read then"])
 --- new
-			(reason == "never" and L["the whole list was asked for and did not arrive within three minutes"])
+			(reason == "never" and L["the whole list was asked for and did not arrive within three minutes - if it arrives while the auction house is open, it will be read then"])

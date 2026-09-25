@@ -1404,10 +1404,18 @@ function Auctions:ReplicateReading()
 	return reading
 end
 
+-- **A read that stopped waiting, still listening while the house is open.** On live Midnight the
+-- list arrived 48 seconds after one call and not within three minutes of the next (`docs/MIDNIGHT.md`
+-- §88, §89), and a stop cannot tell a list that is late from one that is not coming. So a read
+-- that gives up waiting leaves this behind: if the list lands before the auction house is closed,
+-- it is read then and says so, which both keeps the read and answers the question.
+local late
+
 function Auctions:StopReplicateRead(why)
 	if not reading then return false end
 	local stopping, told = reading, reading.told
 	reading = nil
+	late = (why == "quiet") and stopping or nil
 	if told then Family:TryCall(told, "stopped", stopping, why) end
 	return true
 end
@@ -1458,6 +1466,10 @@ end
 
 -- **The list arrived**, which is the only thing that starts the reading.
 local function replicateAnswered()
+	if not reading and late then
+		reading, late = late, nil
+		reading.late = true
+	end
 	if not reading or reading.rows then return end
 
 	reading.rows = Auctions:ReplicateCount() or 0
@@ -2605,6 +2617,7 @@ Family:OnDatabaseReady("auctions", function()
 		-- a half-read house is a lot of prices, not a failure. Both houses, because a client
 		-- has one of them and the call for the other is a shell that answers nought.
 		Auctions:StopReplicateRead("closed")
+		late = nil
 		Auctions:StopWalk("closed")
 
 		-- And the slices, which are indices into a list that is about to be gone. Reading

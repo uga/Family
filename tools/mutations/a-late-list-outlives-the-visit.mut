@@ -1,0 +1,7 @@
+name: a late list is read after the auction house was closed
+file: addons/Family/Scanners/Auctions.lua
+--- old
+		Auctions:StopReplicateRead("closed")
+		late = nil
+--- new
+		Auctions:StopReplicateRead("closed")

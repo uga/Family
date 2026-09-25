@@ -1,0 +1,6 @@
+name: a read that stopped waiting forgets its list
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	late = (why == "quiet") and stopping or nil
+--- new
+	late = nil
