@@ -1482,9 +1482,13 @@ local function startReplicateRead()
 			return
 		end
 
-		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,
+		-- **Rows, not pages.** This read asks for the whole list at once, and it borrowed the page
+		-- walk's sentence: on Midnight it told Alberto *stopped after 0 page(s) ... a page was asked
+		-- for and never arrived* about a read that has no pages (`docs/MIDNIGHT.md` §87).
+		Family:Print(L["stopped after %d row(s) in %s: %s"], state.done or 0,
 			spanOf(Family.Auctions:WalkSeconds(state) or 0),
-			WHY[reason] or tostring(reason))
+			(reason == "quiet" and L["the whole list was asked for and did not arrive within half a minute"])
+				or WHY[reason] or tostring(reason))
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
 	end)
 

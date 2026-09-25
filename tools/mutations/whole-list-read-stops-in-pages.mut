@@ -1,0 +1,6 @@
+name: the whole-list read says it stopped after pages
+file: addons/Family_UI/Slash.lua
+--- old
+		Family:Print(L["stopped after %d row(s) in %s: %s"], state.done or 0,
+--- new
+		Family:Print(L["stopped after %d page(s) in %s: %s"], state.done or 0,

@@ -41204,9 +41204,20 @@ print("reading the newer house whole")
 	SlashCmdList["FAMILY"]("ah scan go")
 	check("a read whose list never arrives is running until it is not", 
 		Family.Auctions:ReplicateReading() ~= nil)
+	local quietAt = #DEFAULT_CHAT_FRAME.messages
 	advance(31)
 	check("and a list that never arrives ends the read rather than hanging it",
 		Family.Auctions:ReplicateReading() == nil)
+
+	-- **And says so in rows and as a list, not as a page** (§87): on Midnight it told Alberto
+	-- *stopped after 0 page(s) ... a page was asked for and never arrived*, about a read that has
+	-- no pages.
+	local quiet = table.concat(DEFAULT_CHAT_FRAME.messages, "\n", quietAt + 1,
+		#DEFAULT_CHAT_FRAME.messages)
+	check("and says the whole list did not arrive, in rows rather than pages",
+		quiet:find("row(s)", 1, true) ~= nil and quiet:find("whole list", 1, true) ~= nil
+			and quiet:find("page", 1, true) == nil,
+		quiet == "" and "nothing said" or quiet)
 
 	_G.C_AuctionHouse = realHouse
 	Family.Auctions:ForgetVisit()

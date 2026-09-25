@@ -3321,3 +3321,25 @@ Alberto's screenshot of Summary / Miscellaneous after deploying: Ahia's Mount co
 Alberto's second screenshot, after switching the style in the Mounts tab: Ahia's column reads
 *Steady*, **with no reload** - a scan that runs on the switch recomputes it, so the style follows
 the switch in play.
+
+**Correction to the above:** that a scan runs on the switch of style and recomputes it is an
+inference, not a reading - which event does it was not looked at. What is seen is only that the
+column followed the switch without a reload.
+
+## 87. The auction house's whole-list read on Midnight (2026-09-25)
+
+The live client's *read it all* stopped with *stopped after 0 page(s) in 30 second(s): a page was
+asked for and never arrived* (2026-09-24). Not the page walk: `Auctions:CanReplicate()` asks whether
+`C_AuctionHouse.ReplicateItems` exists, it does on Midnight, and the button took the whole-list read
+- which borrowed the walk's sentence. Its `quiet` stop is *`ReplicateItems` sent, and
+`REPLICATE_ITEM_LIST_UPDATE` not heard within 30 seconds*; on Mists the list arrived at once.
+
+Alberto's `/run` on the PTR, 12.1.5, at the auction house: `IsThrottledMessageSystemReady()` true,
+`GetNumReplicateItems()` 0 on asking, and **`REPLICATE_ITEM_LIST_UPDATE` 0.84 seconds later with 97
+rows** - a small house on a test realm, answered the way Mists answered. So the PTR's list arrives,
+and the question is the live client's: the same `/run` there, waiting up to five minutes, says
+whether it arrives late, never, or is refused.
+
+The read now says what it is: *stopped after %d row(s)*, and for `quiet`, *the whole list was asked
+for and did not arrive within half a minute*, in the four languages; a check reads it and two
+mutations hold it.
