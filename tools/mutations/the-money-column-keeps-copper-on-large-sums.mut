@@ -1,0 +1,6 @@
+name: the Money column keeps the copper on ten thousand gold and over
+file: addons/Family_UI/Window.lua
+--- old
+	if copper ~= nil and copper >= WHOLE_BELOW then return self:GoldAndSilver(copper, total) end
+--- new
+	if false then return self:GoldAndSilver(copper, total) end

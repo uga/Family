@@ -9188,6 +9188,25 @@ do
 				.. " |cffffffff45|r" .. SILVER_COIN,
 		Family.UI:Coins(208, true) .. " / " .. Family.UI:GoldAndSilver(1234567))
 
+	-- **The Money column drops the copper from ten thousand gold** (§76, Alberto 2026-09-25):
+	-- Deiana's 109118g 83s 93c on the PTR, and one copper under the line keeps all three places.
+	check("coins: the Money column writes ten thousand gold and over without the copper",
+		Family.UI:MoneyColumn(109118 * 10000 + 8393) == "|cffffffff109118|r" .. GOLD_COIN
+			.. " |cffffffff83|r" .. SILVER_COIN
+			and Family.UI:MoneyColumn(10000 * 10000 - 1) == Family.UI:Money(10000 * 10000 - 1)
+			and Family.UI:MoneyColumn(1234500 * 10000, true) == "|cffffd7001.23M|r" .. GOLD_COIN
+			and Family.UI:MoneyColumn(nil) == Family.UI.UNKNOWN,
+		Family.UI:MoneyColumn(109118 * 10000 + 8393))
+
+	-- And the two Summary cells that draw the column use it: a member's, and a total's in gold.
+	check("coins: the Summary's Money cells, a member's and a total's, drop the copper too",
+		Family.UI.__summaryCell.money({ money = 109118 * 10000 + 8393 })
+			== Family.UI:MoneyColumn(109118 * 10000 + 8393)
+			and Family.UI.__summaryTotal.money({ { meta = { money = 100000 * 10000 + 1 } },
+				{ meta = { money = 9118 * 10000 + 8392 } } })
+			== Family.UI:MoneyColumn(109118 * 10000 + 8393, true),
+		tostring(Family.UI.__summaryCell.money({ money = 109118 * 10000 + 8393 })))
+
 	-- **Worth at a million gold and over is millions, two decimals, and the gold coin** -
 	-- Alberto's two examples, 2026-09-15 - and the whole figure below that.
 	check("coins: Worth over a million gold is written as millions, rounded, with the gold coin",
@@ -17733,6 +17752,9 @@ end
 		end
 		local checks = {
 			{ "Overview", "money", Family.UI:Money(999999999, true) },
+			-- **Six figures, Midnight's**, the largest below the millions (§76): the column drops
+			-- the copper from ten thousand gold, by Alberto's choice of 2026-09-25.
+			{ "Overview", "money", Family.UI:MoneyColumn(999999 * 10000 + 9999, true) },
 			{ "Overview", "stock", Family.UI:GoldAndSilver(99999999999, true) },
 			-- **Gold and silver, since 2026-09-16.** With the copper on them these two drew 108
 			-- pixels into 106 and were cut, which the icon sheet measured on Era; the set is at

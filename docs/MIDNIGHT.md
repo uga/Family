@@ -3184,3 +3184,18 @@ raise, tried inside `pcall`; a secret line is read as a line with no text, which
 handles. No new client call: `issecretvalue` was not asked. The harness has a stand-in secret
 (a value its `type` calls a string, which raises when compared), for the helper and end to end
 through the node hook.
+
+## 76. The Money column on Midnight sums: no copper from ten thousand gold (2026-09-25)
+
+On the PTR the Summary's Money column cut Deiana's 109118g 83s 93c to *10911...* and even Ahia's
+62802g 54s 98c to *6280...*; the realm total, 171921g, likewise. The column is 130 pixels at the
+Overview row's budget, sized on Era for four figures of gold. The broker tooltip, which has room,
+showed all three whole.
+
+Alberto chose the first of three ways (dropping the copper; widening Money at Item lvl's and Level's
+cost; thousands as *109.1K*): **from ten thousand gold the column is written as Worth is, gold and
+silver, and from a million as Worth's millions.** `UI:MoneyColumn` in `Window.lua`, used by the
+member's cell and the total's; the tooltip and the Grand totals line keep the whole figure through
+`UI:Money`. The harness's width model now holds 999999g 99s in the column. What it does not model
+is Midnight's own font: that the PTR cut five figures the model says fit is the reason the fix goes
+further than the model asks, and the PTR screenshot is the check.

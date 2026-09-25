@@ -988,7 +988,7 @@ end
 
 CELL.level = function(meta) return meta.level and tostring(meta.level) or "?" end
 
-CELL.money = function(meta) return UI:Money(meta.money) end
+CELL.money = function(meta) return UI:MoneyColumn(meta.money) end
 
 -- **What this character is holding, worked out once for the whole draw.**
 --
@@ -1446,7 +1446,7 @@ local function sumOf(members, field)
 end
 
 local TOTAL = {
-	money = function(members) return UI:Money(sumOf(members, "money"), true) end,
+	money = function(members) return UI:MoneyColumn(sumOf(members, "money"), true) end,
 
 	-- Added up like the money beside it, over whoever the row covers - a faction, a realm, or
 	-- everybody. A member nothing could be priced for contributes nothing and is not counted
@@ -1500,6 +1500,9 @@ local TOTAL = {
 		return UI:GoldAndSilver(total, true)
 	end,
 }
+
+-- Reachable from the harness, which asks them what a cell writes rather than predicting it.
+UI.__summaryCell, UI.__summaryTotal = CELL, TOTAL
 
 --------------------------------------------------------------------------------------------
 -- Gathering

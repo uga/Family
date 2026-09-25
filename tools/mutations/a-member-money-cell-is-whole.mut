@@ -1,0 +1,6 @@
+name: a member's Money cell writes the whole figure however large
+file: addons/Family_UI/Summary.lua
+--- old
+CELL.money = function(meta) return UI:MoneyColumn(meta.money) end
+--- new
+CELL.money = function(meta) return UI:Money(meta.money) end

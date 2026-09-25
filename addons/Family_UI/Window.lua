@@ -1187,6 +1187,21 @@ function UI:GoldAndSilver(copper, total)
 			total)
 end
 
+-- **The Money column: the whole figure below ten thousand gold, Worth's form from there.**
+--
+-- The Summary's Money column is 130 pixels, sized on Era for four figures of gold, and on the
+-- Midnight PTR 109118g and even 62802g were cut to *10911...* and *6280...* (`docs/MIDNIGHT.md`
+-- §76). Alberto's choice of three, 2026-09-25: drop the copper from ten thousand gold up, as
+-- Worth already does - at that size the coppers are noise - which frees a place for the gold
+-- and leaves every other column where it is. From a million, Worth's millions. The tooltip and
+-- the Grand totals line keep the whole figure, through `UI:Money`.
+local WHOLE_BELOW = 10000 * 10000
+
+function UI:MoneyColumn(copper, total)
+	if copper ~= nil and copper >= WHOLE_BELOW then return self:GoldAndSilver(copper, total) end
+	return self:Money(copper, total)
+end
+
 -- **The same money, without the places nothing is standing in.**
 --
 -- `UI:Money` above pads deliberately: on a table it is a column, and a column only reads as one if
