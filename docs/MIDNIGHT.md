@@ -3243,3 +3243,14 @@ did. A sibling's record is never read off this player's spells.
 **Not measured: that Midnight's speeds are `RidingLadder`'s.** The table is Mists' generated
 `MountCapability` - Master at 375 is 100% on the ground and 310% in the air. The column on the PTR
 is the first check; Midnight's skyriding is not in it at all.
+
+## 81. §76 seen, and §80's speeds wrong (2026-09-25)
+
+Alberto's screenshots after deploying to both Midnight clients. **The Money column is whole**:
+*101717g 86s*, *62802g 44s*, total *164520g 30s*, no copper and nothing cut.
+
+**The Mount column now reads *100/310%* for Ahia, and Alberto: *totally wrong - we have to learn how
+to read expansion riding skills*.** §80 reads the riding spell right and prices it with Mists'
+`RidingLadder`, which it said was unmeasured on Midnight; Midnight's riding is evidently not that
+table. What the column should say there, and where the game shows it, is asked of Alberto before
+anything is read. Deiana, not played since the deploy, has no answer yet.
