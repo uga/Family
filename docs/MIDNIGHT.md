@@ -3312,3 +3312,8 @@ aura's name after its colon, *Skyriding* or *Steady* on an English client - so n
 Family's. `Capabilities.lua` has a Midnight column for the first time, `MIDNIGHT = 12`, and one
 feature in it, `skyriding`, seen in game; no Classic client has it, and the harness shows Mists'
 build not taking the route with Midnight's answers in front of it.
+
+## 86. §85 seen: Ahia's Mount column says *Skyriding* (2026-09-25)
+
+Alberto's screenshot of Summary / Miscellaneous after deploying: Ahia's Mount column reads
+*Skyriding*. Deiana's is empty, not played since. The switch to *Steady* is not in this reading.
