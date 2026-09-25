@@ -147,6 +147,20 @@ end
 
 local function packed(...) return { n = select("#", ...), ... } end
 
+-- **A line of a tooltip, where it can be read.** Midnight hands addon code some tooltip text as a
+-- *secret string*: `type` says `"string"`, and comparing it or searching it raises - Family_UI's
+-- node reader did so 51 times on the PTR, 12.1.5, 2026-09-25 (`docs/MIDNIGHT.md` §75). Holding one
+-- is allowed and using one is not, so the test is a use of it inside `pcall`: a line whose text
+-- cannot be compared is treated as a line with no text, which every reader already handles.
+-- Equal, which is what the PTR refused, and less than, which is what raises on a stand-in in
+-- the harness's Lua 5.1; a real string answers both without complaint.
+function Family:TooltipText(region)
+	local text = region and region.GetText and self:TryCall(region.GetText, region)
+	if type(text) ~= "string" then return nil end
+	if not pcall(function() return text == "" or text < "" end) then return nil end
+	return text
+end
+
 function Family:ItemInfo(item)
 	local old = packed(self:TryCall(_G.GetItemInfo, item))
 	if old[1] ~= nil then return unpack(old, 1, old.n) end
@@ -372,7 +386,7 @@ function Family:ScanTooltipLine(aim, index)
 	if lines < index then return nil end
 
 	local region = _G[SCAN_TOOLTIP .. "TextLeft" .. index]
-	local text = region and Family:TryCall(region.GetText, region)
+	local text = Family:TooltipText(region)
 	if type(text) == "string" and text ~= "" then return text end
 
 	return nil
@@ -480,7 +494,7 @@ local function chargesShown(aim)
 
 	for index = 1, lines do
 		local line = _G[SCAN_TOOLTIP .. "TextLeft" .. index]
-		local text = line and Family:TryCall(line.GetText, line)
+		local text = Family:TooltipText(line)
 		if type(text) == "string" then
 			local found = text:match(pattern)
 			if found then return tonumber(found) end
@@ -526,7 +540,7 @@ local function bindingShown(aim)
 
 	for index = 1, lines do
 		local line = _G[SCAN_TOOLTIP .. "TextLeft" .. index]
-		local text = line and Family:TryCall(line.GetText, line)
+		local text = Family:TooltipText(line)
 
 		if type(text) == "string" then
 			for _, row in ipairs(BINDINGS) do
@@ -708,7 +722,7 @@ function Family:BankedBuffs()
 
 	for line = 1, lines do
 		local region = _G[SCAN_TOOLTIP .. "TextLeft" .. line]
-		local text = region and Family:TryCall(region.GetText, region)
+		local text = Family:TooltipText(region)
 		if type(text) == "string" then
 			for row in text:gmatch("[^\r\n]+") do
 				local icon = tonumber(row:match("|T(%d+)"))

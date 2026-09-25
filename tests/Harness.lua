@@ -4718,6 +4718,30 @@ print("items and spells on the PTR, where the old globals are gone")
 end)()
 
 print()
+print("a secret line in a tooltip")
+
+-- **Midnight hands some tooltip text over as a secret string** (`docs/MIDNIGHT.md` §75): `type`
+-- says `"string"`, and comparing it raises - `Tooltip.lua:1512`, 51 times on the PTR, 2026-09-25.
+-- Lua 5.1 has no such thing, so a stand-in: a value this section's `type` calls a string, which
+-- raises when compared, as the PTR's did.
+do
+	local secret = newproxy(true)
+	local realType = type
+	local region = { GetText = function() return secret end }
+	_G.type = function(value)
+		if value == secret then return "string" end
+		return realType(value)
+	end
+	local read = Family:TooltipText(region)
+	local plain = Family:TooltipText({ GetText = function() return "Requires Mining" end })
+	_G.type = realType
+	check("a tooltip line whose text is secret is read as no text, and nothing raises",
+		read == nil, tostring(read))
+	check("while an ordinary line is read as it is",
+		plain == "Requires Mining", tostring(plain))
+end
+
+print()
 print("identity")
 advance(3)
 
@@ -7494,6 +7518,22 @@ do
 	local copper = nodeSays("Copper Vein", MINE)
 	check("a copper vein names copper ore", drewBlock(copper)
 		and namedIn(copper) == "Copper Ore", tostring(namedIn(copper)))
+
+	-- **A node whose second line is secret** (§75): the PTR's creature and node tooltips hand
+	-- some lines over as secret strings, and the reader compared one 51 times. A stand-in, as in
+	-- the section on secret lines: this block's `type` calls it a string, and comparing it raises.
+	do
+		local secret = newproxy(true)
+		local realType = type
+		_G.type = function(value)
+			if value == secret then return "string" end
+			return realType(value)
+		end
+		local ok, said = pcall(nodeSays, "Copper Vein", secret)
+		_G.type = realType
+		check("a node tooltip with a secret line is read without raising, and draws nothing",
+			ok and not drewBlock(said), tostring(said))
+	end
 	local iron = nodeSays("Iron Deposit", MINE)
 	check("an iron deposit names iron ore and not dark iron ore",
 		namedIn(iron) == "Iron Ore", iron)

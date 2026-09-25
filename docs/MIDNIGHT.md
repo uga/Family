@@ -3168,3 +3168,19 @@ as it was, and `Auctions.lua` already reached both instant calls. `Recipes.lua` 
 `GetItemInfoInstant` exists before asking for an item's class, which on the PTR skipped the ask; that
 path has no check of its own. `tools/surface.py` regenerated: `C_Item.GetItemIconByID` and the calls
 this branch added since the last regeneration are now on the probe's list.
+
+## 75. Secret tooltip text on the PTR (2026-09-25)
+
+With scriptErrors on, the PTR, 12.1.5, reported `Tooltip.lua:1512: attempt to compare local 'text'
+(a secret string value, while execution tainted by 'Family_UI')`, 51 times, then again from a
+creature under the cursor: the node reader's `text ~= ""` on `GameTooltipTextLeft2`. The locals say
+`type(text)` is `"string"` and the value is `<secret string>`. The game's own error window then
+raised the same way showing it, tainted by Family_UI: a knock-on, gone once Family does not raise.
+
+Every place Family reads a tooltip line - ten, four in `Core.lua`'s scanning tooltip and six in
+`Tooltip.lua` - checked `type(text) == "string"` and then compared or searched it. They all go
+through `Family:TooltipText(region)` now, which hands back the text only when comparing it does not
+raise, tried inside `pcall`; a secret line is read as a line with no text, which each reader already
+handles. No new client call: `issecretvalue` was not asked. The harness has a stand-in secret
+(a value its `type` calls a string, which raises when compared), for the helper and end to end
+through the node hook.

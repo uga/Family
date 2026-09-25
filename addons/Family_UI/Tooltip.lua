@@ -359,7 +359,7 @@ local function requiredSkill(tooltip, profession)
 
 	for index = 1, lines do
 		local widget = _G[name .. "TextLeft" .. index]
-		local text = widget and widget.GetText and widget:GetText()
+		local text = Family:TooltipText(widget)
 
 		if type(text) == "string" and text:find(profession, 1, true) then
 			local number = text:match("(%d+)")
@@ -1047,7 +1047,7 @@ local function clientShowsSellPrice(tooltip)
 	local lines = tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0
 	for index = 1, lines do
 		local widget = _G[name .. "TextLeft" .. index]
-		local text = widget and widget.GetText and widget:GetText()
+		local text = Family:TooltipText(widget)
 		if type(text) == "string" and text:sub(1, #prefix) == prefix then return true end
 	end
 	return false
@@ -1508,7 +1508,7 @@ end
 local function professionNamed(frameName, lines)
 	for index = 2, math.min(lines, 3) do
 		local region = _G[frameName .. "TextLeft" .. index]
-		local text = region and region.GetText and (Family:TryCall(region.GetText, region))
+		local text = Family:TooltipText(region)
 		if type(text) == "string" and text ~= "" then
 			local lowered = text:lower()
 			for _, entry in ipairs(gatheringWords()) do
@@ -1688,7 +1688,7 @@ local function gatheringNode(tooltip)
 	end
 
 	local region = _G[frameName .. "TextLeft1"]
-	local first = region and region.GetText and (Family:TryCall(region.GetText, region))
+	local first = Family:TooltipText(region)
 	if type(first) ~= "string" or first == "" then
 		Family:Debug("node: line 1 is not text")
 		return nil
@@ -1952,7 +1952,7 @@ end
 local function oncePerName(tooltip)
 	local frameName = tooltip.GetName and tooltip:GetName()
 	local region = frameName and _G[frameName .. "TextLeft1"]
-	local raw = region and region.GetText and (Family:TryCall(region.GetText, region))
+	local raw = Family:TooltipText(region)
 	if type(raw) ~= "string" or not region.SetText then return end
 
 	local seen, kept, pieces = {}, {}, 0
@@ -1986,8 +1986,7 @@ local function onNode(tooltip)
 		local two = named and _G[tostring(named) .. "TextLeft2"]
 		Family:Debug("node: %s shown with %d line(s): %s / %s", tostring(named),
 			tonumber((Family:TryCall(tooltip.NumLines, tooltip))) or 0,
-			tostring(one and one.GetText and (Family:TryCall(one.GetText, one))),
-			tostring(two and two.GetText and (Family:TryCall(two.GetText, two))))
+			tostring(Family:TooltipText(one)), tostring(Family:TooltipText(two)))
 	end
 
 	local said, skill, where = gatheringNode(tooltip)
