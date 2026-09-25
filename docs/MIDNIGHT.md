@@ -3129,3 +3129,20 @@ for it, seen to fail with the skip off, thirty-eight claims.
 The sweep has not run whole on this build, so another name further on may do the same. **The
 probe stays switched off on the PTR** unless a run is wanted, and a run there is a deliberate act
 whose crash, if any, is the reading.
+
+## 73. The PTR has lost the old item and spell globals (2026-09-25)
+
+On the PTR, 12.1.5 build 69952, every item picture in Family is the question mark - Possessions,
+Character's gear, the materials strip - while counts and item levels are there. Alberto's `/run`,
+`type(_G[name])` for eight names: **`GetItemIcon`, `GetItemInfo`, `GetItemInfoInstant`,
+`GetItemCount`, `GetItemQualityColor`, `GetItemSpell`, `GetSpellInfo` and `GetCoinTextureString`
+are all `nil`**; `C_Item.GetItemIconByID` and `C_Item.GetItemInfo` are functions. The live client,
+12.1.0, drew the same pictures (§46 onward), so it still had `GetItemIcon`: the removal is 12.1.5's.
+
+Family calls four of the eight: `GetItemIcon` 10 times, `GetItemInfo` 20, `GetSpellInfo` 6,
+`GetItemInfoInstant` 3, across 20 files. Most go through `TryCall` and answer nothing, which is the
+question mark; `Names.lua` calls `GetItemInfo` and `GetSpellInfo` bare, and raises on this build.
+
+Asked next, before any code: what `C_Item.GetItemInfo(2840)`, `C_Item.GetItemIconByID(2840)`,
+`C_Item.GetItemInfoInstant(2840)` and `C_Spell.GetSpellInfo(2657)` answer on the PTR. The fix is
+one helper per call in `Core.lua`, old call first and the new one where it is gone.
