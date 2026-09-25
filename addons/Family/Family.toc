@@ -1,4 +1,4 @@
-## Interface: 11509, 20506, 50504, 120100
+## Interface: 11509, 20506, 50504, 120100, 120105
 ## Title: Family
 ## Notes: Records what each of your characters owns and knows, and shows it to you from any of them.
 ## IconTexture: Interface\AddOns\Family_UI\Textures\Family.tga

@@ -1,4 +1,4 @@
-## Interface: 11509, 20506, 50504, 120100
+## Interface: 11509, 20506, 50504, 120100, 120105
 ## Title: Family |cff888888(interface)|r
 ## Notes: Everything Family shows you. Requires Family.
 ## IconTexture: Interface\AddOns\Family_UI\Textures\Family.tga

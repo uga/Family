@@ -3103,3 +3103,12 @@ script now copies to every Midnight client installed, live and PTR, each under t
 with a line saying so. Not run here: a batch file needs Windows, so the first run is Alberto's.
 The PTR's interface number is still not read; until it is, a PTR build newer than `120100` lists
 Family as out of date.
+
+## 71. The PTR's interface number, `120105` (2026-09-25)
+
+`/dump GetBuildInfo()` on the PTR, from Alberto's screenshot: `"12.1.5"`, `"69952"`, `"Sep 21 2026"`,
+**120105**, `""`, `" "`. The live client is 12.1.0, build 69875, 120100 (§12). `120105` is added
+beside `120100` on line 1 of `Family.toc`, `Family_UI.toc` and `FamilySurface.toc`, so the PTR loads
+them as current. Family reads the expansion as `floor(interface / 10000)`, 12 for both, so nothing
+else tells the two apart. The harness's fourth pretend client stays the live build, which is the one
+measured and the one that ships.
