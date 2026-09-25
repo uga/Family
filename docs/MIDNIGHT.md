@@ -3286,3 +3286,9 @@ Alberto's `/run` on the PTR, every `C_MountJournal` key holding *Flight*, *Drago
 `SwapDynamicFlightMode`, `PickupDynamicFlightMode`. The last two act - they switch the mode and put it
 on the cursor - and are never to be called by Family or by any `/run` asked for here. The first
 three are asked next, on Ahia and Deiana.
+
+The three reads on the PTR, one character: `GetDynamicFlightModeSpellID()` **436854**, *Switch Flight
+Style* - the toggle, the same whichever mode is on, so it does not say the mode;
+`IsDragonridingUnlocked()` **true**; `GetCollectedDragonridingMounts()` a table of **136**, which is
+the account's collection. Where the mode itself is kept is asked next, among the character's own
+auras.
