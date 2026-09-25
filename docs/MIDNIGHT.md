@@ -3278,3 +3278,11 @@ the question for the next reading:
   ground, and +430% or +705% for skyriding, by the text.
 
 The earlier namespace listings name one call on the subject, `C_MountJournal.GetCollectedDragonridingMounts`.
+
+## 84. The mount journal's flight calls, by name (2026-09-25)
+
+Alberto's `/run` on the PTR, every `C_MountJournal` key holding *Flight*, *Dragon*, *Sky* or
+*Steady*: `GetDynamicFlightModeSpellID`, `IsDragonridingUnlocked`, `GetCollectedDragonridingMounts`,
+`SwapDynamicFlightMode`, `PickupDynamicFlightMode`. The last two act - they switch the mode and put it
+on the cursor - and are never to be called by Family or by any `/run` asked for here. The first
+three are asked next, on Ahia and Deiana.
