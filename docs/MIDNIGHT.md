@@ -3094,3 +3094,12 @@ What follows from it:
 - **The PTR has its own install folder and its own interface number.** `tools/DeployMidnight.bat`
   copies to the live client only, and the `.toc` files list `120100`; both wait on the PTR's
   folder and `GetBuildInfo()`, asked for 2026-09-25.
+
+## 70. `DeployMidnight.bat` updates the PTR too (2026-09-25)
+
+The PTR's AddOns folder, from Alberto: `E:\Giochi\World of Warcraft\_xptr_\Interface\AddOns`. The
+script now copies to every Midnight client installed, live and PTR, each under the same
+`Interface\AddOns` guard; `/live` or `/ptr` limits it to one, and a client not installed is left out
+with a line saying so. Not run here: a batch file needs Windows, so the first run is Alberto's.
+The PTR's interface number is still not read; until it is, a PTR build newer than `120100` lists
+Family as out of date.

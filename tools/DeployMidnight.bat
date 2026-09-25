@@ -14,9 +14,15 @@ rem  interface number and its unreleased changes; Deploy.bat is what puts Family
 rem  Anniversary and Mists, from main. Asked for by Alberto, 2026-09-24, to try the branch at
 rem  home before any beta (docs\MIDNIGHT.md section 46).
 rem
+rem  Two Midnight clients: the live one and the PTR, which runs the full current content without
+rem  the expansion bought and is the test client since 2026-09-25 (docs\MIDNIGHT.md section 69).
+rem  Both are updated wherever they are installed.
+rem
 rem  Usage:  DeployMidnight.bat              copy, after asking
 rem          DeployMidnight.bat /test        show what it would do, write nothing
 rem          DeployMidnight.bat /y           copy without asking
+rem          DeployMidnight.bat /live        the live client only
+rem          DeployMidnight.bat /ptr         the PTR only
 rem          DeployMidnight.bat "folder"     use that folder as the source instead
 rem ---------------------------------------------------------------------------------------
 
@@ -40,7 +46,7 @@ set "SRC=%~dp0..\addons"
 
 rem Anything that is not one of the flags is the source folder.
 for %%A in (%*) do (
-	if /i not "%%~A"=="/test" if /i not "%%~A"=="/y" set "SRC=%%~A"
+	if /i not "%%~A"=="/test" if /i not "%%~A"=="/y" if /i not "%%~A"=="/live" if /i not "%%~A"=="/ptr" set "SRC=%%~A"
 )
 
 for %%P in ("%SRC%") do set "SRC=%%~fP"
@@ -54,15 +60,23 @@ for %%P in ("%SRC%\..\tools") do set "SRC_TOOLS=%%~fP"
 
 rem --- where they are going ---------------------------------------------------------------
 
-rem The Retail client's AddOns folder, as Alberto gave it 2026-09-24.
+rem The Retail client's AddOns folder, as Alberto gave it 2026-09-24, and the PTR's, 2026-09-25.
 set "DEST_MIDNIGHT=E:\Giochi\World of Warcraft\_retail_\Interface\AddOns"
+set "DEST_PTR=E:\Giochi\World of Warcraft\_xptr_\Interface\AddOns"
 
 set "DRYRUN="
 set "NOASK="
+set "ONLY="
 for %%A in (%*) do (
 	if /i "%%~A"=="/test" set "DRYRUN=1"
 	if /i "%%~A"=="/y"    set "NOASK=1"
+	if /i "%%~A"=="/live" set "ONLY=live"
+	if /i "%%~A"=="/ptr"  set "ONLY=ptr"
 )
+set "DO_LIVE=1"
+set "DO_PTR=1"
+if "%ONLY%"=="live" set "DO_PTR="
+if "%ONLY%"=="ptr"  set "DO_LIVE="
 
 set "TOOL_1="
 if exist "%SRC_TOOLS%\%ADDON_TOOL_1%\%ADDON_TOOL_1%.toc" (
@@ -81,7 +95,8 @@ echo   source : %SRC%
 echo   addons : %ADDON_1%, %ADDON_2%
 if defined LIBS echo   libs   : LibStub, LibSerialize, LibDeflate
 if defined TOOL_1 echo   tools  : %ADDON_TOOL_1% ^(the Midnight probe, not part of a release^)
-echo   to     : %DEST_MIDNIGHT%
+if defined DO_LIVE echo   to     : %DEST_MIDNIGHT%
+if defined DO_PTR  echo   to     : %DEST_PTR%
 if defined DRYRUN echo.& echo   TEST RUN - nothing will be written.
 echo.
 
@@ -115,11 +130,21 @@ if not defined LIBS (
 
 rem --- is the client installed ? -----------------------------------------------------------
 
-if not exist "%DEST_MIDNIGHT%\" (
-	echo  ERROR : "%DEST_MIDNIGHT%" is not there, so there is nothing to update.
+rem Each client only where it is installed; neither is an error, both missing is.
+if defined DO_LIVE if not exist "%DEST_MIDNIGHT%\" (
+	echo   absent : live - "%DEST_MIDNIGHT%" is not there, left out.
+	set "DO_LIVE="
+)
+if defined DO_PTR if not exist "%DEST_PTR%\" (
+	echo   absent : PTR - "%DEST_PTR%" is not there, left out.
+	set "DO_PTR="
+)
+if not defined DO_LIVE if not defined DO_PTR (
+	echo  ERROR : no Midnight client to update.
 	goto :failed
 )
-echo   found  : Midnight
+if defined DO_LIVE echo   found  : Midnight, live
+if defined DO_PTR  echo   found  : Midnight, PTR
 echo.
 
 if not defined DRYRUN if not defined NOASK (
@@ -139,21 +164,8 @@ set "RCFLAGS=/MIR /NFL /NDL /NJH /NJS /NP /R:1 /W:1"
 if defined DRYRUN set "RCFLAGS=%RCFLAGS% /L"
 
 set /a ERRORS=0
-set "DEST=%DEST_MIDNIGHT%"
-if "%DEST:~-1%"=="\" set "DEST=%DEST:~0,-1%"
-
-rem The same guard as Deploy.bat's, for the same reason: /MIR deletes what it does not
-rem recognise, so the folder has to be an AddOns folder before anything is pointed at it.
-set "TAIL=%DEST:~-16%"
-if /i not "%TAIL%"=="Interface\AddOns" (
-	echo    REFUSED : "%DEST%" does not end in Interface\AddOns.
-	goto :failed
-)
-
-echo  --- Midnight ---
-call :copyone "%SRC%" "%ADDON_1%"
-call :copyone "%SRC%" "%ADDON_2%"
-if defined TOOL_1 call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
+if defined DO_LIVE call :client "Midnight, live" "%DEST_MIDNIGHT%"
+if defined DO_PTR  call :client "Midnight, PTR" "%DEST_PTR%"
 
 echo.
 if %ERRORS% GTR 0 (
@@ -170,6 +182,26 @@ echo  Then try:  /console scriptErrors 1   so that an error is shown, not swallo
 echo             /family                  open the window
 if defined TOOL_1 echo             /familysurface           ask the client again
 goto :done
+
+:client
+set "DEST=%~2"
+if "%DEST:~-1%"=="\" set "DEST=%DEST:~0,-1%"
+
+rem The same guard as Deploy.bat's, for the same reason: /MIR deletes what it does not
+rem recognise, so the folder has to be an AddOns folder before anything is pointed at it.
+set "TAIL=%DEST:~-16%"
+if /i not "%TAIL%"=="Interface\AddOns" (
+	echo    REFUSED : "%DEST%" does not end in Interface\AddOns.
+	set /a ERRORS+=1
+	exit /b 0
+)
+
+echo  --- %~1 ---
+call :copyone "%SRC%" "%ADDON_1%"
+call :copyone "%SRC%" "%ADDON_2%"
+if defined TOOL_1 call :copyone "%SRC_TOOLS%" "%ADDON_TOOL_1%"
+echo.
+exit /b 0
 
 :copyone
 robocopy "%~1\%~2" "%DEST%\%~2" %RCFLAGS%
