@@ -1460,10 +1460,16 @@ end
 -- thousand rows to go through without the client stopping answering its keyboard, which is why
 -- this reports its way along rather than finishing in a frame.
 local function startReplicateRead()
-	local shown = 0
+	local shown, arrived = 0, false
 
 	local ok, why = Family.Auctions:StartReplicateRead(function(what, state, reason)
 		if what == "some" then
+			-- **When the list lands**, said once: until then the read has been waiting, and
+			-- this is the moment it starts doing something a player can see.
+			if not arrived then
+				arrived = true
+				Family:Print(L["the whole list arrived: %d row(s) - reading them"], state.rows or 0)
+			end
 			-- Every so often rather than every slice: eighty-six lines is not progress.
 			if state.done - shown >= 5000 or state.done >= state.rows then
 				shown = state.done
@@ -1492,7 +1498,14 @@ local function startReplicateRead()
 		if UI.HouseReadChanged then UI:HouseReadChanged() end
 	end)
 
-	if not ok then Family:Print(L["  refused: %s"], WHY[why] or tostring(why)) end
+	-- **Said the moment it asks**, because the answer can be a minute away: on live Midnight the
+	-- list arrived 48 seconds after the call (`docs/MIDNIGHT.md` §88), and Alberto, pressing *read
+	-- it all*, saw nothing at all in that minute and could not tell a read from a dead button.
+	if ok then
+		Family:Print(L["asked the auction house for its whole list - it can take a minute or more to arrive; /family ah scan stop ends it"])
+	else
+		Family:Print(L["  refused: %s"], WHY[why] or tostring(why))
+	end
 	if UI.HouseReadChanged then UI:HouseReadChanged() end
 	return ok, why
 end

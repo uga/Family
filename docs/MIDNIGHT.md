@@ -3356,3 +3356,18 @@ minutes. Reading the list is unchanged: 500 rows every 0.05 seconds is some seve
 upwards of thirty-five seconds, for a house this size. Whether the columns are Mists' - quantity at
 3, the lot's price at 10, the item at 17 (DATASOURCES) - is not read on Midnight yet; the prices the
 first full read files are the check, against the auction house's own.
+
+## 89. Pressing *read it all* on live: silence, then nothing in three minutes (2026-09-25)
+
+Alberto on the live client with §88 deployed: *it does not write anything in chat announcing it is
+working. How do you know you have to let it work?* - and three minutes later *stopped after 0 row(s)
+in 3 minute(s): the whole list was asked for and did not arrive within three minutes*.
+
+**The silence** is fixed: the read now says the moment it asks that the list can take a minute or
+more and how to stop it, and when the list lands, how many rows. Four languages, one check, two
+mutations.
+
+**The list not arriving is not explained yet.** The press came a few minutes after the `/run` of §88
+had asked for the same list, and the server is said to allow this once in about fifteen minutes (not
+measured) - or Family's listener did not hear an answer that came. The next reading tells them
+apart: fifteen minutes on, the `/run` listener alone, then the button.

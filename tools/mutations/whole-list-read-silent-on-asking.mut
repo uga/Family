@@ -1,0 +1,8 @@
+name: the whole-list read says nothing when it asks
+file: addons/Family_UI/Slash.lua
+--- old
+	if ok then
+		Family:Print(L["asked the auction house for its whole list - it can take a minute or more to arrive; /family ah scan stop ends it"])
+--- new
+	if ok then
+		local _ = L

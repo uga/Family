@@ -1,0 +1,6 @@
+name: the whole-list read says nothing when the list lands
+file: addons/Family_UI/Slash.lua
+--- old
+				Family:Print(L["the whole list arrived: %d row(s) - reading them"], state.rows or 0)
+--- new
+				local _ = state

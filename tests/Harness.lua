@@ -41188,6 +41188,12 @@ print("reading the newer house whole")
 		said:find("row(s) read", 1, true) ~= nil
 			and said:find("read the whole house", 1, true) ~= nil,
 		said == "" and "nothing said" or "said")
+	-- **And says it has asked, and when the list lands** (§89): on live Midnight the list came a
+	-- minute after the press, and a read that says nothing in that minute looks like a dead button.
+	check("and says it has asked at once, and when the list arrives, how many rows",
+		said:find("asked the auction house for its whole list", 1, true) ~= nil
+			and said:find("the whole list arrived: " .. rows .. " row(s)", 1, true) ~= nil,
+		said)
 
 	-- **Walking away ends it**, and everything already taken is kept.
 	Family.Auctions:ForgetVisit()
