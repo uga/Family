@@ -3079,3 +3079,18 @@ heading is named from `GetChildProfessionInfos()`, the list behind the game's ex
 *Pandaren Cuisine* is category 90's name, which the game's own recipe list prints. The dropdown's
 name was taken because the category above Classic Mining's headings is called only *Mining*
 (§62).
+
+## 69. The Midnight PTR becomes the test client (2026-09-25)
+
+Alberto: the live Retail client runs without Midnight bought, and the PTR runs the full latest
+content without it too, so the PTR is now the test environment. What it opens that the live client
+could not: the current expansion's lines, recipes and zones on a character that has them.
+
+What follows from it:
+
+- **Every reading says which client it was taken on**, live or PTR, with the build. A PTR build
+  can be ahead of live, and what ships has to run on live: a PTR answer is a question for live
+  where the two may differ, as a `main` answer is for Midnight.
+- **The PTR has its own install folder and its own interface number.** `tools/DeployMidnight.bat`
+  copies to the live client only, and the `.toc` files list `120100`; both wait on the PTR's
+  folder and `GetBuildInfo()`, asked for 2026-09-25.
