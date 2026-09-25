@@ -3199,3 +3199,9 @@ member's cell and the total's; the tooltip and the Grand totals line keep the wh
 `UI:Money`. The harness's width model now holds 999999g 99s in the column. What it does not model
 is Midnight's own font: that the PTR cut five figures the model says fit is the reason the fix goes
 further than the model asks, and the PTR screenshot is the check.
+
+## 77. §74 to §76 seen on the PTR (2026-09-25)
+
+Alberto, after redeploying to the PTR, 12.1.5 build 69952: *it works* - the three things asked to be
+looked at: the Summary's Money column whole, item pictures drawn in Possessions, Character and the
+materials strip, and no secret-string error hovering creatures and gathering nodes.
