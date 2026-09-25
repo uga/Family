@@ -3260,3 +3260,21 @@ anything is read. Deiana, not played since the deploy, has no answer yet.
 Alberto's screenshot on the PTR: *Cardboard Assassin* under *Cataclysm Engineering 80/80*, *Tinkers*,
 drawn with the spell's gear picture where it drew a question mark, and its tooltip saying *Made with
 Tinker's Kit x1*.
+
+## 83. §80's riding route taken back out (2026-09-25)
+
+Alberto chose to take the Mount column's *100/310%* off Midnight until the right reading replaces
+it: a figure known to be wrong is worse than none (§2.2). `60becfe`'s code, its four checks and its
+four mutations are reverted; its notes, §80 and the DECISIONS row, stay, since what they record
+still holds - the riding spell is read right, and priced wrong. The column is empty on Midnight
+again, and the Classic clients were never touched.
+
+What Alberto found about the game, **second-hand and not measured** - text from a search, kept as
+the question for the next reading:
+
+- Flying has two modes, *Skyriding* and *Steady Flight*, chosen in a dropdown at the top of the
+  Mounts tab of the collections window; skyriding has its own talent tree of abilities and passives.
+- The game shows no movement speed anywhere. The mount's aura says its base increase: +100% on the
+  ground, and +430% or +705% for skyriding, by the text.
+
+The earlier namespace listings name one call on the subject, `C_MountJournal.GetCollectedDragonridingMounts`.

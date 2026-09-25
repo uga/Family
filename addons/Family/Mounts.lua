@@ -152,34 +152,6 @@ end
 -- One field, so it costs a Wide Family link a number rather than a spellbook - which is the whole
 -- reason it is worked out here and not in the panel: a sibling shares no bags and no spells, and
 -- would otherwise have no answer at all.
--- **The riding rank where the skill sheet has none: Midnight's riding spells.** The modern client
--- lists professions and nothing else, so skill 762 is never on its sheet, and the journal route
--- above had no rank to start from - the Mount column was empty on the PTR. Riding is a spell
--- there, and only the highest rank learnt answers as known: Ahia, 12.1.5, 2026-09-25, *Master
--- Riding* 90265 true and Apprentice 33388, Journeyman 33391, Expert 34090 false
--- (`docs/MIDNIGHT.md` §80). Each spell stands for the rank that teaches it, highest first. Asked of
--- the character being played only: a spell known is a question about this client's player.
-local RIDING_SPELLS = {
-	{ 90265, 375 }, -- Master Riding
-	{ 34091, 300 }, -- Artisan Riding, where a client still has it
-	{ 34090, 225 }, -- Expert Riding
-	{ 33391, 150 }, -- Journeyman Riding
-	{ 33388, 75 },  -- Apprentice Riding
-}
-
-local function knows(spell)
-	local old = Family:TryCall(_G.IsSpellKnown, spell)
-	if old ~= nil then return old end
-	return Family:TryCall(_G.C_SpellBook and _G.C_SpellBook.IsSpellKnown, spell)
-end
-
-local function ridingFromSpells()
-	for _, row in ipairs(RIDING_SPELLS) do
-		if knows(row[1]) then return row[2] end
-	end
-	return nil
-end
-
 function Mounts:Recompute(key)
 	if not key then return end
 
@@ -192,9 +164,7 @@ function Mounts:Recompute(key)
 	local meta = Family.Database:Meta(key)
 	local riding = meta and meta.skills and meta.skills[762]
 
-	local rank = riding and riding.rank
-	if not rank and key == Family:CurrentMember() then rank = ridingFromSpells() end
-	local ground, flying = self:FromJournal(rank, payload)
+	local ground, flying = self:FromJournal(riding and riding.rank, payload)
 	if not ground then ground, flying = self:Fastest(payload) end
 	Family.Database:SetMeta(key, {
 		mount = ground or Family.CLEAR,

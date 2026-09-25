@@ -1,6 +1,0 @@
-name: the riding spells of the player are read for any member
-file: addons/Family/Mounts.lua
---- old
-	if not rank and key == Family:CurrentMember() then rank = ridingFromSpells() end
---- new
-	if not rank then rank = ridingFromSpells() end

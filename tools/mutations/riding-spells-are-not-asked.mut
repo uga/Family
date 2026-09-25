@@ -1,6 +1,0 @@
-name: with no riding skill on the sheet, no rank is read from the riding spells
-file: addons/Family/Mounts.lua
---- old
-	if not rank and key == Family:CurrentMember() then rank = ridingFromSpells() end
---- new
-	local _ = ridingFromSpells

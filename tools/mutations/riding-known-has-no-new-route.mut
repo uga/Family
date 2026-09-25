@@ -1,6 +1,0 @@
-name: a riding spell is not asked of C_SpellBook where IsSpellKnown is gone
-file: addons/Family/Mounts.lua
---- old
-	return Family:TryCall(_G.C_SpellBook and _G.C_SpellBook.IsSpellKnown, spell)
---- new
-	return nil

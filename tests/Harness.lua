@@ -28723,44 +28723,6 @@ print("how fast a character can get about")
 			meta.mount == 100 and meta.mountFly == 310,
 			tostring(meta.mount) .. " " .. tostring(meta.mountFly))
 
-		-- **With no riding skill on the sheet, the riding spell known** (§80): Midnight lists
-		-- professions only, and on Ahia, 12.1.5, Master Riding 90265 answered known and the three
-		-- below it not. `IsSpellKnown` first; `C_SpellBook.IsSpellKnown` where it is gone.
-		do
-			local heldKnown, heldBook = _G.IsSpellKnown, _G.C_SpellBook
-			local asked = {}
-			_G.IsSpellKnown = function(spell) asked[#asked + 1] = spell return spell == 90265 end
-			Family.Database:SetMeta(key, { skills = Family.CLEAR })
-			Family.Mounts:Recompute(key)
-			meta = Family.Database:Meta(key)
-			check("with no riding skill on the sheet, the riding spell known sets the rank",
-				key == Family:CurrentMember() and meta.mount == 100 and meta.mountFly == 310
-					and asked[1] == 90265,
-				tostring(meta.mount) .. " " .. tostring(meta.mountFly))
-
-			_G.IsSpellKnown = nil
-			_G.C_SpellBook = { IsSpellKnown = function(spell) return spell == 34090 end }
-			Family.Mounts:Recompute(key)
-			meta = Family.Database:Meta(key)
-			check("asked of C_SpellBook where IsSpellKnown is gone, the highest rank known first",
-				meta.mount == 100 and meta.mountFly == 150,
-				tostring(meta.mount) .. " " .. tostring(meta.mountFly))
-
-			-- And never of somebody else: a spell known is this player's, not a sibling's. The same
-			-- record, read while another character is being played.
-			local playing = Family.CurrentMember
-			Family.CurrentMember = function() return "Someone-Else" end
-			Family.Mounts:Recompute(key)
-			Family.CurrentMember = playing
-			meta = Family.Database:Meta(key)
-			check("while another member's rank is not read off this player's spells",
-				meta.mountFly == nil,
-				tostring(meta.mount) .. " " .. tostring(meta.mountFly))
-
-			_G.IsSpellKnown, _G.C_SpellBook = heldKnown, heldBook
-			Family.Database:SetMeta(key, { skills = { [762] = { rank = 375 } } })
-		end
-
 		-- And the mirror, which is the half that catches people out: a ground mount stops at
 		-- Journeyman's hundred however high the skill goes, because its type has no rung above.
 		JOURNAL[2][3], JOURNAL[3][3] = false, false
