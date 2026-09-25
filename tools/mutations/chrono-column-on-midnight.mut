@@ -1,0 +1,6 @@
+name: the Chrono column is drawn on Midnight, which has no Chronoboon
+file: addons/Family_UI/Summary.lua
+--- old
+		if not column.needs or Family.Capabilities:Has(column.needs) then
+--- new
+		if true then

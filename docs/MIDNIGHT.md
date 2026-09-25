@@ -3405,3 +3405,12 @@ A price for each item that matches the house to the copper comes from the right 
 by the right quantity, on the right item. So the Mists positions - quantity at 3, the lot's price at
 10, the item at 17 - hold on Midnight 12.1.0. One item is the whole of this evidence. A second one
 seen to disagree would reopen it.
+
+## 93. No Chrono column on Midnight (2026-09-25)
+
+The Miscellaneous set's Chrono column counts the world buffs a Chronoboon Displacer has banked, an
+item of the Classic game. Midnight has no world buffs to bank, and the column stood there empty on
+every row. It is now a capability, `chronoboon`, true on the three Classic columns and absent for
+Midnight, and a summary column may name the feature it `needs`; the panel asks when it draws, so
+Era, Burning Crusade and Mists draw exactly what they drew before. One check reads the columns drawn
+under Midnight's build and under the harness's own, and one mutation draws it everywhere again.

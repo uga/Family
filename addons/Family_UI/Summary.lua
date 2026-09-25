@@ -635,7 +635,8 @@ local SETS = {
 			-- cronológico`, `Темпоральный манипулятор` - and four of those five share one.
 			-- "Boon" is what English players say and appears in nobody else's item at all,
 			-- which is §2.1's argument applied to a column heading.
-			{ key = "boon",   label = L["Chrono"],      width = 40,  justify = "RIGHT" },
+			{ key = "boon",   label = L["Chrono"],      width = 40,  justify = "RIGHT",
+				needs = "chronoboon" },
 		},
 	},
 }
@@ -737,9 +738,13 @@ end)
 local function columnsOf(set)
 	if set.whole then return set.build and set.build() or set.columns end
 
+	-- A column that `needs` a feature is drawn only where the game has it: asked at draw time,
+	-- because the capability table is filled after this file has loaded.
 	local columns = { MEMBER_COLUMN }
 	for _, column in ipairs(set.build and set.build() or set.columns) do
-		columns[#columns + 1] = column
+		if not column.needs or Family.Capabilities:Has(column.needs) then
+			columns[#columns + 1] = column
+		end
 	end
 	return columns
 end

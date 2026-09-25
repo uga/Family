@@ -18042,6 +18042,26 @@ do
 	Family.Database:SetMeta(key, { bagsSeen = heldSeen })
 	clickButton("Overview") clickButton("Miscellaneous")
 
+	-- Midnight has no Chronoboon, so no Chrono column; the Mount column beside it stays.
+	local function drawn(wanted)
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if column.key == wanted then return true end
+		end
+		return false
+	end
+	check("the Chrono column is drawn on this client", drawn("boon"))
+	do
+		local heldBuild = GetBuildInfo
+		GetBuildInfo = function() return "12.1.0", "69875", "Sep 15 2026", 120100 end
+		Family.Capabilities:Detect()
+		clickButton("Overview") clickButton("Miscellaneous")
+		check("and not on Midnight, where the Mount column still is",
+			not drawn("boon") and drawn("mount"))
+		GetBuildInfo = heldBuild
+		Family.Capabilities:Detect()
+		clickButton("Overview") clickButton("Miscellaneous")
+	end
+
 	-- The Guild cell, and the same §2.2 question asked of it.
 	--
 	-- Found by asking which column it ended up in, exactly as the boon cell above is - and

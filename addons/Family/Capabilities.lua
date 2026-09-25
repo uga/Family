@@ -138,6 +138,12 @@ local EXPECTED = {
 	-- on the PTR, 12.1.5, 2026-09-25: `C_MountJournal.IsDragonridingUnlocked()` true on Ahia and
 	-- the chosen style an aura on the character, 404464 or 404468 (`docs/MIDNIGHT.md` §85).
 	skyriding    = { [MIDNIGHT] = true },
+
+	-- **The Chronoboon Displacer**, which banks world buffs, and the Chrono column that counts
+	-- them. Measured on Era (DATASOURCES §3). On Burning Crusade and Mists the column is drawn
+	-- today and this keeps it so: whether the item is had there is `main`'s question, not this
+	-- branch's. Midnight has no world buffs to bank, so no column there, and the answer is no.
+	chronoboon   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
