@@ -553,6 +553,18 @@ local function isForbidden(space, name)
 	return name:find(FORBIDDEN_WORD, 1, true) ~= nil or FORBIDDEN[space .. "." .. name] == true
 end
 
+-- **And one that takes the client down.** Version 20 on the Midnight PTR, 12.1.5 build 69952,
+-- 2026-09-25: the game stopped at the loading screen with `BC_ASSERT(this->m_has_value)`, and its
+-- crash log has this file's sweep on the Lua stack calling
+-- `C_HousingCustomizeMode.GetSelectedDecorPetInfo()` - which the live build, 12.1.0, had answered
+-- in the same sweep. An assertion inside the client is not a Lua error, so no `pcall` catches it
+-- (L-200's shape). Named, as `FORBIDDEN`'s eighth is: one name, seen on one build, on one day.
+local CRASHES = { ["C_HousingCustomizeMode.GetSelectedDecorPetInfo"] = true }
+
+local function crashes(space, name)
+	return CRASHES[space .. "." .. name] == true
+end
+
 local function mayDiscover()
 	local interface = select(4, GetBuildInfo())
 	return type(interface) == "number" and interface >= DISCOVER_FROM
@@ -588,7 +600,7 @@ function discover(word)
 			lines[#lines + 1] = ("%s: found by a word from the briefs and not on the list of "
 				.. "namespaces this sweep calls, so it is listed and not called"):format(space)
 		else
-			local names, refused, forbidden = {}, {}, {}
+			local names, refused, forbidden, crashed = {}, {}, {}, {}
 			for key, value in pairs(_G[space]) do
 				local text = tostring(key)
 				if type(value) == "function" then
@@ -598,6 +610,8 @@ function discover(word)
 						end
 					elseif isForbidden(space, text) then
 						forbidden[#forbidden + 1] = text
+					elseif crashes(space, text) then
+						crashed[#crashed + 1] = text
 					else
 						names[#names + 1] = text
 					end
@@ -622,6 +636,12 @@ function discover(word)
 				lines[#lines + 1] = ("%s: %d name(s) the client allows only its own interface, "
 					.. "so are listed and not called: %s")
 					:format(space, #forbidden, table.concat(forbidden, " "))
+			end
+			if #crashed > 0 then
+				table.sort(crashed)
+				lines[#lines + 1] = ("%s: %d name(s) that have taken a client down when called "
+					.. "with nothing, so are listed and not called: %s")
+					:format(space, #crashed, table.concat(crashed, " "))
 			end
 			for _, name in ipairs(names) do lines[#lines + 1] = ask({ space .. "." .. name }) end
 		end

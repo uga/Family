@@ -69,6 +69,10 @@ local function stubs(interface)
 		-- Both count themselves, so calling either makes the claims below go red.
 		GetHoveredDecorDebugInfo = function() forbidden = forbidden + 1 end,
 	}
+	-- The one that took the PTR down on 2026-09-25. Counts itself with the forbidden ones.
+	_G.C_HousingCustomizeMode = {
+		GetSelectedDecorPetInfo = function() forbidden = forbidden + 1 end,
+	}
 	_G.C_HousingDecor = {
 		GetAllPlacedDecor = function() forbidden = forbidden + 1 end,
 		GetDecorCount = function() called = called + 1 return 3 end,
@@ -299,6 +303,12 @@ check("and both are written into the run, so the list is audited by reading",
 	swept:find("the client allows only its own interface", 1, true) ~= nil
 		and swept:find("GetHoveredDecorDebugInfo", 1, true) ~= nil
 		and swept:find("GetAllPlacedDecor", 1, true) ~= nil, swept)
+-- The one that took the Midnight PTR down at the loading screen, 2026-09-25: an assertion in the
+-- client, which no pcall catches. Its stub counts itself with the forbidden ones above.
+check("a read that has taken a client down is not called, and is written into the run",
+	swept:find("C_HousingCustomizeMode.GetSelectedDecorPetInfo() answers", 1, true) == nil
+		and swept:find("have taken a client down", 1, true) ~= nil
+		and swept:find("GetSelectedDecorPetInfo", 1, true) ~= nil, swept)
 check("while an ordinary read in the same namespace is still called",
 	swept:find("C_HousingDecor.GetDecorCount() answers 3", 1, true) ~= nil, swept)
 

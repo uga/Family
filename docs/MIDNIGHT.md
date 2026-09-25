@@ -3112,3 +3112,20 @@ beside `120100` on line 1 of `Family.toc`, `Family_UI.toc` and `FamilySurface.to
 them as current. Family reads the expansion as `floor(interface / 10000)`, 12 for both, so nothing
 else tells the two apart. The harness's fourth pretend client stays the live build, which is the one
 measured and the one that ships.
+
+## 72. The probe took the PTR down at the loading screen (2026-09-25)
+
+First login on the PTR with the four addons in: the client stopped before entering the world with
+`BC_ASSERT(this->m_has_value)` (`WowT.exe`, 12.1.5 build 69952, Ahia-Fyrakk). The crash log's Lua
+stack: `FamilySurface.lua:370`, `ask`, calling **`C_HousingCustomizeMode.GetSelectedDecorPetInfo`**
+with no arguments, from `discover` at line 626, from the login run at 1017. `LuaErrors 0`, current
+addon `FamilySurface`. Family and Family_UI were loaded and are not on the stack.
+
+The live client, 12.1.0, answered the same sweep (§12, version 12's run): so the PTR build is
+where the call became fatal, and an assertion is not a Lua error, which no `pcall` catches (L-200's
+shape on Mists). Probe version 21 lists the name and does not call it; the selftest has a claim
+for it, seen to fail with the skip off, thirty-eight claims.
+
+The sweep has not run whole on this build, so another name further on may do the same. **The
+probe stays switched off on the PTR** unless a run is wanted, and a run there is a deliberate act
+whose crash, if any, is the reading.

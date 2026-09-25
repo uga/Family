@@ -94,6 +94,16 @@ the run saying so. That is what pays for the list's one cost: a namespace a futu
 not swept until somebody adds it, and this line is how the next reader sees the new name in the
 run and decides, rather than finding out because something was called.
 
+## The read that took a client down
+
+Version 20 on the Midnight PTR, 12.1.5 build 69952, 2026-09-25, stopped the game at the loading
+screen with `BC_ASSERT(this->m_has_value)`. The crash log has the sweep calling
+`C_HousingCustomizeMode.GetSelectedDecorPetInfo()` with nothing, a call the live 12.1.0 build had
+answered. An assertion in the client is not a Lua error and no `pcall` catches it. From version 21
+the name is listed and not called, and the run says so in a line of its own. **The PTR is not
+where the sweep has run whole**: another name further on may do the same, which is why the probe
+is switched off there unless a run is wanted.
+
 ## The reads the client keeps for itself
 
 Eight of the calls that run made raised `ADDON_ACTION_FORBIDDEN`, which put a dialog in front of
@@ -138,7 +148,7 @@ placed to answer, and asking for it at the far end is how a gate turns into a re
 sometimes skipped.
 
 It loads the addon with the real generated list, stubs the login path and fires `PLAYER_LOGIN` at
-interface 50504 and at 120100. Thirty-seven claims: that an action whose name begins with a read
+interface 50504 and at 120100. Thirty-eight claims: that an action whose name begins with a read
 word is not called even where the sweep runs, that the predicate which only looks like it still
 is, that the near miss is written down; that the sweep and both briefs' calls stay away
 from the first and still run on the second, that a skipped block says why it is short, that a
