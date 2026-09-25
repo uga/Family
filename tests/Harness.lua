@@ -12907,6 +12907,20 @@ check("the profession button is armed with the spell that opens it",
 check("and a recipe row knows whether there is a window to open",
 	recipeButton ~= nil, recipeButton and recipeButton.recipeName)
 
+-- **A row recorded with the question-mark picture takes the spell's** (§79): Midnight gives a
+-- tinker that makes no item, *Cardboard Assassin* 84425, the file 134400, and the game draws the
+-- spell's gear. **This file's**: the spell's picture, stood in for through `Names:Spell`.
+do
+	local spell = Family.Names.Spell
+	Family.Names.Spell = function(_, id) if id == 84425 then return "Cardboard Assassin", 136243 end end
+	local drawn = Family.UI.__recipeIcon({ spellID = 84425, icon = 134400 })
+	local kept = Family.UI.__recipeIcon({ spellID = 84425, icon = 7422725 })
+	Family.Names.Spell = spell
+	check("a row recorded with the question mark draws the spell's picture instead",
+		drawn == 136243, tostring(drawn))
+	check("while a row recorded with a real picture keeps it", kept == 7422725, tostring(kept))
+end
+
 -- **A recipe's rank is drawn beside its name** (§59): the game's window draws stars, and three
 -- rows of one name read as a list that repeats. A client with ranks writes them on the record;
 -- one is put on here and the list drawn again.

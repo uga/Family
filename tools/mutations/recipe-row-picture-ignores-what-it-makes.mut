@@ -2,7 +2,7 @@ name: a recipe row's picture ignores what the recipe makes and draws the Craft f
 file: addons/Family_UI/Professions.lua
 --- old
 	local made = recipe.itemID or Family.Recipes:Product(recipe.spellID)
-	local icon = made and Family:ItemIcon(made) or recipe.icon
+	local recorded = recipe.icon ~= QUESTION_MARK_FILE and recipe.icon or nil
 --- new
 	local made = recipe.itemID
-	local icon = made and Family:ItemIcon(made) or recipe.icon
+	local recorded = recipe.icon ~= QUESTION_MARK_FILE and recipe.icon or nil

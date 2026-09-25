@@ -3213,3 +3213,11 @@ as possessions, or a housing panel - he chose **nothing yet**: the panels Family
 first on Midnight. Housing stays §10's brief and the question stays his; when it comes back, the
 first step is targeted `/run`s on the PTR, never the probe's sweep, which crashed there on a housing
 call (§72).
+
+## 79. A tinker's picture: the recorded question mark is no picture (2026-09-25)
+
+After §74 the *Cardboard Assassin* row on the PTR still drew a question mark (Alberto's screenshot).
+Not the spell route: `recipeIcon` takes the product's picture, then the icon the row was recorded
+with, then the spell's - and the row was recorded with **134400, the question-mark file itself**
+(§59), so the spell's was never asked. 134400 is now read as no picture, and the spell's, through
+`Names:Spell` and `C_Spell` on Midnight, comes next, as the game's window draws it.

@@ -193,14 +193,23 @@ local ORDERS = {
 -- choosing and no item; the product is asked of the recipe, as the tooltip already does
 -- (`Recipes:Product`), and its picture of the client by id. Then what the window recorded, then
 -- the spell's own - which is right for an enchant that makes nothing.
+--
+-- **The question mark a row was recorded with is no picture.** Midnight gives a tinker's row -
+-- *Cardboard Assassin*, which makes no item - the question-mark file, 134400, and the game's own
+-- window draws the spell's gear instead (`docs/MIDNIGHT.md` §59, §79). Taken as a picture, it
+-- stopped the spell's from ever being asked.
+local QUESTION_MARK_FILE = 134400
+
 local function recipeIcon(recipe)
 	local made = recipe.itemID or Family.Recipes:Product(recipe.spellID)
-	local icon = made and Family:ItemIcon(made) or recipe.icon
+	local recorded = recipe.icon ~= QUESTION_MARK_FILE and recipe.icon or nil
+	local icon = made and Family:ItemIcon(made) or recorded
 	if not icon and recipe.spellID then
 		icon = select(2, Family.Names:Spell(recipe.spellID))
 	end
 	return icon or "Interface\\Icons\\INV_Misc_QuestionMark"
 end
+UI.__recipeIcon = recipeIcon
 
 --------------------------------------------------------------------------------------------
 -- And the orders for the list that is about everybody

@@ -1,0 +1,6 @@
+name: a row recorded with the question mark keeps it as its picture
+file: addons/Family_UI/Professions.lua
+--- old
+	local recorded = recipe.icon ~= QUESTION_MARK_FILE and recipe.icon or nil
+--- new
+	local recorded = recipe.icon
