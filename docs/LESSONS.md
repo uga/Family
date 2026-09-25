@@ -4978,3 +4978,15 @@ panel that means `visibleText` of the whole string.
 
 **Caught by:** `and the name and its difficulty are drawn whole` in the lockouts section, and the
 mutation `lockout-label-clipped-at-24`, which puts the old clip back.
+
+## L-127 — a `/run` line longer than the chat box takes, cut off mid-word
+
+**2026-09-25.** I gave Alberto a `/run` to print Heart of Fire's rows from the whole auction list
+and guessed it was about 245 characters. It was longer. The chat box keeps 255 characters, the
+text was cut inside `tostring`, and the game answered *'end' expected near '<eof>'*. The line was
+no longer needed by then, but it cost him a paste and a Lua error.
+
+**A `/run` for Alberto is counted before it is sent**, with `printf '%s' '<line>' | wc -c`, and
+kept under 255 including `/run `. Longer work is split across two lines with a global between them.
+
+**Caught by:** nothing automatic. The count is a step taken by hand.
