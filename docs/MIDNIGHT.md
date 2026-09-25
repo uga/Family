@@ -3221,3 +3221,25 @@ Not the spell route: `recipeIcon` takes the product's picture, then the icon the
 with, then the spell's - and the row was recorded with **134400, the question-mark file itself**
 (§59), so the spell's was never asked. 134400 is now read as no picture, and the spell's, through
 `Names:Spell` and `C_Spell` on Midnight, comes next, as the game's window draws it.
+
+## 80. The riding rank from Midnight's riding spells (2026-09-25)
+
+The Summary's Mount column was empty on the PTR for both characters. `Mounts:Recompute` reads the
+rank from the riding skill, 762, on the sheet, and asks the journal what there is to ride at that
+rank; Midnight's sheet lists professions only, so the rank was never there and the column had
+nothing to start from.
+
+Alberto's `/run` on Ahia, 12.1.5 build 69952: `IsSpellKnown` and `C_SpellBook.IsSpellKnown` both
+functions; *Apprentice Riding* 33388, *Journeyman* 33391, *Expert* 34090 not known and **Master
+Riding 90265 known** - only the highest rank learnt answers; `C_MountJournal.GetMountIDs()` 1683 ids.
+Alberto could not find riding shown anywhere in the game's own interface, so this reading is the
+only one there is.
+
+Where the sheet has no riding rank, the character being played now takes it from the highest
+riding spell known - 90265 → 375, 34091 → 300, 34090 → 225, 33391 → 150, 33388 → 75 - asked through
+`IsSpellKnown` and `C_SpellBook.IsSpellKnown` where it is gone, and the journal route runs as it
+did. A sibling's record is never read off this player's spells.
+
+**Not measured: that Midnight's speeds are `RidingLadder`'s.** The table is Mists' generated
+`MountCapability` - Master at 375 is 100% on the ground and 310% in the air. The column on the PTR
+is the first check; Midnight's skyriding is not in it at all.

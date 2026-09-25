@@ -1,0 +1,6 @@
+name: a riding spell is asked of C_SpellBook even where IsSpellKnown answers
+file: addons/Family/Mounts.lua
+--- old
+	local old = Family:TryCall(_G.IsSpellKnown, spell)
+--- new
+	local old = nil
