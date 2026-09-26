@@ -3673,3 +3673,11 @@ half. The mutation that guarded the old rule was pointed at the new line rather 
 the world-map check gained a vein, which only a pin is scored for. Four checks new and three
 rewritten, 3975 to 3979 in all; four mutations.
 Not yet seen in the game.
+
+## 105. §103 and §104 seen on the PTR (2026-09-26)
+
+Deiana, with 37 Ironwood Lumber in her bags. **On the minimap**, a blip reading *Ironwood Lumber*
+with the arrow Midnight puts beside it drew *Family possessions 37 / Deiana 37 (37 bags)*, and held
+there: so the block written after `SetMinimapMouseover` survives the refills, and the arrow's
+markup does not stand between the name and the match. **In the world**, the one-line tooltip on the
+tree drew the same block. Both reach the item by what the family holds, since lumber is on no list.
