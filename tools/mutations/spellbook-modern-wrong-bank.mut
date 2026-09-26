@@ -1,0 +1,6 @@
+name: Midnight's book is read from the pet's bank rather than the player's
+file: addons/Family/Scanners/Character.lua
+--- old
+	local PLAYER = banks.Player or 0
+--- new
+	local PLAYER = 1

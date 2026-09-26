@@ -1,0 +1,6 @@
+name: a specialisation the character is not playing is recorded as theirs
+file: addons/Family/Scanners/Character.lua
+--- old
+			and not aSpecialisation(info.offSpecID) then
+--- new
+			then

@@ -3050,6 +3050,40 @@ print("reputations on the fourth pretend client")
 	set("GetSpellInfo", nil)
 	set("GetSpellSubtext", nil)
 
+	-- **Midnight's book is `C_SpellBook`**, read on Maretta 2026-09-26 (`docs/MIDNIGHT.md` §117):
+	-- skill lines with an offset, a count and `offSpecID` on the specialisations not played, and
+	-- entries as tables, `itemType` 1 a spell and 4 a flyout whose id is `actionID`. The rows are
+	-- hers where they were read; the rest of each tab is this harness's own.
+	local LINES = {
+		{ name = "General", itemIndexOffset = 0, numSpellBookItems = 3 },
+		{ name = "Warrior", itemIndexOffset = 3, numSpellBookItems = 1 },
+		{ name = "Fury", itemIndexOffset = 4, numSpellBookItems = 1, specID = 72 },
+		{ name = "Arms", itemIndexOffset = 5, numSpellBookItems = 1, offSpecID = 71, specID = 71 },
+	}
+	local ITEMS = {
+		{ itemType = 1, spellID = 6603, actionID = 6603, name = "Auto Attack" },
+		{ itemType = 4, actionID = 229, name = "Skyriding" },
+		{ itemType = 2, spellID = 700002, actionID = 700002, name = "Not Yet" },
+		{ itemType = 1, spellID = 6673, actionID = 6673, name = "Battle Shout" },
+		{ itemType = 1, spellID = 23881, actionID = 23881, name = "Bloodthirst" },
+		{ itemType = 1, spellID = 12294, actionID = 12294, name = "Mortal Strike" },
+	}
+	set("C_SpellBook", {
+		GetNumSpellBookSkillLines = function() return #LINES end,
+		GetSpellBookSkillLineInfo = function(line) return LINES[line] end,
+		GetSpellBookItemInfo = function(index, bank)
+			if bank ~= 0 then return nil end
+			return ITEMS[index]
+		end,
+	})
+	set("GetFlyoutInfo", function(id) if id == 229 then return "Skyriding", "", 1, true end end)
+	set("GetFlyoutSlotInfo", function(id, slot)
+		if id == 229 and slot == 1 then return 372610, 372610, true, "Skyward Ascent" end
+	end)
+	set("C_Spell", { GetSpellInfo = function(id)
+		return { name = "Spell " .. tostring(id), iconID = 1, spellID = id }
+	end })
+
 	-- The list, with its headings opening and shutting as the client's do.
 	--
 	-- **Three rows are measured, with all seventeen keys.** *The War Within* (2569) and
@@ -3240,20 +3274,26 @@ print("reputations on the fourth pretend client")
 	check("a whole character scan still records the equipment",
 		payload and payload.equipment ~= nil)
 
-	-- And the spellbook, which cannot be read at all here. `ReadSpells` leaves on a tab count
-	-- of nought and answers nil, and `ScanNow` writes the key only if it got a book - so
-	-- nothing is stored, which is right.
-	check("and records no spellbook, because there is no spellbook to read",
-		payload and payload.spells == nil,
-		payload and payload.spells and (#payload.spells .. " schools") or "nothing")
+	-- **And the spellbook, through `C_SpellBook`**, where the old walk found no tabs and gave up.
+	local schools, spells = {}, {}
+	for _, school in ipairs(payload and payload.spells or {}) do
+		schools[#schools + 1] = school.name
+		for _, id in ipairs(school.spells) do spells[id] = school.name end
+	end
+	check("and records the spellbook, read through C_SpellBook where the old walk finds no tabs",
+		table.concat(schools, ",") == "General,Warrior,Fury", table.concat(schools, ","))
+	check("each spell under its tab, and the specialisation not played left out",
+		spells[6603] == "General" and spells[6673] == "Warrior" and spells[23881] == "Fury"
+			and spells[12294] == nil)
+	check("a spell to be learned later is not one she has, and a flyout keeps what is behind it",
+		spells[700002] == nil and spells[372610] == "General")
 
-	-- `specialisations = book and (branches or Family.CLEAR) or nil` is nil when the book is
-	-- nil, and `SetMeta` skips a nil field - so what another client learnt is left alone
-	-- rather than cleared. Exactly the case §26 found going the other way.
+	-- A book was read, and it holds none of the Classic trade branches, so the record now says
+	-- none rather than carrying what another client read: the rule is the book's, and the branch
+	-- of a trade Midnight does not have is not one this character has here.
 	local carried = stored.meta["Mirror-Midnight"]
-	check("and leaves the specialisations another client read, rather than clearing them",
-		carried and type(carried.specialisations) == "table"
-			and carried.specialisations[1] == "Swords",
+	check("and with a book read, the specialisations say none rather than what another client read",
+		carried and carried.specialisations == Family.CLEAR,
 		carried and tostring(carried.specialisations) or "no meta")
 
 	check("and records the three factions it read",

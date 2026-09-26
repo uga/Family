@@ -1,0 +1,6 @@
+name: where the old spellbook calls are gone C_SpellBook is not asked, and no book is recorded
+file: addons/Family/Scanners/Character.lua
+--- old
+	if tabs == 0 then return readModernBook({}) end
+--- new
+	if tabs == 0 then return nil end

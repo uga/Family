@@ -1,0 +1,6 @@
+name: a flyout's spells are dropped from Midnight's book
+file: addons/Family/Scanners/Character.lua
+--- old
+				elseif kind == FLYOUT and tonumber(item.actionID) then
+--- new
+				elseif false then

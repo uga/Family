@@ -434,9 +434,56 @@ local function heldByCharacter(kind, told)
 	return true
 end
 
+-- **Midnight's book, through `C_SpellBook`**, where the six old globals are gone (§17 of
+-- `docs/MIDNIGHT.md`). Read on Maretta, 2026-09-26 (§117): the tabs are *skill lines* -
+-- *General*, *Warrior*, then *Fury*, *Arms* and *Protection* - each a table with the offset and
+-- count this walk already uses, and `offSpecID` set on the specialisations she is not playing,
+-- 71 and 73, and nil on the one she is. An entry is a table: `itemType` 1 a spell, with its
+-- `spellID`; 4 a flyout, with its id in `actionID` and no spell - *Skyriding*, 229. Same rules as
+-- the old walk: another specialisation's tab is not hers, a spell is kept once, a flyout keeps
+-- the spells behind it, and a spell only to be learned later is not one she has.
+local function readModernBook(told)
+	local api = _G.C_SpellBook
+	local lines = tonumber((Family:TryCall(api and api.GetNumSpellBookSkillLines))) or 0
+	if lines == 0 then return nil end
+
+	local enum = _G.Enum or {}
+	local banks = enum.SpellBookSpellBank or {}
+	local kinds = enum.SpellBookItemType or {}
+	local PLAYER = banks.Player or 0
+	local SPELL, FLYOUT = kinds.Spell or 1, kinds.Flyout or 4
+
+	local book, seen = {}, {}
+	for line = 1, lines do
+		local info = Family:TryCall(api.GetSpellBookSkillLineInfo, line)
+		local offset = type(info) == "table" and tonumber(info.itemIndexOffset)
+		local count = type(info) == "table" and tonumber(info.numSpellBookItems)
+		if offset and count and count > 0 and info.name and not info.shouldHide
+			and not aSpecialisation(info.offSpecID) then
+			local school = { name = info.name, spells = {} }
+
+			for position = offset + 1, offset + count do
+				local item = Family:TryCall(api.GetSpellBookItemInfo, position, PLAYER)
+				local kind = type(item) == "table" and item.itemType
+				local spellID = type(item) == "table" and tonumber(item.spellID)
+				if kind == SPELL and spellID and not seen[spellID] then
+					seen[spellID] = true
+					school.spells[#school.spells + 1] = spellID
+				elseif kind == FLYOUT and tonumber(item.actionID) then
+					fromFlyout(tonumber(item.actionID), school.spells, seen, told)
+				end
+			end
+
+			if #school.spells > 0 then book[#book + 1] = school end
+		end
+	end
+
+	return #book > 0 and book or nil
+end
+
 function Character:ReadSpells()
 	local tabs = Family:TryCall(GetNumSpellTabs) or 0
-	if tabs == 0 then return nil end
+	if tabs == 0 then return readModernBook({}) end
 
 	local book = {}
 	local told = {}

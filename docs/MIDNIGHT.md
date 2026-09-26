@@ -3890,3 +3890,33 @@ which Mists reads, is unchanged: whether it has the same hole is `main`'s questi
 Four checks new and one widened, and five mutations, on a copy of Maretta's rows with *Legion* shut; one line the
 mutations showed did nothing came out, and the header mutation was moved to the line that now
 does its work. Not yet seen in the game.
+
+## 117. Midnight's spellbook, through `C_SpellBook` (2026-09-26)
+
+Alberto on the PTR: *we are not collecting the spellbook!* - Maretta's Spellbook page said *Nothing
+recorded for this member*. §17 had recorded the six old spellbook globals absent and the reader
+leaving on a tab count of nought, and nothing had given it another route.
+
+Read on Maretta, a Fury warrior:
+
+- `C_SpellBook.GetNumSpellBookSkillLines()` **5**. `GetSpellBookSkillLineInfo(i)` is a table:
+  *General* offset 0 and 16 entries; *Warrior* 61 and 21; *Fury* 82 and 12, `specID` 72 and no
+  `offSpecID`; *Arms* 95 and 15 and *Protection* 110 and 13, each with `offSpecID` set, 71 and 73.
+  `shouldHide` false for all. So the tab she plays carries no off-spec mark, and the two she does
+  not play do, which is the mark the old walk left out by on Mists.
+- `GetSpellBookItemInfo(i, Enum.SpellBookSpellBank.Player)` is a table: `itemType` **1** for a spell
+  with its `spellID` - *Auto Attack* 6603, *Recuperate* 1231411, *Revive Battle Pets* 125439 - and
+  **4** for a flyout, with no `spellID` and its id in `actionID`: *Skyriding* 229, *Skyriding Flight
+  Style* 243.
+- `GetFlyoutInfo(229)` answers *Skyriding*, so the flyout calls the old walk uses are still there.
+
+`Character:ReadSpells` now reads this book where `GetNumSpellTabs` answers nothing, by the old walk's
+rules: another specialisation's tab is not hers, a spell is kept once, a flyout keeps the spells
+behind it that she knows, and an entry of any other kind - a spell to be learned later among them -
+is not kept.
+
+**One change that follows.** The Classic trade branches, *Weaponsmith* and the like, are read out of
+the book, and were left alone on Midnight while there was no book. With a book read and none of
+those branches in it, the record now says none. Midnight has no such branches, so that is the
+reading. Three checks new and one rewritten, five mutations; `Surface.lua` gains three names. Not
+yet seen in the game.
