@@ -29,6 +29,12 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### The summary
+
+- **Hovering a line on the Cooldowns page describes that line's character.** After looking at
+  the Miscellaneous page, a crafting cooldown or lockout line could show another character's
+  tooltip, or none.
+
 ## 4.4.0 — 2026-09-23
 
 ### Herbs and ore in the world

@@ -42260,6 +42260,31 @@ print("instance lockouts, read, kept and drawn")
 	check("and the name and its difficulty are drawn whole",
 		visibleText("Hellfire Citadel: Ramparts  Heroic"))
 
+	-- **Each line's tooltip is about its own member**, after a set whose rows carried another
+	-- member's key for their tooltip (found on the Midnight branch, 2026-09-26). Raidera has a
+	-- crafting timer and a lock, so both kinds of line are asked.
+	Family.Database:SetMeta("Raidera-FireMaw", { craftCooldowns = { { name = "Transmute: Arcanite",
+		profession = 171, readyAt = time() + 3600 } } })
+	clickLastButton(Family.L["Miscellaneous"])
+	Family.UI:Refresh()
+	clickLastButton(Family.L["Cooldowns"])
+	Family.UI:Refresh()
+	local wrong, raideraLines = {}, 0
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and onScreen(f) and f.memberKey and f.__familyTooltip then
+			local _, _, lines = f.__familyTooltip(f)
+			local first = type(lines) == "table" and lines[1] and tostring(lines[1][1]) or ""
+			local name = tostring(f.memberName or f.memberKey)
+			if not first:find(name, 1, true) then wrong[#wrong + 1] = name .. ": " .. first end
+			if f.memberKey == "Raidera-FireMaw" then raideraLines = raideraLines + 1 end
+		end
+	end
+	check("a Cooldowns line's tooltip is about its own member, after Miscellaneous",
+		#wrong == 0 and raideraLines == 2,
+		table.concat(wrong, " | ") .. " / Raidera lines " .. raideraLines)
+	Family.Database:SetMeta("Raidera-FireMaw", { craftCooldowns = Family.CLEAR })
+	Family.UI:Refresh()
+
 	-- The section headings carry the column words, so the heading row above them carries none.
 	local worded = {}
 	for _, column in ipairs(Family.UI.__summaryColumns or {}) do

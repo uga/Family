@@ -3419,6 +3419,11 @@ local function build(frame)
 			-- row that kept the previous one's professions would be a sword offering to
 			-- open a forge if `opens` were ever set again above it.
 			row.professions = nil
+			-- And whose tooltip it answers for. The tooltip reads these before anything
+			-- else, and only `drawMember` set them: a Cooldowns line drawn on a row that had
+			-- held a Miscellaneous member described that member (found on the Midnight
+			-- branch, 2026-09-26). `drawMember` sets them again after this.
+			row.__skills, row.__places, row.__riding, row.__stock = nil, nil, nil, nil
 			layOut(row.cells, columns)
 			for index = 1, MAX_CELLS do setCell(row, index, "") end
 
