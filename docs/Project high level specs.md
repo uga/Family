@@ -311,6 +311,12 @@ own Raid Information window shows no progress (`docs/MIDNIGHT.md` §121).
 
 #### Values the client keeps secret
 
+Settled 2026-09-26 with nothing to build. Midnight hides some values from add-ons - in combat in an
+instance it says cooldowns are to be secret - and every read Family's scans make was taken in combat,
+and in an instance for a bag item's cooldown, and none came back secret. The one secret Family meets
+is tooltip text, which it reads as a line with no text rather than raising an error, so a tooltip
+line the game hides is simply not used (`docs/MIDNIGHT.md` §75, §123).
+
 **Waiting for Forever.** Family Midnight ships with what it has and with what Forever will have as
 well; a system only Midnight has joins after Forever is released (Alberto, 2026-09-26). So crafting
 orders, delves, the keystone a character holds, the Omnium Folio and profession specialisations

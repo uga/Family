@@ -4147,6 +4147,24 @@ false; `C_Secrets.HasSecretRestrictions()` answered **true**; `ShouldCooldownsBe
 cooldowns are not secret there. The bag-cooldown line printed nothing to record. The in-combat,
 in-instance reading is still to come.
 
+**In combat, in a dungeon, on the PTR** (*Rowdy Troublemaker says: Time to fight!*):
+`InCombatLockdown()` true, `IsInInstance()` true, `HasSecretRestrictions()` true;
+`ShouldCooldownsBeSecret()` **true** and `ShouldSpellCooldownBeSecret(6603)` **true** - and the one
+bag slot with a cooldown running, backpack slot 1, answered `GetContainerItemCooldown` with start and
+duration both **not** secret. So the game does hide cooldowns in combat in an instance, and the one
+cooldown Family reads there, an item's in a bag, is not among them.
+
+**What this settles for Midnight's first release.** Every read Family's scans make has now been
+taken in combat - the twelve of the *Secret Values: no* reading, and the item cooldown here in an
+instance - and none came back secret. The one place a secret has reached Family is tooltip text
+(§75), which `Family:TooltipText` already reads as a line with no text, inside `pcall`, seen working
+on the PTR (§77). `issecretvalue` exists and could ask first, but it has never been read beside a
+secret line - the creature asked about gave none - so replacing a guard that works with one never
+seen to answer would be a change made on trust. **Nothing is built; the heading in the
+specification says what Family does.** If a scan ever meets a secret value, the predicates are
+there and named here, and the reading to take first is `issecretvalue` beside the `pcall` on that
+value.
+
 **Read on Deiana, on the PTR, the cat out, the stable shut.** `C_StableInfo`: `ClosePetStables`,
 `GetActivePetList`, `GetAvailablePetSpecInfos`, `GetNumActivePets`, `GetNumStablePets`,
 `GetStablePetFoodTypes`, `GetStablePetInfo`, `GetStabledPetList`, `IsAtStableMaster`,
