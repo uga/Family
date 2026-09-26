@@ -1,0 +1,6 @@
+name: the currencies are drawn against the game's order
+file: addons/Family_UI/Character.lua
+--- old
+	table.sort(ordered, function(a, b) return (a.order or 1e9) < (b.order or 1e9) end)
+--- new
+	table.sort(ordered, function(a, b) return (a.order or 1e9) > (b.order or 1e9) end)

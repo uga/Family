@@ -3931,3 +3931,21 @@ Off* - so the flyout calls answer on Midnight as they did on Mists. The spell to
 on `CURRENCY_DISPLAY_UPDATE` printed nothing. So the call works on Midnight, and opening a heading is
 not announced as a currency change. The guard against the scan answering its own opening stays as a
 precaution that costs one comparison; it was not needed for this.
+
+## 118. One member's currencies, grouped as the game groups them (2026-09-26)
+
+The second part of Alberto's currency redesign. Where the record carries the headings §116 now keeps,
+Character > Currencies draws them as the game's window does: each heading a row, in the game's
+words, the currencies under it in the game's order, each still with its picture, amount and cap. A
+record with no headings - every Classic one, and anything read before §116 - keeps the flat list
+it had.
+
+**What starts open.** Every top heading, and a sub-heading only where it is its parent's only one:
+*Midnight > Season 2* opens with *Midnight*, and *Legacy*'s expansions start shut, each saying how
+many currencies it holds. A click on a heading opens or shuts it; the window's closing forgets
+what was clicked. Typing in the filter opens every heading and keeps only what matches, under the
+headings above it.
+
+Seven checks and seven mutations, on a few of Maretta's rows; the search check first passed
+without testing anything, because the search left *Warlords* as *Legacy*'s only sub-heading and so
+open anyway, and now shuts *Legacy* by hand before it searches. Not yet seen in the game.

@@ -1,0 +1,6 @@
+name: the top headings start shut, and the season's currencies with them
+file: addons/Family_UI/Character.lua
+--- old
+		if level == 1 then return true end
+--- new
+		if level == 1 then return false end

@@ -46298,6 +46298,87 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 end)()
 
 print()
+print("one member's currencies, grouped as the game groups them")
+
+-- Maretta's layout of 2026-09-26 (`docs/MIDNIGHT.md` §116, §118), a few rows of it: headings as the
+-- reader records them, each currency with its path and its place in the game's order.
+;(function()
+	local held = {
+		{ id = 3465, name = "Venomblight Manaflux", quantity = 8, order = 3,
+			group = { "Midnight", "Season 2" } },
+		{ id = 1792, name = "Honor", quantity = 1400, max = 15000, order = 5,
+			group = { "Player vs. Player" } },
+		{ id = 1220, name = "Order Resources", quantity = 27187, order = 9,
+			group = { "Legacy", "Legion" } },
+		{ id = 823, name = "Apexis Crystal", quantity = 102110, order = 11,
+			group = { "Legacy", "Warlords of Draenor" } },
+	}
+	local function said(lines)
+		local out = {}
+		for _, line in ipairs(lines or {}) do
+			if line.heading then
+				out[#out + 1] = (line.open and "-" or "+") .. line.heading
+			else
+				out[#out + 1] = line.currency.name
+			end
+		end
+		return table.concat(out, "|")
+	end
+
+	Family.UI.__currencyHeads = {}
+	check("a record with no headings keeps the flat list",
+		Family.UI:CurrencyRows({ { id = 1, name = "Honor", quantity = 1 } }) == nil)
+
+	local plain = said(Family.UI:CurrencyRows(held))
+	check("the game's groups in the game's order, Legacy's expansions shut and Season 2 open",
+		plain == "-Midnight|-Season 2|Venomblight Manaflux|-Player vs. Player|Honor|-Legacy"
+			.. "|+Legion|+Warlords of Draenor", plain)
+
+	Family.UI.__currencyHeads["Legacy\nLegion"] = true
+	local opened = said(Family.UI:CurrencyRows(held))
+	check("a click on Legion opens it, and Warlords stays shut",
+		opened:find("-Legion|Order Resources|+Warlords of Draenor", 1, true) ~= nil, opened)
+
+	Family.UI.__currencyHeads["Midnight"] = false
+	local shut = said(Family.UI:CurrencyRows(held))
+	check("and a top heading shut hides everything under it, headings too",
+		shut:find("+Midnight|-Player vs. Player", 1, true) == 1, shut)
+
+	-- With Legacy shut by hand, which is what a search has to see past.
+	Family.UI.__currencyHeads["Legacy"] = false
+	local searched = said(Family.UI:CurrencyRows(held, function(name)
+		return type(name) == "string" and name:find("Apexis", 1, true) ~= nil
+	end))
+	check("a search opens every heading and keeps only what matches, under its headings",
+		searched == "-Legacy|-Warlords of Draenor|Apexis Crystal", searched)
+	Family.UI.__currencyHeads = {}
+
+	-- **And the panel draws it**, a heading being a row a click opens.
+	local key = Family:CurrentMember()
+	local heldMeta = Family.Database:Meta(key)
+	local before, beforeSeen = heldMeta.currencies, heldMeta.currenciesSeen
+	Family.Database:SetMeta(key, { currencies = held, currenciesSeen = time() })
+	Family.UI:ShowTab("character")
+	clickButton("Currencies")
+	Family.UI:Refresh()
+	check("the member's Currencies page draws the groups, Legion shut",
+		drawnText("Player vs. Player") and drawnText("+ Legion") and not drawnText("Order Resources"))
+	local heading
+	for _, f in ipairs(frames) do
+		local left = rawget(f, "left")
+		if f.__shown == true and left and type(left.__text) == "string"
+			and left.__text:find("+ Legion", 1, true) and f.__scripts.OnClick then
+			heading = f
+		end
+	end
+	if heading then fireClick(heading) end
+	check("and a click on its heading opens it", heading ~= nil and drawnText("Order Resources"))
+	Family.Database:SetMeta(key, { currencies = before or Family.CLEAR,
+		currenciesSeen = beforeSeen or Family.CLEAR })
+	Family.UI.__currencyHeads = {}
+end)()
+
+print()
 print("a large family grown from real records, tools/grow-family.lua")
 
 -- **On two small invented files, never on `tools/live/`.** The tool is run the way Alberto runs it,

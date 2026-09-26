@@ -1,0 +1,6 @@
+name: the older expansions under Legacy start open, a page of every currency ever held
+file: addons/Family_UI/Character.lua
+--- old
+		return (subs[keyOf(path, level - 1)] or 0) <= 1
+--- new
+		return true

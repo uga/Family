@@ -1,0 +1,6 @@
+name: a heading the player opened goes back to its default
+file: addons/Family_UI/Character.lua
+--- old
+		if chosen ~= nil then return chosen end
+--- new
+

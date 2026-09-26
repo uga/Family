@@ -1,0 +1,6 @@
+name: a search leaves shut headings shut, hiding what it found
+file: addons/Family_UI/Character.lua
+--- old
+		if matching then return true end
+--- new
+

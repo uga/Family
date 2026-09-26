@@ -1,0 +1,6 @@
+name: a click on a currency heading leaves it as it was
+file: addons/Family_UI/Character.lua
+--- old
+				UI.__currencyHeads[self.expandCurrency.key] = not self.expandCurrency.open
+--- new
+				UI.__currencyHeads[self.expandCurrency.key] = self.expandCurrency.open

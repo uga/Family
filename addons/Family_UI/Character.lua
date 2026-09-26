@@ -170,7 +170,78 @@ end
 UI:OnFold("character", function()
 	UI.__openFaction = nil
 	UI.__openQuest = nil
+	UI.__currencyHeads = {}
 end)
+
+-- Which currency headings are open, by their path; nil means the default below.
+UI.__currencyHeads = {}
+
+-- **One member's currencies as the game's window lays them out**, as a list of lines: a heading
+-- line wherever the path changes, then the currencies under it in the game's order. Nil where no
+-- currency carries a heading, which is every list read before 2026-09-26 and every Classic one.
+--
+-- **What starts open**: every top heading, and a heading below one only where it is its parent's
+-- only sub-heading - so *Midnight > Season 2* is open and *Legacy*'s expansions are shut until a
+-- click opens one (Alberto, 2026-09-26). A search opens everything and shows only what matches,
+-- with the headings above it. Reached through `UI` because this file is near Lua's upvalue limit.
+function UI:CurrencyRows(held, matching)
+	local any = false
+	for _, currency in ipairs(held or {}) do
+		if currency.group then any = true break end
+	end
+	if not any then return nil end
+
+	local ordered = {}
+	for _, currency in ipairs(held) do
+		if not matching or matching(currency.name) then ordered[#ordered + 1] = currency end
+	end
+	table.sort(ordered, function(a, b) return (a.order or 1e9) < (b.order or 1e9) end)
+
+	local function keyOf(path, level) return table.concat(path, "\n", 1, level) end
+
+	-- How many sub-headings each heading holds, and how many currencies lie under each.
+	local subs, counts, seenSub = {}, {}, {}
+	for _, currency in ipairs(ordered) do
+		local path = currency.group or {}
+		for level = 1, #path do
+			local key = keyOf(path, level)
+			counts[key] = (counts[key] or 0) + 1
+			if level > 1 and not seenSub[key] then
+				seenSub[key] = true
+				local parent = keyOf(path, level - 1)
+				subs[parent] = (subs[parent] or 0) + 1
+			end
+		end
+	end
+
+	local function isOpen(path, level)
+		if matching then return true end
+		local key = keyOf(path, level)
+		local chosen = self.__currencyHeads[key]
+		if chosen ~= nil then return chosen end
+		if level == 1 then return true end
+		return (subs[keyOf(path, level - 1)] or 0) <= 1
+	end
+
+	local lines, previous = {}, {}
+	for _, currency in ipairs(ordered) do
+		local path = currency.group or {}
+		local shown = true
+		for level = 1, #path do
+			local key = keyOf(path, level)
+			local open = isOpen(path, level)
+			if shown and previous[level] ~= key then
+				lines[#lines + 1] = { heading = path[level], key = key, level = level,
+					open = open, count = counts[key] or 0 }
+				previous[level] = key
+				for deeper = level + 1, #previous do previous[deeper] = nil end
+			end
+			shown = shown and open
+		end
+		if shown then lines[#lines + 1] = { currency = currency, level = #path } end
+	end
+	return lines
+end
 
 -- How many of a faction's people are shown before the rest are folded away, and how much room
 -- their standing needs beside them. Three, because the ask was three and because a faction a
@@ -687,6 +758,13 @@ local function build(frame)
 				return
 			end
 
+			-- A currency heading, opened or shut.
+			if self.expandCurrency then
+				UI.__currencyHeads[self.expandCurrency.key] = not self.expandCurrency.open
+				frame:Refresh()
+				return
+			end
+
 			if self.questID or self.questTitle then
 				if UI:OpenQuest(self.memberKey, self.questID, self.questTitle) then
 					UI:StepAside()
@@ -798,6 +876,7 @@ local function build(frame)
 			-- widens it to hold a standing and a score together.
 			r.right:SetWidth(140)
 			r.expandFaction, r.expandQuest = nil, nil
+			r.expandCurrency = nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
 			r.progress = nil
@@ -1758,6 +1837,51 @@ local function build(frame)
 			if not held or #held == 0 then
 				return finish(L["|cff9d9d9dThis client offers no currencies, or this "
 					.. "member has never held one.|r"])
+			end
+
+			-- **Grouped as the game groups them**, where the record carries the headings: a
+			-- currency list read on Midnight does, a Classic one does not and keeps the flat list
+			-- below (Alberto, 2026-09-26; `docs/MIDNIGHT.md` §118).
+			local grouped = UI:CurrencyRows(held, (search:GetText() or "") ~= "" and matches or nil)
+			if grouped then
+				local shown = 0
+				for _, line in ipairs(grouped) do
+					local r = nextRow()
+					if line.heading then
+						r.left:SetText(string.format("%s|cff88bbff%s %s|r%s",
+							string.rep("  ", line.level - 1), line.open and "-" or "+", line.heading,
+							line.open and "" or string.format(" |cff888888(%d)|r", line.count)))
+						r.expandCurrency = { key = line.key, open = line.open }
+						r.highlight:Show()
+					else
+						local currency = line.currency
+						shown = shown + 1
+						local name = currency.name
+							or string.format(L["Currency #%s"], tostring(currency.id))
+						r.icon:SetTexture(currency.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+						r.left:SetText(string.rep("  ", line.level) .. name)
+						r.middle:SetText(string.format("|cffffd700%s|r",
+							tostring(currency.quantity or 0)))
+						if currency.max then
+							local room = currency.max - (currency.quantity or 0)
+							r.right:SetText(string.format(L["%s%s|r  |cff888888(%s to go)|r"],
+								room <= 0 and "|cffff8040" or "|cff888888",
+								tostring(currency.max), tostring(math.max(room, 0))))
+						else
+							r.right:SetText(L["|cff9d9d9dno cap|r"])
+						end
+						r.currencyID = currency.id
+						r.fallback = { { name },
+							{ tostring(currency.quantity or 0),
+								currency.max and tostring(currency.max) or "" } }
+					end
+				end
+
+				status:SetText(string.format(#held == 1
+					and L["|cffffd700%d|r currency   |cff888888|||r   seen %s"]
+					or L["|cffffd700%d|r currencies   |cff888888|||r   seen %s"],
+					#held, UI:Ago(member.meta.currenciesSeen)))
+				return finish()
 			end
 
 			-- Most held first, which is the same order the summary picks its columns in.

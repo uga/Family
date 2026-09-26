@@ -1,0 +1,6 @@
+name: the member's currencies are drawn flat whatever headings were recorded
+file: addons/Family_UI/Character.lua
+--- old
+			local grouped = UI:CurrencyRows(held, (search:GetText() or "") ~= "" and matches or nil)
+--- new
+			local grouped = nil
