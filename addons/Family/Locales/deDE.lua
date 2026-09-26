@@ -418,6 +418,12 @@ Family.locales.deDE = {
 	["|cff9d9d9dNever activated - nothing recorded.|r"] = "|cff9d9d9dNie aktiviert - nichts aufgezeichnet.|r",
 	["|cffffaa00Nothing recorded for this specialisation.|r"] = "|cffffaa00Nichts für diese Spezialisierung aufgezeichnet.|r",
 	["|cff88bbff%s|r%s   |cff888888|||r   one talent a tier%s   |cff888888|||r   seen %s"] = "|cff88bbff%s|r%s   |cff888888|||r   ein Talent pro Stufe%s   |cff888888|||r   gesehen %s",
+	["|cff88bbff%s|r%s%s%s   |cff888888|||r   seen %s"] = "|cff88bbff%s|r%s%s%s   |cff888888|||r   gesehen %s",
+	["Hero talents"] = "Heldentalente",
+	["Other"] = "Sonstige",
+	["|cffffd700%d|r spent |cff40bf40(%d to spend)|r"] = "|cffffd700%d|r ausgegeben |cff40bf40(%d zu vergeben)|r",
+	["|cffffd700%d|r spent"] = "|cffffd700%d|r ausgegeben",
+	["|cff9d9d9dnothing taken|r"] = "|cff9d9d9dnichts gewählt|r",
 	["|cffffaa00no talent grid could be read on this client.|r Please report what |cffffd700/family talentprobe|r prints."] = "|cffffaa00Auf diesem Client konnte kein Talentraster gelesen werden.|r Bitte melde, was |cffffd700/family talentprobe|r ausgibt.",
 	["|cffffaa00no talent data could be read on this client|r (%s, %d group(s)). Please report this with /family caps, and with /family talentprobe if it says choices."] = "|cffffaa00Auf diesem Client konnten keine Talentdaten gelesen werden|r (%s, %d Gruppe(n)). Bitte melde dies mit /family caps, und mit /family talentprobe, falls es choices sagt.",
 

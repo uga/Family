@@ -1,0 +1,6 @@
+name: playing one specialisation throws away what was recorded for the others
+file: addons/Family/Scanners/Talents.lua
+--- old
+		for at, kept in pairs(previous.groups or {}) do groups[at] = kept end
+--- new
+

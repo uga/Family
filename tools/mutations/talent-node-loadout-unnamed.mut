@@ -1,0 +1,6 @@
+name: the loadout's name is not kept
+file: addons/Family/Scanners/Talents.lua
+--- old
+	local result = { system = "nodes", loadout = config.name, talents = {}, points = {},
+--- new
+	local result = { system = "nodes", loadout = nil, talents = {}, points = {},

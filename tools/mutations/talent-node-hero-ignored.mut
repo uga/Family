@@ -1,0 +1,6 @@
+name: a hero talent is filed by its cost rather than under its hero tree
+file: addons/Family/Scanners/Talents.lua
+--- old
+				if node.subTreeID then
+--- new
+				if false then

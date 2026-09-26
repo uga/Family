@@ -1,0 +1,6 @@
+name: the panel draws a node record as Mists tiers
+file: addons/Family_UI/Talents.lua
+--- old
+		if data.system == "nodes" then
+--- new
+		if false then

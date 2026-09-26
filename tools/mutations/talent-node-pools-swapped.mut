@@ -1,0 +1,6 @@
+name: the class and specialisation pools are taken the other way round
+file: addons/Family/Scanners/Talents.lua
+--- old
+local NODE_SIDES = { "class", "spec" }
+--- new
+local NODE_SIDES = { "spec", "class" }

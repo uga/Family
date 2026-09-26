@@ -77,7 +77,11 @@ local TITLE = 24
 local function build(frame)
 	local section = SECTIONS[1]
 	local sectionButtons = {}
-	local group = 1
+	-- Nil until a member is drawn: on Midnight it then opens on the specialisation being
+	-- played, and elsewhere on the first, as it always has.
+	local group
+	-- How many the Spec button goes round, set by each draw.
+	local groupTotal = 2
 
 	local rows = {}           -- the spellbook's lines
 	local cells = {}          -- the talent icons
@@ -88,7 +92,7 @@ local function build(frame)
 
 	local picker = UI:CreateMemberPicker(frame, 200, membersKnown, function()
 		if search then search:SetText("") end
-		group = 1
+		group = nil
 		frame:Refresh()
 	end)
 	picker:SetPoint("TOPLEFT", 0, -2)
@@ -97,7 +101,7 @@ local function build(frame)
 	spec:SetSize(90, 22)
 	spec:SetPoint("LEFT", picker, "RIGHT", 8, 0)
 	spec:SetScript("OnClick", function()
-		group = (group == 1) and 2 or 1
+		group = ((group or 1) % groupTotal) + 1
 		frame:Refresh()
 	end)
 
@@ -823,12 +827,15 @@ local function build(frame)
 		end
 
 		local count = talents.groupCount or 1
-		spec:Show()
-		spec:SetText(count > 1 and string.format(L["Spec %d"], group) or L["Spec"])
-		spec:SetEnabled(count > 1)
+		groupTotal = math.max(count, 1)
+		group = group or (talents.system == "nodes" and talents.activeGroup) or 1
 		if group > count then group = 1 end
 
 		local data = talents.groups and talents.groups[group]
+
+		spec:Show()
+		spec:SetText(count > 1 and string.format(L["Spec %d"], group) or L["Spec"])
+		spec:SetEnabled(count > 1)
 
 		if not data then
 			return finish(L["|cffffaa00Nothing recorded for this specialisation.|r"])
@@ -929,6 +936,86 @@ local function build(frame)
 			end
 
 			y = TITLE + deepest * CELL + 8
+			return finish()
+		end
+
+		----------------------------------------------------------------------------------
+		-- Midnight: the talents taken, as a list under the class, the specialisation and
+		-- each hero tree. A list and not the game's tree, chosen by Alberto 2026-09-26 -
+		-- *at least for now* (`docs/MIDNIGHT.md` §94).
+		----------------------------------------------------------------------------------
+
+		if data.system == "nodes" then
+			rowHeight = ROW * 2
+			local chosen = specOf(data.specID)
+
+			status:SetText(string.format(L["|cff88bbff%s|r%s%s%s   |cff888888|||r   seen %s"],
+				chosen.label,
+				chosen.role and string.format(L[" |cff888888- %s|r"], chosen.role) or "",
+				data.loadout and ("   |cff888888|||r   " .. data.loadout) or "",
+				count > 1 and string.format(
+					L["   |cff888888|||r   specialisation %d of %d%s"],
+					group, count,
+					group == (talents.activeGroup or 1) and L[" |cff40bf40(active)|r"] or "")
+					or "",
+				UI:Ago(talents.seen)))
+
+			-- The headings, in the order the game shows its trees: the class on the left, the
+			-- specialisation on the right, the hero talents below them.
+			local classNames = _G.LOCALIZED_CLASS_NAMES_MALE
+			local order, titles, bySide = {}, {}, {}
+			local function side(key, title)
+				if bySide[key] then return end
+				bySide[key] = {}
+				order[#order + 1] = key
+				titles[key] = title
+			end
+			side("class", classNames and classNames[member.meta.classFile]
+				or member.meta.classFile or L["Class"])
+			side("spec", chosen.label)
+
+			for _, talent in ipairs(data.talents or {}) do
+				local key = talent.side
+				if key == "hero" then
+					key = "hero:" .. tostring(talent.hero)
+					side(key, (data.heroes or {})[talent.hero] or L["Hero talents"])
+				elseif key ~= "class" and key ~= "spec" then
+					key = "other"
+					side(key, L["Other"])
+				end
+				local name, icon = Family.Names:Spell(talent.spellID)
+				if matches(name) then
+					local list = bySide[key]
+					list[#list + 1] = { talent = talent, name = name, icon = icon }
+				end
+			end
+
+			for _, key in ipairs(order) do
+				local heading = nextRow()
+				heading.left:SetText("|cff88bbff" .. titles[key] .. "|r")
+				local points = (data.points or {})[key]
+				if points then
+					heading.middle:SetText(string.format(points.left > 0
+						and L["|cffffd700%d|r spent |cff40bf40(%d to spend)|r"]
+						or L["|cffffd700%d|r spent"], points.spent, points.left))
+				end
+
+				if #bySide[key] == 0 and (search:GetText() or "") == "" then
+					heading.right:SetText(L["|cff9d9d9dnothing taken|r"])
+				end
+
+				for _, shown in ipairs(bySide[key]) do
+					local r = nextRow()
+					local talent = shown.talent
+					r.spellID = talent.spellID
+					if shown.icon then r.icon:SetTexture(shown.icon) end
+					r.middle:SetText(shown.name or ("#" .. tostring(talent.spellID)))
+					r.right:SetText((talent.maxRank or 1) > 1
+						and string.format("|cff888888%d/%d|r", talent.rank or 0, talent.maxRank)
+						or "")
+				end
+			end
+
 			return finish()
 		end
 

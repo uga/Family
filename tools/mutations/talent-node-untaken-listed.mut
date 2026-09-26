@@ -1,0 +1,6 @@
+name: a node with no rank taken is listed as a talent
+file: addons/Family/Scanners/Talents.lua
+--- old
+			local entryID = rank > 0 and type(node.activeEntry) == "table"
+--- new
+			local entryID = type(node.activeEntry) == "table"

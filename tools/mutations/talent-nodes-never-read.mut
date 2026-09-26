@@ -1,0 +1,6 @@
+name: Midnight's talents are read by the Mists grid reader, which draws seven empty tiers
+file: addons/Family/Scanners/Talents.lua
+--- old
+	if Family.Capabilities:Has("talentNodes") then
+--- new
+	if false then

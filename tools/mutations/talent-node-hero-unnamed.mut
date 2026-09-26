@@ -1,0 +1,6 @@
+name: a hero tree is headed by a generic word, not its name
+file: addons/Family_UI/Talents.lua
+--- old
+					side(key, (data.heroes or {})[talent.hero] or L["Hero talents"])
+--- new
+					side(key, L["Hero talents"])

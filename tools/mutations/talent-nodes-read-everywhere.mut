@@ -1,0 +1,6 @@
+name: a client with no node trees asks for a loadout
+file: addons/Family/Scanners/Talents.lua
+--- old
+	if Family.Capabilities:Has("talentNodes") then
+--- new
+	if true then

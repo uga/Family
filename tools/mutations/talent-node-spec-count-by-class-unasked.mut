@@ -1,0 +1,6 @@
+name: the count of specialisations is not asked by class where the old call is gone
+file: addons/Family/Scanners/Talents.lua
+--- old
+		count = tonumber((Family:TryCall(api and api.GetNumSpecializationsForClassID, classID)))
+--- new
+		count = nil

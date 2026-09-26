@@ -418,6 +418,12 @@ Family.locales.ruRU = {
 	["|cff9d9d9dNever activated - nothing recorded.|r"] = "|cff9d9d9dНи разу не активировалась - ничего не записано.|r",
 	["|cffffaa00Nothing recorded for this specialisation.|r"] = "|cffffaa00Для этой специализации ничего не записано.|r",
 	["|cff88bbff%s|r%s   |cff888888|||r   one talent a tier%s   |cff888888|||r   seen %s"] = "|cff88bbff%s|r%s   |cff888888|||r   один талант на ярус%s   |cff888888|||r   замечено %s",
+	["|cff88bbff%s|r%s%s%s   |cff888888|||r   seen %s"] = "|cff88bbff%s|r%s%s%s   |cff888888|||r   замечено %s",
+	["Hero talents"] = "Героические таланты",
+	["Other"] = "Прочие",
+	["|cffffd700%d|r spent |cff40bf40(%d to spend)|r"] = "|cffffd700%d|r потрачено |cff40bf40(%d осталось)|r",
+	["|cffffd700%d|r spent"] = "|cffffd700%d|r потрачено",
+	["|cff9d9d9dnothing taken|r"] = "|cff9d9d9dничего не выбрано|r",
 	["|cffffaa00no talent grid could be read on this client.|r Please report what |cffffd700/family talentprobe|r prints."] = "|cffffaa00На этом клиенте не удалось прочитать сетку талантов.|r Пожалуйста, сообщите, что выводит |cffffd700/family talentprobe|r.",
 	["|cffffaa00no talent data could be read on this client|r (%s, %d group(s)). Please report this with /family caps, and with /family talentprobe if it says choices."] = "|cffffaa00На этом клиенте не удалось прочитать данные о талантах|r (%s, групп: %d). Пожалуйста, сообщите об этом с /family caps и с /family talentprobe, если он говорит choices.",
 

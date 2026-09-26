@@ -3439,3 +3439,29 @@ the bottom, three PvP slots at the bottom right, and a *Default Loadout* picker 
 **The spell, answered:** `C_Traits.GetEntryInfo(25147678, 112513).definitionID` is `117518`, whose
 `GetDefinitionInfo` gives spell `1247993`, *Motivated Murderer*. So a taken node leads to a spell
 id, which the client will name for any class - the same route `TalentSpells.lua` gives Classic.
+
+## 95. Midnight's talents read as nodes and drawn as a list (2026-09-26)
+
+A capability, `talentNodes`, seen on the PTR in §94, sends Midnight's scan to a reader of its own;
+Era, Burning Crusade and Mists keep theirs. The reader takes the active loadout, walks its tree, and
+keeps each node with a rank taken as its spell, its rank and highest rank, and its side: the class's
+or the specialisation's by the point pool it costs from, taken in the order `GetTreeCurrencyInfo`
+answered them, or a hero tree's by `subTreeID`, whose name `GetSubTreeInfo` gives. A node whose entry
+leads to no spell is left out. The list is kept in the tree's order, top first then left first,
+by `posY` and `posX` - two fields not yet seen on Midnight: where they are absent, the order is the
+node ids'. Each side's points spent and still to spend are kept beside it.
+
+**One record per specialisation.** Only the one being played can be read, so it is filed under its
+index, `GetSpecialization()`, and the others are kept as they were last seen; the count comes from
+`GetNumSpecializations` or, where that answers nothing, `GetNumSpecializationsForClassID` (§12). The
+scan also runs on `TRAIT_CONFIG_UPDATED`.
+
+**The panel** (§94, Alberto's choice): a heading for the class, one for the specialisation and one
+for each hero tree, each with its points, then the talents under it, a picture, the spell's name and
+a rank where there is more than one. *Other* holds a node whose pool is neither of the two, if any.
+The Spec button goes round all of the class's specialisations, not two.
+
+Not yet seen in the game: the hero heading and its name (Ahia has no hero talents), `posX`/`posY`,
+another specialisation's record, and the whole panel. Thirteen checks and fourteen mutations.
+`tools/FamilySurface/Surface.lua` is regenerated; the eleven names it gained include three from the
+flight-style work of §85, which had not been regenerated then.

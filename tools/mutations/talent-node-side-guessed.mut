@@ -1,0 +1,6 @@
+name: every talent is filed under the class, whatever pool it costs from
+file: addons/Family/Scanners/Talents.lua
+--- old
+					side = type(cost) == "table" and sideOf[cost.ID] or "other"
+--- new
+					side = "class"

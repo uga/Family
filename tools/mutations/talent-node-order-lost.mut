@@ -1,0 +1,6 @@
+name: the talents are listed in the client's node order, not the tree's
+file: addons/Family/Scanners/Talents.lua
+--- old
+		if a.y ~= b.y then return a.y < b.y end
+--- new
+

@@ -3488,6 +3488,14 @@ print("talents on the fourth pretend client")
 	check("this client claims no talent trees, so the tree reader is not the one asked",
 		Family.Capabilities:Has("talentTrees") == false)
 
+	-- Midnight's talents are read as nodes since 2026-09-26 (`docs/MIDNIGHT.md` §94), and that
+	-- reader has its own section. This one keeps the reading of the grid call as measured, so
+	-- the node route is switched off for it.
+	midnight.Capabilities = { Has = function(_, feature)
+		if feature == "talentNodes" then return false end
+		return Family.Capabilities:Has(feature)
+	end }
+
 	load("addons/Family/Scanners/Talents.lua", "Family", midnight)
 	midnight.Talents:Scan()
 
@@ -45708,6 +45716,161 @@ if RUN.storage == "compressed" then
 	check("and the log is appended to, so a run's whole turn can be read back",
 		text:find("and the log keeps all three True", 1, true) ~= nil, text)
 end
+
+print()
+print("Midnight's talents: one tree of nodes, drawn as a list")
+
+-- Ahia, an Assassination rogue on the PTR, 2026-09-26 (`docs/MIDNIGHT.md` §94). Measured: config
+-- 25147678 named *Assassination* with one tree, 852; the class's pool 2801 first, 13 spent and 8
+-- left, and the specialisation's 2800, 4 spent and 16 left; node 90628 at rank 1 of 1, entry 112513,
+-- definition 117518, spell 1247993 *Motivated Murderer*. The other nodes, spells, positions and the
+-- hero tree's name are this harness's own.
+;(function()
+	local key = Family:CurrentMember()
+	local was = {}
+	local function set(name, value)
+		was[name] = was[name] or { _G[name] }
+		_G[name] = value
+	end
+	local heldPayload = (Family.Database:Payload(key) or {}).talents
+	local heldSpecID = (Family.Database:Meta(key) or {}).specID
+
+	local NODES = {
+		[90628] = { activeRank = 1, maxRanks = 1, entry = 112513, posY = 300, posX = 100,
+			cost = 2801 },
+		[90700] = { activeRank = 2, maxRanks = 2, entry = 200, posY = 100, posX = 200, cost = 2800 },
+		[90701] = { activeRank = 0, maxRanks = 1, entry = 201, posY = 150, posX = 100, cost = 2801 },
+		[90702] = { activeRank = 1, maxRanks = 1, entry = 202, posY = 50, posX = 100, subTreeID = 52 },
+		[90703] = { activeRank = 1, maxRanks = 1, entry = 203, posY = 40, posX = 100, cost = 2988 },
+		[90704] = { activeRank = 1, maxRanks = 1, entry = 204, posY = 100, posX = 50, cost = 2801 },
+	}
+	local DEFINITIONS = { [112513] = 117518, [200] = 300, [201] = 301, [202] = 302, [203] = 303,
+		[204] = 304 }
+	local SPELLS = { [117518] = 1247993, [300] = 5001, [301] = 5009, [302] = 5002, [304] = 5004 }
+	local NAMES = { [1247993] = "Motivated Murderer", [5001] = "A Spec Talent",
+		[5002] = "A Hero Talent", [5004] = "A Class Talent", [5009] = "Not Taken" }
+	local spec = 1
+	local configAsked = 0
+
+	set("GetBuildInfo", function() return "12.1.5", "69952", "Sep 21 2026", 120105 end)
+	set("GetSpecialization", function() return spec end)
+	set("GetSpecializationInfo", function(index) return 258 + index end)
+	set("GetNumSpecializations", nil)
+	set("C_SpecializationInfo", { GetNumSpecializationsForClassID = function() return 3 end })
+	set("C_ClassTalents", { GetActiveConfigID = function()
+		configAsked = configAsked + 1
+		return 25147678
+	end })
+	set("C_Traits", {
+		GetConfigInfo = function(id)
+			if id ~= 25147678 then return nil end
+			return { name = "Assassination", type = 1, treeIDs = { 852 } }
+		end,
+		GetTreeCurrencyInfo = function()
+			return { { traitCurrencyID = 2801, quantity = 8, spent = 13, maxQuantity = 21 },
+				{ traitCurrencyID = 2800, quantity = 16, spent = 4, maxQuantity = 20 },
+				{ traitCurrencyID = 2986, quantity = 0, spent = 0, maxQuantity = 0 } }
+		end,
+		GetTreeNodes = function(tree)
+			if tree ~= 852 then return {} end
+			return { 90628, 90700, 90701, 90702, 90703, 90704 }
+		end,
+		GetNodeInfo = function(_, id)
+			local node = NODES[id]
+			return { ID = id, activeRank = node.activeRank, maxRanks = node.maxRanks,
+				activeEntry = { entryID = node.entry, rank = node.activeRank },
+				posX = node.posX, posY = node.posY, subTreeID = node.subTreeID }
+		end,
+		GetNodeCost = function(_, id)
+			local node = NODES[id]
+			return node.cost and { { ID = node.cost, amount = 1 } } or {}
+		end,
+		GetEntryInfo = function(_, entry) return { definitionID = DEFINITIONS[entry] } end,
+		GetDefinitionInfo = function(definition) return { spellID = SPELLS[definition] } end,
+		GetSubTreeInfo = function(_, id) return id == 52 and { name = "A Hero Tree" } or nil end,
+	})
+	local spellNames = Family.Names.Spell
+	Family.Names.Spell = function(_, id) return NAMES[id], 1000 + (id or 0) end
+
+	Family.Capabilities:Detect()
+	Family.Talents:Scan()
+	local talents = (Family.Database:Payload(key) or {}).talents or {}
+	local group = talents.groups and talents.groups[1]
+	check("Midnight's talents are read as nodes, for the specialisation being played",
+		talents.system == "nodes" and talents.activeGroup == 1 and group ~= nil
+			and group.specID == 259, tostring(talents.system))
+	check("and the class's count of specialisations is asked by class where the old call is gone",
+		talents.groupCount == 3, tostring(talents.groupCount))
+	check("with the loadout's name", group and group.loadout == "Assassination")
+
+	local bySpell = {}
+	for index, talent in ipairs(group and group.talents or {}) do
+		talent.at = index
+		bySpell[talent.spellID] = talent
+	end
+	check("a node taken is recorded as its spell, entry to definition to spell",
+		bySpell[1247993] ~= nil and bySpell[1247993].rank == 1 and bySpell[1247993].maxRank == 1)
+	check("and filed under the side whose pool it costs from",
+		bySpell[1247993] and bySpell[1247993].side == "class"
+			and bySpell[5001] and bySpell[5001].side == "spec" and bySpell[5001].rank == 2)
+	check("a hero node under its hero tree, which is named",
+		bySpell[5002] and bySpell[5002].side == "hero" and bySpell[5002].hero == 52
+			and group.heroes[52] == "A Hero Tree")
+	check("a node not taken is not listed, nor one whose entry leads to no spell",
+		bySpell[5009] == nil and #group.talents == 4, tostring(group and #group.talents))
+	check("in the order the tree reads, top first and left first",
+		bySpell[5002].at == 1 and bySpell[5004].at == 2 and bySpell[5001].at == 3
+			and bySpell[1247993].at == 4)
+	check("with each side's points spent and still to spend",
+		group.points.class and group.points.class.spent == 13 and group.points.class.left == 8
+			and group.points.spec and group.points.spec.spent == 4)
+	check("and the specialisation reaches meta", Family.Database:Meta(key).specID == 259)
+
+	-- Another specialisation played: it is recorded, and the first is kept as it was.
+	spec = 2
+	Family.Talents:Scan()
+	talents = Family.Database:Payload(key).talents
+	check("a second specialisation is recorded beside the first, which is kept",
+		talents.activeGroup == 2 and talents.groups[2] and talents.groups[2].specID == 260
+			and talents.groups[1] and talents.groups[1].specID == 259)
+
+	-- The panel: a list under the class, the specialisation and the hero tree.
+	Family.UI:ShowTab("talents")
+	clickButton("Talents")
+	Family.UI:Refresh()
+	check("the panel says which of the class's three specialisations it shows",
+		drawnText("A Spec Talent") and (visibleText("specialisation 1 of 3")
+			or visibleText("specialisation 2 of 3")))
+	check("and draws each talent taken by the name its spell has",
+		drawnText("Motivated Murderer") and drawnText("A Class Talent")
+			and drawnText("A Hero Talent") and not drawnText("Not Taken"))
+	check("under the hero tree's name, with a rank where there is more than one",
+		drawnText("A Hero Tree") and drawnText("2/2"))
+	check("and each side's points", drawnText("13|r spent") and drawnText("(8 to spend)"))
+	check("the Mists tiers are not drawn", not drawnText("nothing chosen"))
+
+	-- And no client whose game has no node trees asks for them.
+	set("GetBuildInfo", function() return "5.5.4", "69585", "Sep 1 2026", 50504 end)
+	Family.Capabilities:Detect()
+	configAsked = 0
+	Family.Database:SetPayload(key, (function()
+		local payload = Family.Database:Payload(key) or {}
+		payload.talents = nil
+		return payload
+	end)(), "talents")
+	Family.Talents:Scan()
+	check("and a client with no node trees never asks for a loadout", configAsked == 0,
+		tostring(configAsked))
+
+	Family.Names.Spell = spellNames
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+	Family.Capabilities:Detect()
+	local payload = Family.Database:Payload(key) or {}
+	payload.talents = heldPayload
+	Family.Database:SetPayload(key, payload, "talents")
+	Family.Database:SetMeta(key, { specID = heldSpecID or Family.CLEAR })
+	Family.UI:Refresh()
+end)()
 
 print()
 print("a large family grown from real records, tools/grow-family.lua")

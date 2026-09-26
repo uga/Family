@@ -1,0 +1,6 @@
+name: a side's heading does not say its points
+file: addons/Family_UI/Talents.lua
+--- old
+				if points then
+--- new
+				if false then

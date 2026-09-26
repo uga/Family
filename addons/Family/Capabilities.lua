@@ -144,6 +144,11 @@ local EXPECTED = {
 	-- today and this keeps it so: whether the item is had there is `main`'s question, not this
 	-- branch's. Midnight has no world buffs to bank, so no column there, and the answer is no.
 	chronoboon   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+
+	-- **Talents as a tree of nodes**, Midnight's: a class side, a specialisation side and hero
+	-- talents, with loadouts. Seen on the PTR, 12.1.5, 2026-09-26, on Ahia: the game's window, and
+	-- `C_Traits` answering one tree of 206 nodes for the active loadout (`docs/MIDNIGHT.md` §94).
+	talentNodes  = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -162,6 +167,7 @@ local CONFIRMED = {
 	-- Leatherworking*, measured from inside the click (Family_UI/Professions.lua).
 	addonCasts   = {                   [TBC] = true                 },
 	skyriding    = { [MIDNIGHT] = true },
+	talentNodes  = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

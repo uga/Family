@@ -14,6 +14,8 @@
 --            talents arranged in tiers and columns.
 --   choices  Mists. Six tiers, three mutually exclusive choices each, plus a
 --            specialisation chosen separately.
+--   nodes    Midnight. One tree of nodes per class, drawn by the game as the class's, the
+--            specialisation's and the hero talents; kept per specialisation.
 --
 -- Which one is in use is a capability question, not a guess (Capabilities.lua), and the two
 -- readers below share nothing but their output shape.
@@ -490,9 +492,150 @@ local function readChoices(group)
 end
 
 --------------------------------------------------------------------------------------------
+-- Midnight: one tree of nodes
+--
+-- The game draws two trees, the class's and the specialisation's, and hero talents below them.
+-- The client holds them as **one** tree: Ahia's active loadout, 2026-09-26, has one tree id,
+-- 852, of 206 nodes (`docs/MIDNIGHT.md` §94). Which side a node is on is the point pool it costs
+-- from: `GetTreeCurrencyInfo` answered the class's pool first (2801, 13 spent) and the
+-- specialisation's second (2800, 4 spent), and the ranks taken, summed by the pool each node
+-- costs from, came to 14 and 4. A hero node names its hero tree in `subTreeID`.
+--
+-- A node taken leads to a spell: its active entry, the entry's definition, the definition's
+-- spell - 112513, 117518, 1247993, *Motivated Murderer*. A spell the client names for any
+-- class, which is what lets another member's list be read (§2.1). A node whose entry leads to
+-- no spell - the one that picks a hero tree - is not a talent and is not listed.
+--
+-- Only the specialisation being played can be read, so each one is kept as it was last seen.
+--------------------------------------------------------------------------------------------
+
+local NODE_SIDES = { "class", "spec" }
+
+local function readNodes()
+	local traits, classTalents = _G.C_Traits, _G.C_ClassTalents
+	if not (traits and classTalents) then return nil end
+
+	local configID = Family:TryCall(classTalents.GetActiveConfigID)
+	local config = configID and Family:TryCall(traits.GetConfigInfo, configID)
+	if type(config) ~= "table" or type(config.treeIDs) ~= "table" then return nil end
+
+	local result = { system = "nodes", loadout = config.name, talents = {}, points = {},
+		heroes = {} }
+	local found = {}
+
+	for _, treeID in ipairs(config.treeIDs) do
+		local sideOf = {}
+		local pools = Family:TryCall(traits.GetTreeCurrencyInfo, configID, treeID, false)
+		for index, side in ipairs(NODE_SIDES) do
+			local pool = type(pools) == "table" and pools[index]
+			if type(pool) == "table" and pool.traitCurrencyID then
+				sideOf[pool.traitCurrencyID] = side
+				result.points[side] = { spent = tonumber(pool.spent) or 0,
+					left = tonumber(pool.quantity) or 0 }
+			end
+		end
+
+		local nodes = Family:TryCall(traits.GetTreeNodes, treeID)
+		for _, nodeID in ipairs(type(nodes) == "table" and nodes or {}) do
+			local node = Family:TryCall(traits.GetNodeInfo, configID, nodeID)
+			local rank = type(node) == "table" and tonumber(node.activeRank) or 0
+			local entryID = rank > 0 and type(node.activeEntry) == "table"
+				and node.activeEntry.entryID
+			local entry = entryID and Family:TryCall(traits.GetEntryInfo, configID, entryID)
+			local definition = type(entry) == "table" and entry.definitionID
+				and Family:TryCall(traits.GetDefinitionInfo, entry.definitionID)
+			local spellID = type(definition) == "table" and tonumber(definition.spellID)
+
+			if spellID then
+				local side, hero
+				if node.subTreeID then
+					side, hero = "hero", node.subTreeID
+					if not result.heroes[hero] then
+						local tree = Family:TryCall(traits.GetSubTreeInfo, configID, hero)
+						result.heroes[hero] = type(tree) == "table" and tree.name or false
+					end
+				else
+					local costs = Family:TryCall(traits.GetNodeCost, configID, nodeID)
+					local cost = type(costs) == "table" and costs[1]
+					side = type(cost) == "table" and sideOf[cost.ID] or "other"
+				end
+
+				found[#found + 1] = { spellID = spellID, rank = rank,
+					maxRank = tonumber(node.maxRanks) or rank, side = side, hero = hero,
+					y = tonumber(node.posY) or 0, x = tonumber(node.posX) or 0, node = nodeID }
+			end
+		end
+	end
+
+	-- Top of the tree first, as the game reads it; the position is not kept.
+	table.sort(found, function(a, b)
+		if a.y ~= b.y then return a.y < b.y end
+		if a.x ~= b.x then return a.x < b.x end
+		return a.node < b.node
+	end)
+	for _, talent in ipairs(found) do
+		result.talents[#result.talents + 1] = { spellID = talent.spellID, rank = talent.rank,
+			maxRank = talent.maxRank, side = talent.side, hero = talent.hero }
+	end
+
+	return result
+end
+
+-- The specialisation being played, and how many this class has. The old count first; Midnight
+-- answers the class's count by class id, 3 or 4 (`docs/MIDNIGHT.md` §12).
+local function specIndex()
+	local index = tonumber((Family:TryCall(GetSpecialization)))
+	if not index or index < 1 then return nil end
+	return index
+end
+
+local function specCount(index)
+	local count = tonumber((Family:TryCall(_G.GetNumSpecializations)))
+	if not count or count < 1 then
+		local api = _G.C_SpecializationInfo
+		local _, _, classID = UnitClass("player")
+		count = tonumber((Family:TryCall(api and api.GetNumSpecializationsForClassID, classID)))
+	end
+	return math.max(count or 0, index or 0, 1)
+end
+
+local function scanNodes(key, previous)
+	local index = specIndex() or 1
+	local data = readNodes() or { system = "nodes", talents = {}, points = {}, heroes = {} }
+	data.group = index
+	data.visited = true
+	data.specID = specIDFor(activeGroup())
+
+	-- The other specialisations, as they were when they were last played.
+	local groups = {}
+	if previous and previous.system == "nodes" then
+		for at, kept in pairs(previous.groups or {}) do groups[at] = kept end
+	end
+	groups[index] = data
+
+	local payload = Family.Database:Payload(key) or {}
+	payload.talents = {
+		seen = time(),
+		system = "nodes",
+		activeGroup = index,
+		groupCount = specCount(index),
+		groups = groups,
+	}
+	Family.Database:SetPayload(key, payload, "talents")
+	Family.Database:SetMeta(key, { specID = data.specID, talentPoints = nil })
+
+	Family:Debug("scanned talents: specialisation %d, %d talent(s)", index, #data.talents)
+end
+
+--------------------------------------------------------------------------------------------
 
 function Talents:Scan()
 	local key = Family:CurrentMember()
+
+	if Family.Capabilities:Has("talentNodes") then
+		return scanNodes(key, (Family.Database:Payload(key) or {}).talents)
+	end
+
 	local useTrees = Family.Capabilities:Has("talentTrees")
 
 	local groups = {}
@@ -627,6 +770,8 @@ Family:OnDatabaseReady("talents", function()
 		"CHARACTER_POINTS_CHANGED",
 		"ACTIVE_TALENT_GROUP_CHANGED",
 		"PLAYER_SPECIALIZATION_CHANGED",
+		-- Midnight's: a loadout changed or its changes were applied.
+		"TRAIT_CONFIG_UPDATED",
 	} do
 		Family:RegisterEvent(event, "talents", function() scanSoon(event) end)
 	end

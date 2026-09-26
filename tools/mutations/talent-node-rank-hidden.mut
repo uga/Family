@@ -1,0 +1,6 @@
+name: a talent with more than one rank does not say its rank
+file: addons/Family_UI/Talents.lua
+--- old
+					r.right:SetText((talent.maxRank or 1) > 1
+--- new
+					r.right:SetText(false
