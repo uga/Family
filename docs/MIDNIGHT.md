@@ -3435,3 +3435,7 @@ the bottom, three PvP slots at the bottom right, and a *Default Loadout* picker 
   are one tree to the client, class and specialisation nodes together.
 - The first node in that tree with a rank taken is `90628`: rank 1 of 1, active entry `112513`.
 - `C_Traits.GetEntryInfo(configID, 112513)` then `GetDefinitionInfo` gives the spell - asked next.
+
+**The spell, answered:** `C_Traits.GetEntryInfo(25147678, 112513).definitionID` is `117518`, whose
+`GetDefinitionInfo` gives spell `1247993`, *Motivated Murderer*. So a taken node leads to a spell
+id, which the client will name for any class - the same route `TalentSpells.lua` gives Classic.
