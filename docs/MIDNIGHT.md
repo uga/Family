@@ -3500,3 +3500,20 @@ inventing a word for it. A saved loadout's name, where one exists, is not yet re
 
 The same hunter's window shows what §96 had not seen: a hero tree, *Pack Leader*, with its talents
 taken, and ranks of 2 on both sides.
+
+## 98. Only the hero tree chosen (2026-09-26)
+
+Deiana, a Survival hunter with *Pack Leader* chosen, showed §95's list with a *Sentinel* heading
+above Pack Leader's, holding one talent, *Sentinel*. Two readings, both specialisations:
+
+- **Beast Mastery, no hero tree chosen** (*Choose your hero talents*):
+  `C_ClassTalents.GetActiveHeroTalentSpec()` **nil**, and two hero nodes with a rank taken -
+  94991 in tree 43, *Pack Leader*, and 109961 in tree 44, *Dark Ranger* - both with
+  `GetSubTreeInfo(...).isActive` false, `subTreeActive` false, `isVisible` true.
+- **Survival, Pack Leader chosen**: `GetActiveHeroTalentSpec()` **43**; eleven nodes of tree 43,
+  every one `isActive`, `subTreeActive` and `isVisible` true; and 94976 of tree 42, *Sentinel*,
+  `isActive` and `subTreeActive` false.
+
+So every hero tree's first node answers a rank whether the tree is chosen or not, and the game
+names the chosen tree. A hero node is now kept only where its tree is the one
+`GetActiveHeroTalentSpec` names, and none where it names none. Two checks, two mutations.

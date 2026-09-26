@@ -45740,30 +45740,38 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 			cost = 2800 },
 		[90700] = { activeRank = 2, maxRanks = 2, entry = 200, posY = 100, posX = 200, cost = 2800 },
 		[90705] = { activeRank = 1, maxRanks = 1, entry = 205, posY = 20, posX = 100, cost = 2801 },
+		-- The first node of a hero tree not chosen, which answers a rank of 1 all the same
+		-- (`docs/MIDNIGHT.md` §98).
+		[90706] = { activeRank = 1, maxRanks = 1, entry = 206, posY = 45, posX = 200, subTreeID = 53 },
 		[90701] = { activeRank = 0, maxRanks = 1, entry = 201, posY = 150, posX = 100, cost = 2801 },
 		[90702] = { activeRank = 1, maxRanks = 1, entry = 202, posY = 50, posX = 100, subTreeID = 52 },
 		[90703] = { activeRank = 1, maxRanks = 1, entry = 203, posY = 40, posX = 100, cost = 2988 },
 		[90704] = { activeRank = 1, maxRanks = 1, entry = 204, posY = 100, posX = 50, cost = 2801 },
 	}
 	local DEFINITIONS = { [112513] = 117518, [200] = 300, [201] = 301, [202] = 302, [203] = 303,
-		[204] = 304, [205] = 305 }
+		[204] = 304, [205] = 305, [206] = 306 }
 	local SPELLS = { [117518] = 1247993, [300] = 5001, [301] = 5009, [302] = 5002, [304] = 5004,
-		[305] = 5005 }
+		[305] = 5005, [306] = 5006 }
 	local NAMES = { [1247993] = "Motivated Murderer", [5001] = "A Spec Talent",
 		[5002] = "A Hero Talent", [5004] = "A Class Talent", [5005] = "A Top Talent",
+		[5006] = "An Unchosen Hero Root",
 		[5009] = "Not Taken" }
 	local spec = 1
 	local configAsked = 0
+	local activeHero = 52
 
 	set("GetBuildInfo", function() return "12.1.5", "69952", "Sep 21 2026", 120105 end)
 	set("GetSpecialization", function() return spec end)
 	set("GetSpecializationInfo", function(index) return 258 + index end)
 	set("GetNumSpecializations", nil)
 	set("C_SpecializationInfo", { GetNumSpecializationsForClassID = function() return 3 end })
-	set("C_ClassTalents", { GetActiveConfigID = function()
-		configAsked = configAsked + 1
-		return 25147678
-	end })
+	set("C_ClassTalents", {
+		GetActiveConfigID = function()
+			configAsked = configAsked + 1
+			return 25147678
+		end,
+		GetActiveHeroTalentSpec = function() return activeHero end,
+	})
 	set("C_Traits", {
 		GetConfigInfo = function(id)
 			if id ~= 25147678 then return nil end
@@ -45776,7 +45784,7 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		end,
 		GetTreeNodes = function(tree)
 			if tree ~= 852 then return {} end
-			return { 90628, 90700, 90701, 90702, 90703, 90704, 90705 }
+			return { 90628, 90700, 90701, 90702, 90703, 90704, 90705, 90706 }
 		end,
 		GetNodeInfo = function(_, id)
 			local node = NODES[id]
@@ -45790,7 +45798,11 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		end,
 		GetEntryInfo = function(_, entry) return { definitionID = DEFINITIONS[entry] } end,
 		GetDefinitionInfo = function(definition) return { spellID = SPELLS[definition] } end,
-		GetSubTreeInfo = function(_, id) return id == 52 and { name = "A Hero Tree" } or nil end,
+		GetSubTreeInfo = function(_, id)
+			if id == 52 then return { name = "A Hero Tree" } end
+			if id == 53 then return { name = "An Unchosen Hero Tree" } end
+			return nil
+		end,
 	})
 	local spellNames = Family.Names.Spell
 	Family.Names.Spell = function(_, id) return NAMES[id], 1000 + (id or 0) end
@@ -45824,6 +45836,8 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 			and group.heroes[52] == "A Hero Tree")
 	check("a node not taken is not listed, nor one whose entry leads to no spell",
 		bySpell[5009] == nil and #group.talents == 5, tostring(group and #group.talents))
+	check("nor the first node of a hero tree that is not the one chosen",
+		bySpell[5006] == nil)
 	check("in the order the tree reads, top first and left first",
 		bySpell[5005].at == 1 and bySpell[5002].at == 2 and bySpell[5004].at == 3
 			and bySpell[5001].at == 4 and bySpell[1247993].at == 5)
@@ -45831,6 +45845,18 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		group.points.class and group.points.class.spent == 13 and group.points.class.left == 8
 			and group.points.spec and group.points.spec.spent == 4)
 	check("and the specialisation reaches meta", Family.Database:Meta(key).specID == 259)
+
+	-- A specialisation with no hero tree chosen lists no hero talents at all.
+	activeHero = nil
+	Family.Talents:Scan()
+	local heroes = 0
+	for _, talent in ipairs(Family.Database:Payload(key).talents.groups[1].talents) do
+		if talent.side == "hero" then heroes = heroes + 1 end
+	end
+	check("and where no hero tree is chosen, no hero talent is listed", heroes == 0,
+		tostring(heroes))
+	activeHero = 52
+	Family.Talents:Scan()
 
 	-- Another specialisation played: it is recorded, and the first is kept as it was.
 	spec = 2

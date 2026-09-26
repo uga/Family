@@ -1,0 +1,6 @@
+name: a hero tree not chosen has its first node listed, as Sentinel was beside Pack Leader
+file: addons/Family/Scanners/Talents.lua
+--- old
+			if spellID and not (node.subTreeID and node.subTreeID ~= activeHero) then
+--- new
+			if spellID then

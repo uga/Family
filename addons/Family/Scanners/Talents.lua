@@ -523,6 +523,14 @@ local function readNodes()
 		heroes = {} }
 	local found = {}
 
+	-- **Only the hero tree chosen.** Every hero tree's first node answers a rank of 1 whether it
+	-- is chosen or not: a Beast Mastery hunter with none chosen had Pack Leader's and Dark
+	-- Ranger's both at 1, and a Survival one listed Sentinel's beside the Pack Leader it had
+	-- chosen. `GetActiveHeroTalentSpec` answered 43, Pack Leader's, on the Survival one and nil
+	-- on the Beast Mastery one (`docs/MIDNIGHT.md` §98). So a hero node is kept only where its
+	-- tree is the one named, and none are where none is.
+	local activeHero = tonumber((Family:TryCall(classTalents.GetActiveHeroTalentSpec)))
+
 	for _, treeID in ipairs(config.treeIDs) do
 		local sideOf = {}
 		local pools = Family:TryCall(traits.GetTreeCurrencyInfo, configID, treeID, false)
@@ -546,7 +554,7 @@ local function readNodes()
 				and Family:TryCall(traits.GetDefinitionInfo, entry.definitionID)
 			local spellID = type(definition) == "table" and tonumber(definition.spellID)
 
-			if spellID then
+			if spellID and not (node.subTreeID and node.subTreeID ~= activeHero) then
 				local side, hero
 				if node.subTreeID then
 					side, hero = "hero", node.subTreeID

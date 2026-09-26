@@ -1,0 +1,6 @@
+name: the hero tree the game names as active is never asked, so no hero talent is listed
+file: addons/Family/Scanners/Talents.lua
+--- old
+	local activeHero = tonumber((Family:TryCall(classTalents.GetActiveHeroTalentSpec)))
+--- new
+	local activeHero = nil
