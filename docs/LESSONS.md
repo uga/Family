@@ -4991,6 +4991,11 @@ kept under 255 including `/run `. Longer work is split across two lines with a g
 
 **Caught by:** nothing automatic. The count is a step taken by hand.
 
+**And compiled, 2026-09-26.** A pet line of 198 characters carried one `end` too many and the game
+answered *'<eof>' expected near 'end'*: counted, and never parsed. The line without `/run ` now also
+goes through `luac5.1 -p` in the scratchpad before it is sent; a line that does not compile here
+does not compile in the client.
+
 ## L-128 — checks that ran against the wrong reading of a panel, and passed
 
 **2026-09-26.** The whole-family currency checks passed while the family view had never been drawn.

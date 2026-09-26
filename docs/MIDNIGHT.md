@@ -4107,3 +4107,70 @@ and on live:
 3. Pointing at a creature, as §75 did: for the tooltip's first three lines, whether each is a string,
    what `issecretvalue` and `canaccessvalue` answer for it where they exist, and whether comparing it
    raises - the predicate beside the `pcall` it would replace.
+
+## 124. A hunter's pets on Midnight: nothing recorded, and the questions (2026-09-26)
+
+Alberto, on Deiana, a hunter with a pet out: *Abilities & Talents > Pets* says *Nothing recorded for
+this member*. As §29 measured on 2026-09-20: `GetStablePetInfo`, `HasPetSpells` and
+`GetPetTrainingPoints` are nil on Midnight, and `Pets:Scan` writes nothing when nothing was read, on
+purpose. So this is the known gap and not a new fault. Pets are something every client has, so by
+§111 they are in scope, and by step 3 the question is which call reads them here. `C_StableInfo`
+(fourteen functions, among them `GetActivePetList`, `GetStabledPetList`, `GetStablePetInfo`) and
+`C_PetInfo` (seven) were listed and never called. Asked next, with the pet out: both namespaces'
+names in full; what `C_StableInfo.GetActivePetList()` answers with the stable shut, key by key; and
+whether `C_SpellBook` has a pet book to read, by its first slot.
+
+**Read, 2026-09-26, on the PTR** (Alberto: *all these come from PTR*). Globals naming *secret*: `issecretvalue`, `issecrettable`,
+`hasanysecretvalues`, `canaccesssecrets`, `dropsecretaccess`, `scrubsecretvalues`, `secretwrap`, all
+functions; `C_Secrets`, a table; and four `EVENTTRACE_SECRET_*` constants. `canaccessvalue`, asked
+by name in the third line, answered too. `C_Secrets` holds twenty-seven functions: *Should...BeSecret*
+predicates for units (identity, comparison, health and power maxima, power, stats, threat, casts,
+auras by index, slot and instance), for cooldowns (`ShouldCooldownsBeSecret`,
+`ShouldSpellCooldownBeSecret`, `ShouldActionCooldownBeSecret`,
+`ShouldSpellBookItemCooldownBeSecret`), for totems and auras; three *Get...Secrecy* calls for a
+spell's cast, aura and cooldown and a power type; `HasSecretRestrictions`; `CanCompareUnitTokens`.
+
+The creature pointed at gave three lines that were **not** secret: each a string, `issecretvalue`
+false, `canaccessvalue` true, the comparison fine. So the predicate beside §75's `pcall` has not yet
+met a secret line, and the question stays open until it does.
+
+**What this says about Family.** Nearly all of `C_Secrets` is about units, auras and combat, which
+Family does not read. The one family of it that touches Family is cooldowns: the bag scan asks every
+slot's cooldown (`Scanners/Bags.lua`, `GetContainerItemCooldown`) and runs after loot, in combat as
+§122 showed. The *Secret Values: no* reading had no cooldown among its twelve. Asked next: the
+cooldown predicates and the bag slots' cooldowns, out of combat and then in combat in an instance;
+and a secret tooltip line, on the PTR where §75 saw them, for the predicate.
+
+**Out of combat and outside an instance, on the PTR**: `InCombatLockdown()` false, `IsInInstance()`
+false; `C_Secrets.HasSecretRestrictions()` answered **true**; `ShouldCooldownsBeSecret()` false;
+`ShouldSpellCooldownBeSecret(6603)` false. So restrictions are on for this client even at rest, and
+cooldowns are not secret there. The bag-cooldown line printed nothing to record. The in-combat,
+in-instance reading is still to come.
+
+**Read on Deiana, on the PTR, the cat out, the stable shut.** `C_StableInfo`: `ClosePetStables`,
+`GetActivePetList`, `GetAvailablePetSpecInfos`, `GetNumActivePets`, `GetNumStablePets`,
+`GetStablePetFoodTypes`, `GetStablePetInfo`, `GetStabledPetList`, `IsAtStableMaster`,
+`IsBonusPetSlotAvailable`, `IsPetFavorite`, `PickupStablePet`, `SetPetFavorite`, `SetPetSlot`.
+`C_PetInfo`: `GetPetTalentTree`, `GetPetTamersForMap`, `GetSpellForPetAction`,
+`IsPetActionPassive`, `PetAbandon`, `PetAssistMode`, `PetRename`.
+
+`GetActivePetList()` answered **one** row with the stable shut: `petNumber=5610909 type=Beast
+isFavorite=false specID=74 creatureID=42718 uiModelSceneID=763 slotID=1 isExotic=false
+displayID=17090 name=Cat level=80 icon=132185 familyName=Cat specialization=Ferocity`, and two
+tables, `petAbilities` and `specAbilities`. So the stable's old question - name, level, family as a
+word - is answered here, and more: the tamed creature's id, which §2.1 would rather have than the
+word. No family **id**, as on Classic, where only `UnitCreatureFamily` gives one.
+
+`C_SpellBook.HasPetSpells` is a function and answered **15**; `GetSpellBookItemInfo(1, Pet)` is a
+table: `itemType 3`, `name Assist`, `subName Pet Stance`, `actionID 100663299`, `iconID 524348`,
+`isPassive false`, `isOffSpec false` - a command, with no spell id, which is what the Classic filter
+already drops. Asked next: what the two ability tables hold, all fifteen book slots, whether the
+stabled list answers with the stable shut, and what the unit calls answer for the pet.
+
+**The unit calls, same pet**: `UnitCreatureFamily("pet")` answered **Cat 2** - the family id Family
+files a hunter's pet under, as on Classic. `UnitGUID("pet")` answered
+`Pet-0-5769-0-2041-165189-0100559D9D`, `UnitName` *Cat*, `UnitLevel` 80. The GUID's sixth field is
+**165189**, where the active list says `creatureID=42718` for the same cat: on Midnight the GUID
+does not carry the tamed creature, so `creatureFrom` would file every pet under one number. Where the
+list answers, its `creatureID` is the one to keep. Whether 165189 is the same for every pet is a
+reading of a second pet, not assumed.
