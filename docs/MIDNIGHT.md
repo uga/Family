@@ -4207,3 +4207,9 @@ So a demon keys as `d:23` as on Classic, and **its GUID names the demon**: a `Cr
 416 in it, the Imp's number on Era. As first built, the capability sent every GUID to the list, and
 a demon, never on it, would have been recorded with no creature. Only a `Pet-` GUID is generic now.
 Three checks and two mutations, and one mutation re-anchored.
+
+**Seen on the PTR**: Deiana's *Abilities & Talents > Pets* reads *8 abilities across 1 creatures*,
+*Cat (8)*, *Cat, Level 80*, and lists Avoidance, Catlike Reflexes, Claw, Dash, Growl, Predator's
+Thirst, Primal Rage and Prowl with the book's own second words, against the game's pet book of
+fifteen beside it. Alberto asked whether some were missing: the seven not drawn are the stances and
+commands, which have no spell id and which the filter written for Mists leaves out on purpose.
