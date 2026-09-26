@@ -2503,9 +2503,8 @@ local function makeRow(parent)
 		end
 
 		-- **A lock's line, about its own member and its own lock**, asked before the member
-		-- fields for the letter's reason: a lock line comes out of the pool still carrying the
-		-- keys of whatever member it drew on another set, and read through them it gave that
-		-- member's tooltip (found by the harness, 2026-09-26).
+		-- fields the way a letter's line is: what it has to say is the lock's, which a member's
+		-- tooltip does not know.
 		local lock = self.__lock
 		if lock then
 			if not self.memberKey then return nil end
@@ -3520,6 +3519,11 @@ local function build(frame)
 			-- row that kept the previous one's professions would be a sword offering to
 			-- open a forge if `opens` were ever set again above it.
 			row.professions = nil
+			-- And which member its tooltip is about. `drawMember` sets these again for its
+			-- own rows; a line drawn any other way - a crafting timer's, a lock's - kept the
+			-- member of whatever set was on screen before, and its tooltip described them
+			-- (found 2026-09-26).
+			row.__skills, row.__places, row.__riding, row.__stock = nil, nil, nil, nil
 			layOut(row.cells, columns)
 			for index = 1, MAX_CELLS do setCell(row, index, "") end
 

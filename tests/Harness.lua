@@ -45449,6 +45449,31 @@ print("instance lockouts, read, kept and drawn")
 	check("a lock line's tooltip is about its own member",
 		said:find("Raiderf", 1, true) ~= nil and plainSaid:find("Raidera", 1, true) ~= nil
 			and not (said .. plainSaid):find("Raiderc", 1, true), said .. " // " .. plainSaid)
+	-- **Every line on the page is about its own member**, crafting lines as much as lock lines,
+	-- after a set that leaves member keys on its rows: Miscellaneous first, then back here.
+	Family.Database:SetMeta("Raiderf-FireMaw", { craftCooldowns = { { name = "Transmute: Arcanite",
+		profession = 171, readyAt = time() + 3600 } } })
+	clickLastButton(Family.L["Miscellaneous"])
+	Family.UI:Refresh()
+	clickLastButton(Family.L["Cooldowns"])
+	Family.UI:Refresh()
+	local strangers, ownLines = {}, 0
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey and f.__familyTooltip then
+			local _, _, lines = f.__familyTooltip(f)
+			local first = lines and lines[1] and tostring(lines[1][1]) or ""
+			local name = (Family.UI:Meta(f.memberKey) or {}).name or f.memberKey
+			if first:find(name, 1, true) then
+				if f.memberKey == "Raiderf-FireMaw" then ownLines = ownLines + 1 end
+			else
+				strangers[#strangers + 1] = name .. " said " .. first
+			end
+		end
+	end
+	check("after Miscellaneous, every Cooldowns line's tooltip is about its own member",
+		#strangers == 0 and ownLines == 2,
+		table.concat(strangers, "; ") .. " / " .. tostring(ownLines))
+
 	-- And a line that drew a lock and is then drawn as somebody on another set has let go of it.
 	clickLastButton(Family.L["Overview"])
 	Family.UI:Refresh()

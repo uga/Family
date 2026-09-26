@@ -4035,6 +4035,15 @@ could show another member's Miscellaneous tooltip. Found when the first check of
 Raiderc's tooltip on Raiderf's line. A lock line is now answered before those keys, as a letter's
 line already was, and a pooled row lets go of its lock.
 
+**Widened the same hour**: the crafting timers' lines on the same page had the same gap, since
+they too are member lines drawn without `drawMember`, which is the only place those four keys were
+cleared. They are now cleared where every row is wiped, in `nextRow`. A check goes to Miscellaneous
+and back and asks every Cooldowns line's tooltip whose it is; it failed on a crafting line before
+the fix. `main` has the same code at 4.4.0 and the fault on all three Classic clients: Alberto chose
+to have it fixed there as a 4.x bug, and the note went to the main session. The mutation that
+guarded the lock-first order stopped testing anything once the keys were cleared, and was rewritten
+to guard the lock line's own tooltip.
+
 Fourteen checks and eleven mutations. `tools/surface.py` regenerated for the one new name, which is
 this call and is already answered. **Not yet seen in the game.**
 
