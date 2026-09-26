@@ -3760,4 +3760,4 @@ the pattern of step 3:
 
 **`Mounts.lua` is left as it is.** Its fallback, `C_SpellBook.IsSpellKnown`, agreed with
 `IsSpellKnown` on a spell known and on one replaced, which are the two cases the riding table asks
-about. Four checks, four mutations; `Surface.lua` regenerated with five new names.
+about. Three checks, four mutations; `Surface.lua` regenerated with five new names.
