@@ -3887,6 +3887,6 @@ is being measured; until it is known, an announcement within a second of the sca
 taken for its echo, so a shut heading cannot set off a scan every three seconds. The older list,
 which Mists reads, is unchanged: whether it has the same hole is `main`'s question.
 
-Five checks and five mutations, on a copy of Maretta's rows with *Legion* shut; one line the
+Four checks new and one widened, and five mutations, on a copy of Maretta's rows with *Legion* shut; one line the
 mutations showed did nothing came out, and the header mutation was moved to the line that now
 does its work. Not yet seen in the game.
