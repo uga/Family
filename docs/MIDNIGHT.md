@@ -3489,3 +3489,14 @@ until the right call is measured - `C_ClassTalents.GetLastSelectedSavedConfigID(
 next, beside `GetStarterBuildActive()`.
 
 Not seen yet: a hero tree, and a rank of more than one.
+
+## 97. *Default Loadout* is no saved loadout (2026-09-26)
+
+On a Survival hunter (specialisation 255) whose picker reads *Default Loadout*,
+`C_ClassTalents.GetLastSelectedSavedConfigID(255)` answered **nil**, and `GetStarterBuildActive()`
+false. So *Default Loadout* is what the game's picker says when no loadout has been saved, not a
+name any call answers. Family draws no loadout name, which says the same thing without Family
+inventing a word for it. A saved loadout's name, where one exists, is not yet read.
+
+The same hunter's window shows what §96 had not seen: a hero tree, *Pack Leader*, with its talents
+taken, and ranks of 2 on both sides.
