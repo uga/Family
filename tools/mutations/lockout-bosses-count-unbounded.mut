@@ -1,0 +1,6 @@
+name: a lock is walked to whatever count its row gives
+file: addons/Family/Scanners/Instances.lua
+--- old
+	for slot = 1, math.min(count, MOST_BOSSES) do
+--- new
+	for slot = 1, count do

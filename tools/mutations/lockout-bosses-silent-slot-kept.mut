@@ -1,0 +1,6 @@
+name: a boss slot that answers no name is kept
+file: addons/Family/Scanners/Instances.lua
+--- old
+		if ok and type(name) == "string" and name ~= "" then
+--- new
+		if ok then

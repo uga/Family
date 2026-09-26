@@ -26,9 +26,16 @@
 -- client's language, so they travel as labels and never as keys, the way a currency's name does:
 -- nothing on these builds turns 469 back into *Blackwing Lair* for a reader in another language.
 --
--- **No boss progress.** Columns 11 and 12 read like bosses and bosses down on Era and were both
--- retracted on Mists, where a lock with bosses killed on it answered `1` and `0` and the game's own
--- Raid Information window drew no progress either. Nothing here claims one.
+-- **No boss progress on the Classic clients.** Columns 11 and 12 read like bosses and bosses down on
+-- Era and were both retracted on Mists, where a lock with bosses killed on it answered `1` and `0`
+-- and the game's own Raid Information window drew no progress either. Nothing there claims one.
+--
+-- **Midnight keeps its bosses one by one** (`docs/MIDNIGHT.md` §121). The same Molten Core lock
+-- answered 10 and 1 in those two columns, and `GetSavedInstanceEncounterInfo` named all ten bosses
+-- in order with Gehennas alone killed - two readings of one kill that agree. Mists answers the same
+-- call too, with one boss of ten, so which client is asked is the capability `lockoutBosses` and
+-- not whether the call is there. A boss is a word in the client's language and travels as a label
+-- inside its lock, which is keyed by id already; its place in the list is all the order it needs.
 
 local _, Family = ...
 
@@ -50,6 +57,10 @@ local function rowFrom(ok, ...)
 	if not ok then return {}, 0 end
 	return { ... }, select("#", ...)
 end
+
+-- The most bosses a lock is asked for, whatever its row says: a guard against a number that is
+-- not a count, well above the ten of the largest place read.
+local MOST_BOSSES = 40
 
 local function wholePositive(value)
 	local number = tonumber(value)
@@ -97,6 +108,23 @@ local function lockFrom(row, width, now)
 	}
 end
 
+-- A lock's bosses in the game's order, each with whether it is down, or nil where there are none
+-- to read. Asked by position up to the count the row gave; a slot with no name is skipped rather
+-- than guessed at.
+local function bossesOf(index, count)
+	count = wholePositive(count)
+	if not count then return nil end
+
+	local bosses = {}
+	for slot = 1, math.min(count, MOST_BOSSES) do
+		local ok, name, _, killed = pcall(_G.GetSavedInstanceEncounterInfo, index, slot)
+		if ok and type(name) == "string" and name ~= "" then
+			bosses[#bosses + 1] = { name = name, killed = killed == true or nil }
+		end
+	end
+	return #bosses > 0 and bosses or nil
+end
+
 -- Every lock the client reports for this character, or nil where the client has no way to ask.
 function Lockouts:Read()
 	if type(_G.GetNumSavedInstances) ~= "function"
@@ -112,7 +140,12 @@ function Lockouts:Read()
 	for index = 1, count do
 		local row, width = rowFrom(pcall(GetSavedInstanceInfo, index))
 		local lock = lockFrom(row, width, now)
-		if lock then found[#found + 1] = lock end
+		if lock then
+			if Family.Capabilities:Has("lockoutBosses") then
+				lock.bosses = bossesOf(index, row[11])
+			end
+			found[#found + 1] = lock
+		end
 	end
 
 	table.sort(found, function(a, b)
@@ -132,6 +165,17 @@ function Lockouts:For(meta)
 		if (lock.resetAt or 0) > now then live[#live + 1] = lock end
 	end
 	return live
+end
+
+-- How many of a lock's bosses are down, and of how many, or nil for a lock read without its list.
+function Lockouts:Progress(lock)
+	local bosses = lock and lock.bosses
+	if type(bosses) ~= "table" or #bosses == 0 then return nil end
+	local down = 0
+	for _, boss in ipairs(bosses) do
+		if boss.killed then down = down + 1 end
+	end
+	return down, #bosses
 end
 
 -- What a lock is called on a heading: the place, and the difficulty where the client named one.

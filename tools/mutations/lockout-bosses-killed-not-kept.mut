@@ -1,0 +1,6 @@
+name: a boss is kept without whether it is down
+file: addons/Family/Scanners/Instances.lua
+--- old
+			bosses[#bosses + 1] = { name = name, killed = killed == true or nil }
+--- new
+			bosses[#bosses + 1] = { name = name }

@@ -1,0 +1,6 @@
+name: the lock line does not say how many bosses are down
+file: addons/Family_UI/Summary.lua
+--- old
+						down and string.format("|cffffffff%d/%d|r  ", down, of) or "",
+--- new
+						"",

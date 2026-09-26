@@ -301,12 +301,20 @@ Nothing here is promised yet.
 
 #### Lockouts, boss by boss
 
+Designed 2026-09-26. On Midnight each instance lock is recorded with its bosses, in the game's
+order, each with whether it is down; a boss's name is a label inside its lock, which stays keyed by
+the place's id and the difficulty (§2.1). On the Summary's Cooldowns page a lock's line says how
+many are down of how many - *1/10* - before the lock's number and when it lets go, and hovering the
+line lists the bosses, the ones down in grey marked *defeated*. The Classic clients keep their
+lockouts as they are, with no count: Mists answers the same question with one boss of ten and its
+own Raid Information window shows no progress (`docs/MIDNIGHT.md` §121).
+
 #### Values the client keeps secret
 
 **Waiting for Forever.** Family Midnight ships with what it has and with what Forever will have as
 well; a system only Midnight has joins after Forever is released (Alberto, 2026-09-26). So crafting
-orders, delves, the keystone a character holds and the Omnium Folio are not in Midnight's first
-release, and neither is any other system Midnight alone has.
+orders, delves, the keystone a character holds, the Omnium Folio and profession specialisations
+are not in Midnight's first release, and neither is any other system Midnight alone has.
 
 ### When recording happens
 

@@ -1,0 +1,6 @@
+name: every boss counts as down
+file: addons/Family/Scanners/Instances.lua
+--- old
+		if boss.killed then down = down + 1 end
+--- new
+		down = down + 1

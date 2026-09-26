@@ -1,0 +1,8 @@
+name: hovering a lock line names no bosses
+file: addons/Family_UI/Summary.lua
+--- old
+			if type(lock.bosses) == "table" and #lock.bosses > 0 then
+				lines[#lines + 1] = { " " }
+--- new
+			if false then
+				lines[#lines + 1] = { " " }

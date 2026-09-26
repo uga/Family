@@ -1,0 +1,8 @@
+name: a lock line's tooltip is read through the member keys it last carried
+file: addons/Family_UI/Summary.lua
+--- old
+		local lock = self.__lock
+		if lock then
+--- new
+		local lock = self.__lock
+		if lock and not (self.__places or self.__riding or self.__stock or self.__skills) then

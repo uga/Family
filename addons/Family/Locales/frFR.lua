@@ -1040,6 +1040,7 @@ Family.locales.frFR = {
 	["Instance lockouts"] = "Verrous d'instance",
 	["Resets in"] = "Réinitialisé dans",
 	["extended"] = "prolongé",
+	["defeated"] = "vaincu",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Personne n'est verrouillé dans une instance en ce moment.|r",
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Listes de recettes effondrées|r, dans toute la famille :",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Listes de recettes effondrées|r, dans toute la famille : aucune.",

@@ -2502,6 +2502,37 @@ local function makeRow(parent)
 			return nil, nil, said
 		end
 
+		-- **A lock's line, about its own member and its own lock**, asked before the member
+		-- fields for the letter's reason: a lock line comes out of the pool still carrying the
+		-- keys of whatever member it drew on another set, and read through them it gave that
+		-- member's tooltip (found by the harness, 2026-09-26).
+		local lock = self.__lock
+		if lock then
+			if not self.memberKey then return nil end
+			local meta = UI:Meta(self.memberKey)
+			if not meta then return nil end
+			local lines = { { UI:NameOf(meta) } }
+			logoutPlace(lines, meta)
+			-- **Its bosses, one line each, in the game's order** (`docs/MIDNIGHT.md` §121): the
+			-- ones down in grey with the word for it, the ones still standing in white. Only
+			-- for a lock read with its list, which is Midnight's. In the words, since a line
+			-- here is drawn from its text alone.
+			if type(lock.bosses) == "table" and #lock.bosses > 0 then
+				lines[#lines + 1] = { " " }
+				lines[#lines + 1] = { "|cffffd100" .. Family.Lockouts:Label(lock) .. "|r" }
+				for _, boss in ipairs(lock.bosses) do
+					if boss.killed then
+						lines[#lines + 1] = { "|cff9d9d9d" .. tostring(boss.name) .. "|r",
+							"|cff9d9d9d" .. L["defeated"] .. "|r" }
+					else
+						lines[#lines + 1] = { "|cffffffff" .. tostring(boss.name) .. "|r" }
+					end
+				end
+			end
+			clickHints(lines, meta)
+			return nil, nil, lines
+		end
+
 		local rowKey = self.__places or self.__riding or self.__stock or self.__skills
 
 		-- **Every member row says what a modified click on it does**, including the sets that
@@ -3478,6 +3509,7 @@ local function build(frame)
 			end
 			row.opens = nil
 			row.__letter = nil
+			row.__lock = nil
 			-- Wiped here rather than by each caller. A row that is shown but not written
 			-- keeps whatever it last said, which is how a blank spacer came to be drawn as
 			-- a second "total" line - with the money and played figures of the column set
@@ -4128,7 +4160,13 @@ local function build(frame)
 					-- find out whether they are saved to the same raid - then when it lets
 					-- go, and whether it was extended past its own reset.
 					local lock = person.lock
-					setCell(row, 3, string.format("|cff9d9d9d%s%s%s|r",
+					row.__lock = lock
+					-- **How many of its bosses are down**, first and in white, where the lock
+					-- was read with its list (`docs/MIDNIGHT.md` §121); hovering the line
+					-- names them.
+					local down, of = Family.Lockouts:Progress(lock)
+					setCell(row, 3, string.format("%s|cff9d9d9d%s%s%s|r",
+						down and string.format("|cffffffff%d/%d|r  ", down, of) or "",
 						lock.lockID and ("#" .. lock.lockID .. "  ") or "",
 						lock.extended and (L["extended"] .. "  ") or "",
 						duration(lock.resetAt - time()) or L["soon"]))

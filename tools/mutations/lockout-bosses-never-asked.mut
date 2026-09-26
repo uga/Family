@@ -1,0 +1,6 @@
+name: Midnight's locks are read without their bosses
+file: addons/Family/Scanners/Instances.lua
+--- old
+				lock.bosses = bossesOf(index, row[11])
+--- new
+				lock.bosses = nil

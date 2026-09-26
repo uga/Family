@@ -1040,6 +1040,7 @@ Family.locales.deDE = {
 	["Instance lockouts"] = "Instanzsperren",
 	["Resets in"] = "Zurückgesetzt in",
 	["extended"] = "verlängert",
+	["defeated"] = "besiegt",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Gerade ist niemand in einer Instanz gesperrt.|r",
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Geschrumpfte Rezeptlisten|r, in der ganzen Familie:",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Geschrumpfte Rezeptlisten|r, in der ganzen Familie: keine.",

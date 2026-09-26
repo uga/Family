@@ -1,0 +1,7 @@
+name: a pooled row keeps the lock it last drew
+file: addons/Family_UI/Summary.lua
+--- old
+			row.__letter = nil
+			row.__lock = nil
+--- new
+			row.__letter = nil

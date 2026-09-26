@@ -1,0 +1,6 @@
+name: a Classic client is asked for a lock's bosses
+file: addons/Family/Scanners/Instances.lua
+--- old
+			if Family.Capabilities:Has("lockoutBosses") then
+--- new
+			if true then

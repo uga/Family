@@ -1040,6 +1040,7 @@ Family.locales.esES = {
 	["Instance lockouts"] = "Bloqueos de instancia",
 	["Resets in"] = "Se reinicia en",
 	["extended"] = "extendido",
+	["defeated"] = "derrotado",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Nadie tiene un bloqueo de instancia ahora mismo.|r",
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Listas de recetas encogidas|r, en toda la familia:",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Listas de recetas encogidas|r, en toda la familia: ninguna.",

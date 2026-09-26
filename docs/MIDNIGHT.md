@@ -4005,3 +4005,39 @@ columns - *all ok*, Alberto's word. The footer under them still read *the curren
 holds most of, most first*, which was no longer what they were, so the footer now says which rule
 chose them: the starred ones, the game's current ones with Legacy left out, or - a family with no
 headings - the most held, as before. Two checks widened, two mutations.
+
+## 121. Lockouts boss by boss, recorded and shown (2026-09-26)
+
+§115's questions, asked on the same character and the same Molten Core lock. `GetSavedInstanceInfo(1)`
+answers **fourteen** values on Midnight, as on the three Classic clients, so the scanner's width
+guard holds and the fourteenth, **409**, is the instance's id. Columns 11 and 12 read **10** and **1**:
+on Midnight the row does carry boss progress, where Mists answered 1 and 0 for a lock with kills on
+it. The encounter call, walked to 10, named Lucifron to Ragnaros in order, *nil* where a picture
+might be, Gehennas alone killed, and the fourth value false for all ten. The list and column 12
+agree on one kill, which is two readings of the same fact. The saved list held one lock, so whether
+a dungeon lock answers the same way is still unread; the reader does not depend on it.
+
+**Built as offered, option 1.** A lock read on Midnight carries `bosses`, one `{ name, killed }` per
+position; the name travels as a label inside the lock, which stays keyed by `i409:9`, so a boss
+needs no id of its own. Which client is asked is the capability `lockoutBosses`, true on Midnight
+only: Mists has the call and answers it with one boss of ten (DATASOURCES, 2026-09-23), which is the
+*answers but is wrong* case the capabilities are for. A slot with no name is skipped, and a lock is
+asked for forty bosses at most whatever its row says. The fourth value is not kept, since nothing
+says what it is.
+
+On the Summary's Cooldowns page a lock's line now starts with *1/10* in white, before its number and
+its reset; hovering the line names the bosses in order, the ones down in grey with *defeated*.
+Colours are in the words, because a Summary tooltip line is drawn from its text alone.
+
+**And a fault that was there before.** A lock line comes out of the row pool still carrying the
+member keys of whatever it drew on another set, and its tooltip read them first: hovering a lock
+could show another member's Miscellaneous tooltip. Found when the first check of the boss list got
+Raiderc's tooltip on Raiderf's line. A lock line is now answered before those keys, as a letter's
+line already was, and a pooled row lets go of its lock.
+
+Fourteen checks and eleven mutations. `tools/surface.py` regenerated for the one new name, which is
+this call and is already answered. **Not yet seen in the game.**
+
+**Profession specialisations wait for Forever** (Alberto, the same afternoon): Family does not read
+them - no scanner asks the specialisation calls - and Forever will not have them, so by §111's rule
+they are not in Midnight's first release.

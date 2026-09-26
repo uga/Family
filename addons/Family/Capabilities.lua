@@ -168,6 +168,13 @@ local EXPECTED = {
 	-- and `GetMaxNumQuests()` answers 175, a ceiling of another kind (`docs/MIDNIGHT.md` §113). The
 	-- old constant answers and is wrong, so the choice of reader is the game's and lives here.
 	questLogAsked = { [MIDNIGHT] = true },
+
+	-- **A lock that keeps its bosses one by one.** On Midnight a Molten Core lock answered ten
+	-- bosses by `GetSavedInstanceEncounterInfo`, Gehennas alone killed, and its row's columns 11 and
+	-- 12 said 10 and 1 (`docs/MIDNIGHT.md` §121). Mists answers the same call with one boss for the
+	-- same place and draws no progress in its own Raid Information window, so there the call is
+	-- there and is not asked.
+	lockoutBosses = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -189,6 +196,7 @@ local CONFIRMED = {
 	talentNodes  = { [MIDNIGHT] = true },
 	reagentBag   = { [MIDNIGHT] = true },
 	questLogAsked = { [MIDNIGHT] = true },
+	lockoutBosses = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

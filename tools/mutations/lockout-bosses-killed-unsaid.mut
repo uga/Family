@@ -1,0 +1,8 @@
+name: a boss that is down is drawn like one still standing
+file: addons/Family_UI/Summary.lua
+--- old
+					if boss.killed then
+						lines[#lines + 1] = { "|cff9d9d9d" .. tostring(boss.name) .. "|r",
+--- new
+					if false then
+						lines[#lines + 1] = { "|cff9d9d9d" .. tostring(boss.name) .. "|r",

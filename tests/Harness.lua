@@ -45200,6 +45200,63 @@ print("instance lockouts, read, kept and drawn")
 		read and read[1] and read[1].key == "n:Molten Core:9",
 		read and read[1] and tostring(read[1].key))
 
+	-- **Midnight's bosses, one by one** (`docs/MIDNIGHT.md` §121): Molten Core read on Midnight,
+	-- ten bosses by position with Gehennas alone down, and columns 11 and 12 saying 10 and 1.
+	local heldBosses = Family.Capabilities.can.lockoutBosses
+	local heldEncounter = _G.GetSavedInstanceEncounterInfo
+	local BOSSES = { "Lucifron", "Magmadar", "Gehennas", "Garr", "Shazzrah", "Baron Geddon",
+		"Sulfuron Harbinger", "Golemagg the Incinerator", "Majordomo Executus", "Ragnaros" }
+	local encounterAsks, silentSlot = 0, nil
+	GetSavedInstanceEncounterInfo = function(index, slot)
+		encounterAsks = encounterAsks + 1
+		if index ~= 1 or slot == silentSlot or not BOSSES[slot] then return nil end
+		return BOSSES[slot], nil, slot == 3, false
+	end
+	rows = { { "Molten Core", 239723021, 126845, 9, true, false, 524615680, true, 40,
+		"40 Player", 10, 1, false, 409 } }
+
+	Family.Capabilities.can.lockoutBosses = true
+	read = Family.Lockouts:Read()
+	local bosses = read and read[1] and read[1].bosses
+	check("on Midnight a lock carries its bosses, in the game's order",
+		bosses and #bosses == 10 and bosses[1].name == "Lucifron"
+			and bosses[10].name == "Ragnaros", bosses and tostring(#bosses))
+	check("with the ones down marked, and only those",
+		bosses and bosses[3].killed == true and bosses[2].killed == nil
+			and bosses[4].killed == nil)
+	local down, of = Family.Lockouts:Progress(read and read[1])
+	check("which counts as one of ten", down == 1 and of == 10,
+		tostring(down) .. "/" .. tostring(of))
+	check("and is still keyed by the place, not by a boss",
+		read and read[1] and read[1].key == "i409:9")
+
+	-- A slot that answers no name is left out rather than guessed at.
+	silentSlot = 5
+	read = Family.Lockouts:Read()
+	bosses = read and read[1] and read[1].bosses
+	check("a boss slot that answers nothing is skipped",
+		bosses and #bosses == 9 and bosses[5].name == "Baron Geddon",
+		bosses and tostring(#bosses))
+	silentSlot = nil
+
+	-- A count that is not a count is not walked to its end.
+	rows[1][11] = 100000
+	encounterAsks = 0
+	read = Family.Lockouts:Read()
+	check("a lock is asked for forty bosses at most, whatever its row says",
+		encounterAsks == 40, tostring(encounterAsks))
+	rows[1][11] = 10
+
+	-- **Mists answers the same call with one boss of ten**, so a Classic client is not asked.
+	Family.Capabilities.can.lockoutBosses = false
+	encounterAsks = 0
+	read = Family.Lockouts:Read()
+	check("a Classic client, where the call answers but is wrong, is not asked for bosses",
+		encounterAsks == 0 and read and read[1] and read[1].bosses == nil
+			and Family.Lockouts:Progress(read[1]) == nil, tostring(encounterAsks))
+	Family.Capabilities.can.lockoutBosses = heldBosses
+	GetSavedInstanceEncounterInfo = heldEncounter
+
 	-- **Read when the event says so, not beside the request.** The login asks; the answer is
 	-- read when UPDATE_INSTANCE_INFO arrives.
 	rows = ROWS
@@ -45343,6 +45400,71 @@ print("instance lockouts, read, kept and drawn")
 	check("and so is one read in another language", visibleText("Raiderb"))
 	check("the lock's own number is shown", visibleText("#135392441"))
 	check("an extended lock says so", visibleText(Family.L["extended"]))
+
+	-- **A lock read with its bosses says how many are down, and names them on hover**
+	-- (`docs/MIDNIGHT.md` §121).
+	local named = {}
+	for slot, boss in ipairs { "Lucifron", "Magmadar", "Gehennas", "Garr" } do
+		named[slot] = { name = boss, killed = slot == 3 or nil }
+	end
+	member("Raiderf", { { key = "i409:9", instance = 409, difficulty = 9,
+		name = "Molten Core", difficultyName = "40 Player", lockID = 239735737,
+		resetAt = time() + 5 * 86400, bosses = named } })
+	Family.UI:Refresh()
+	local progressRow, plainRow
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey and type(f.cells) == "table"
+			and type(f.cells[3]) == "table" then
+			if f.memberKey == "Raiderf-FireMaw" then progressRow = f end
+			if f.memberKey == "Raidera-FireMaw" then plainRow = f end
+		end
+	end
+	check("a lock read with its bosses says how many are down, of how many",
+		progressRow and tostring(progressRow.cells[3].__text):find("1/4", 1, true) ~= nil,
+		progressRow and tostring(progressRow.cells[3].__text))
+	check("and a lock read without them says no count",
+		plainRow and not tostring(plainRow.cells[3].__text):find("%d/%d"),
+		plainRow and tostring(plainRow.cells[3].__text))
+	local said = ""
+	if progressRow and progressRow.__familyTooltip then
+		local _, _, lines = progressRow.__familyTooltip(progressRow)
+		for _, line in ipairs(lines or {}) do
+			said = said .. tostring(line[1]) .. " | " .. tostring(line[2]) .. " / "
+		end
+	end
+	check("hovering it names the bosses in order",
+		said:find("Lucifron", 1, true) and said:find("Garr", 1, true)
+			and said:find("Lucifron", 1, true) < said:find("Garr", 1, true), said)
+	check("with the one down said to be",
+		said:find("Gehennas|r | |cff9d9d9d" .. Family.L["defeated"], 1, true) ~= nil
+			and not said:find("Magmadar|r | |cff9d9d9d", 1, true), said)
+	local plainSaid = ""
+	if plainRow and plainRow.__familyTooltip then
+		local _, _, lines = plainRow.__familyTooltip(plainRow)
+		for _, line in ipairs(lines or {}) do plainSaid = plainSaid .. tostring(line[1]) .. " / " end
+	end
+	check("and a lock without its bosses lists none",
+		plainRow ~= nil and not plainSaid:find("Blackwing Lair", 1, true), plainSaid)
+	-- A lock line comes out of the pool carrying whatever member it drew on another set.
+	check("a lock line's tooltip is about its own member",
+		said:find("Raiderf", 1, true) ~= nil and plainSaid:find("Raidera", 1, true) ~= nil
+			and not (said .. plainSaid):find("Raiderc", 1, true), said .. " // " .. plainSaid)
+	-- And a line that drew a lock and is then drawn as somebody on another set has let go of it.
+	clickLastButton(Family.L["Overview"])
+	Family.UI:Refresh()
+	local elsewhere, members = "", 0
+	for _, f in ipairs(frames) do
+		if onScreen(f) and f.memberKey and f.__familyTooltip then
+			members = members + 1
+			local _, _, lines = f.__familyTooltip(f)
+			for _, line in ipairs(lines or {}) do elsewhere = elsewhere .. tostring(line[1]) .. " / " end
+		end
+	end
+	check("a line that drew a lock lists no bosses once it is a member on another set",
+		members > 0 and not elsewhere:find("Gehennas", 1, true), elsewhere)
+	clickLastButton(Family.L["Cooldowns"])
+	Family.Database:Forget("Raiderf-FireMaw")
+	Family.UI:Refresh()
 	check("a lock that has let go is not drawn", not visibleText("Raiderc")
 		and not visibleText("Molten Core"))
 
