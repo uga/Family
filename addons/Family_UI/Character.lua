@@ -171,6 +171,7 @@ UI:OnFold("character", function()
 	UI.__openFaction = nil
 	UI.__openQuest = nil
 	UI.__currencyHeads = {}
+	UI.__openCurrency = nil
 end)
 
 -- Which currency headings are open, by their path; nil means the default below.
@@ -566,7 +567,8 @@ local function build(frame)
 	-- their columns are called when they are showing it. Gear draws a character sheet and
 	-- keeps its three blanks; reputations become a list of factions rather than of members,
 	-- so all three headings change.
-	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true, Quests = true }
+	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true, Quests = true,
+		Currencies = true }
 	local FAMILY_HEADINGS = {
 		-- Faction, then who, then how far they got. It was faction / furthest / held by,
 		-- which is the shape of a single winner rather than of a list of people.
@@ -575,6 +577,8 @@ local function build(frame)
 		-- quest / progress, because there the quest is the answer; across the family the
 		-- quest is the question and the names are the answer.
 		Quests = { L["Quest"], L["Character"], L["Progress"] },
+		-- The currency, who holds it, how many: the family's total on the currency's own line.
+		Currencies = { L["Currency"], L["Character"], L["Held"] },
 	}
 
 	local headerRow = CreateFrame("Frame", nil, frame)
@@ -758,6 +762,14 @@ local function build(frame)
 				return
 			end
 
+			-- A currency across the family, its holders shown or put away.
+			if self.expandCurrencyRow then
+				UI.__openCurrency = (UI.__openCurrency ~= self.expandCurrencyRow)
+					and self.expandCurrencyRow or nil
+				frame:Refresh()
+				return
+			end
+
 			-- A currency heading, opened or shut.
 			if self.expandCurrency then
 				UI.__currencyHeads[self.expandCurrency.key] = not self.expandCurrency.open
@@ -876,7 +888,7 @@ local function build(frame)
 			-- widens it to hold a standing and a score together.
 			r.right:SetWidth(140)
 			r.expandFaction, r.expandQuest = nil, nil
-			r.expandCurrency = nil
+			r.expandCurrency, r.expandCurrencyRow = nil, nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
 			r.progress = nil
@@ -1379,6 +1391,113 @@ local function build(frame)
 		-- language: a family plays across clients, and the id is the same word in all of
 		-- them.
 		------------------------------------------------------------------------------------
+
+		------------------------------------------------------------------------------------
+		-- Everybody's currencies at once (Alberto, 2026-09-26; `docs/MIDNIGHT.md` §119)
+		--
+		-- A row per currency with the family's total, grouped as the game's window groups them
+		-- where the records carry the headings, and who holds how many under it once opened.
+		-- Keyed by the currency's id: a name is a language.
+		------------------------------------------------------------------------------------
+
+		if section == "Currencies" and familyView then
+			local byId, rows, people = {}, {}, 0
+			for _, group in ipairs(gearRoster()) do
+				for _, entry in ipairs(group.members) do
+					local meta = entry.meta or {}
+					if filters:Passes(meta) and meta.currencies and #meta.currencies > 0 then
+						people = people + 1
+						for _, currency in ipairs(meta.currencies) do
+							local id = currency.id or currency.key or currency.name
+							local row = byId[id]
+							if not row then
+								row = { id = currency.id, rowKey = id, name = currency.name,
+									icon = currency.icon, total = 0, people = {} }
+								byId[id] = row
+								rows[#rows + 1] = row
+							end
+							-- The headings and the order from whoever has them: a record read
+							-- before §116 carries neither.
+							row.group = row.group or currency.group
+							row.order = row.order or currency.order
+							row.name = row.name or currency.name
+							local held = tonumber(currency.quantity) or 0
+							row.total = row.total + held
+							if held > 0 then
+								row.people[#row.people + 1] = { entry = entry, held = held }
+							end
+						end
+					end
+				end
+			end
+
+			if #rows == 0 then
+				return finish(L["|cff9d9d9dNo currency has been recorded for anybody yet.|r"])
+			end
+
+			local searching = (search:GetText() or "") ~= ""
+			local lines = UI:CurrencyRows(rows, searching and matches or nil)
+			if not lines then
+				-- No headings anywhere: every currency flat, the most held first.
+				local flat = {}
+				for _, row in ipairs(rows) do
+					if not searching or matches(row.name) then flat[#flat + 1] = row end
+				end
+				table.sort(flat, function(a, b)
+					if a.total ~= b.total then return a.total > b.total end
+					return tostring(a.name) < tostring(b.name)
+				end)
+				lines = {}
+				for _, row in ipairs(flat) do lines[#lines + 1] = { currency = row, level = 0 } end
+			end
+
+			local shown = 0
+			for _, line in ipairs(lines) do
+				local r = nextRow()
+				r.left:SetWidth(220)
+				if line.heading then
+					r.left:SetText(string.format("%s|cff88bbff%s %s|r%s",
+						string.rep("  ", line.level - 1), line.open and "-" or "+", line.heading,
+						line.open and "" or string.format(" |cff888888(%d)|r", line.count)))
+					r.right:SetText("")
+					r.expandCurrency = { key = line.key, open = line.open }
+					r.highlight:Show()
+				else
+					local row = line.currency
+					shown = shown + 1
+					local open = UI.__openCurrency == row.rowKey
+					r.icon:SetTexture(row.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+					r.left:SetText(string.rep("  ", line.level)
+						.. (row.name or string.format(L["Currency #%s"], tostring(row.id))))
+					r.middle:SetText(#row.people > 0
+						and string.format("|cff888888(%d)|r", #row.people) or "")
+					r.right:SetText(string.format("|cffffd700%s|r", tostring(row.total)))
+					r.currencyID = row.id
+					if #row.people > 0 then
+						r.expandCurrencyRow = row.rowKey
+						r.highlight:Show()
+					end
+
+					if open then
+						table.sort(row.people, function(a, b)
+							if a.held ~= b.held then return a.held > b.held end
+							return tostring((a.entry.meta or {}).name)
+								< tostring((b.entry.meta or {}).name)
+						end)
+						for _, person in ipairs(row.people) do
+							local p = nextRow()
+							p.memberKey = person.entry.key
+							p.left:SetWidth(220)
+							p.middle:SetText(personLabel(person.entry))
+							p.right:SetText(tostring(person.held))
+						end
+					end
+				end
+			end
+
+			return finish(string.format(L["|cffffd700%d|r currencies   |cff888888|||r"
+				.. "   %d with currencies recorded"], shown, people))
+		end
 
 		if section == "Quests" and familyView then
 			local byQuest, order = {}, {}

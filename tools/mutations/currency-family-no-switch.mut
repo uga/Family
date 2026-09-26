@@ -1,0 +1,7 @@
+name: Currencies has no whole-family reading
+file: addons/Family_UI/Character.lua
+--- old
+	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true, Quests = true,
+		Currencies = true }
+--- new
+	local FAMILY_SECTIONS = { ["Equipped gear"] = true, Reputations = true, Quests = true }

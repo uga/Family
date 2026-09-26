@@ -1,0 +1,6 @@
+name: an opened currency does not list who holds it
+file: addons/Family_UI/Character.lua
+--- old
+					if open then
+--- new
+					if false then

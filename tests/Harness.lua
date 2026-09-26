@@ -46360,9 +46360,29 @@ print("one member's currencies, grouped as the game groups them")
 	Family.Database:SetMeta(key, { currencies = held, currenciesSeen = time() })
 	Family.UI:ShowTab("character")
 	clickButton("Currencies")
+	-- The switch on this panel, not the first button anywhere with that label: two panels'
+	-- switches count as on screen here, so each is tried and kept only if it turned this panel's
+	-- reading, which the family view's status line says.
+	local function wholeFamily()
+		local was = visibleText("with currencies recorded")
+		for _, f in ipairs(frames) do
+			if type(f.__text) == "string" and f.__text:find(Family.L["Whole family"], 1, true)
+				and clickable(f) and onScreen(f) then
+				fireClick(f)
+				Family.UI:Refresh()
+				if visibleText("with currencies recorded") ~= was then return true end
+				fireClick(f)
+				Family.UI:Refresh()
+			end
+		end
+		return false
+	end
+	-- One member's page, whatever reading an earlier section left the panel in.
+	if visibleText("with currencies recorded") then wholeFamily() end
 	Family.UI:Refresh()
 	check("the member's Currencies page draws the groups, Legion shut",
-		drawnText("Player vs. Player") and drawnText("+ Legion") and not drawnText("Order Resources"))
+		not visibleText("with currencies recorded") and drawnText("Player vs. Player")
+			and drawnText("+ Legion") and not drawnText("Order Resources"))
 	local heading
 	for _, f in ipairs(frames) do
 		local left = rawget(f, "left")
@@ -46373,9 +46393,52 @@ print("one member's currencies, grouped as the game groups them")
 	end
 	if heading then fireClick(heading) end
 	check("and a click on its heading opens it", heading ~= nil and drawnText("Order Resources"))
+
+	-- **The whole family** (`docs/MIDNIGHT.md` §119): a row per currency with the family's total,
+	-- grouped the same way, and who holds how many once the row is opened.
+	local other
+	for memberKey in pairs(Family.Database:Members()) do
+		if memberKey ~= key then other = other or memberKey end
+	end
+	local otherMeta = other and Family.Database:Meta(other) or {}
+	local otherBefore, otherSeen = otherMeta.currencies, otherMeta.currenciesSeen
+	if other then
+		Family.Database:SetMeta(other, { currenciesSeen = time(), currencies = {
+			{ id = 1792, name = "Honor", quantity = 600, order = 5, group = { "Player vs. Player" } },
+			{ id = 1220, name = "Order Resources", quantity = 13, order = 9,
+				group = { "Legacy", "Legion" } },
+		} })
+	end
+	Family.UI.__currencyHeads = {}
+	wholeFamily()
+	Family.UI:Refresh()
+	check("the whole family's currencies are grouped the same way, with the family's total",
+		other ~= nil and visibleText("with currencies recorded") and drawnText("Player vs. Player")
+			and drawnText("|cffffd7002000|r") and drawnText("+ Legion")
+			and not drawnText("Order Resources"))
+	local honourRow
+	for _, f in ipairs(frames) do
+		local left = rawget(f, "left")
+		if f.__shown == true and onScreen(f) and rawget(f, "expandCurrencyRow") ~= nil
+			and left and type(left.__text) == "string" and left.__text:find("Honor", 1, true) then
+			honourRow = f
+		end
+	end
+	if honourRow then fireClick(honourRow) end
+	local otherName = other and (Family.Database:Meta(other).name or other)
+	check("and a currency opened lists who holds how many",
+		honourRow ~= nil and drawnText("1400") and drawnText("600")
+			and drawnText(tostring(otherName)))
+	wholeFamily()
+	if other then
+		Family.Database:SetMeta(other, { currencies = otherBefore or Family.CLEAR,
+			currenciesSeen = otherSeen or Family.CLEAR })
+	end
+
 	Family.Database:SetMeta(key, { currencies = before or Family.CLEAR,
 		currenciesSeen = beforeSeen or Family.CLEAR })
 	Family.UI.__currencyHeads = {}
+	Family.UI.__openCurrency = nil
 end)()
 
 print()

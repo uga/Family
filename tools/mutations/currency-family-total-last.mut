@@ -1,0 +1,6 @@
+name: a currency's family total is only the last member's amount
+file: addons/Family_UI/Character.lua
+--- old
+							row.total = row.total + held
+--- new
+							row.total = held

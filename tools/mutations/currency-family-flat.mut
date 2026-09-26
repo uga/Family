@@ -1,0 +1,6 @@
+name: the whole family's currencies are drawn flat whatever headings were recorded
+file: addons/Family_UI/Character.lua
+--- old
+			local lines = UI:CurrencyRows(rows, searching and matches or nil)
+--- new
+			local lines = nil

@@ -3949,3 +3949,16 @@ headings above it.
 Seven checks and seven mutations, on a few of Maretta's rows; the search check first passed
 without testing anything, because the search left *Warlords* as *Legacy*'s only sub-heading and so
 open anyway, and now shuts *Legacy* by hand before it searches. Not yet seen in the game.
+
+## 119. The whole family's currencies (2026-09-26)
+
+The third part of the redesign, which Alberto added: Character > Currencies has a **Whole family**
+reading, as gear, reputations and quests do. A row per currency, keyed by its id, with the family's
+**total** on the right and how many hold it beside the name; grouped by the same headings as one
+member's page, opening and shutting the same way and sharing what was clicked; a record with no
+headings anywhere gives a flat list, the largest total first. A click on a currency lists who holds
+how many, the most first, each named as every other panel names a member. The class and realm
+filters of the whole-family reading apply, and the filter box searches by name.
+
+Two checks and four mutations, with a second member holding Honor beside the first. Getting the
+checks to test anything took three rounds, recorded as L-128. Not yet seen in the game.

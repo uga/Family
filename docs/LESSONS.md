@@ -4990,3 +4990,20 @@ no longer needed by then, but it cost him a paste and a Lua error.
 kept under 255 including `/run `. Longer work is split across two lines with a global between them.
 
 **Caught by:** nothing automatic. The count is a step taken by hand.
+
+## L-128 — checks that ran against the wrong reading of a panel, and passed
+
+**2026-09-26.** The whole-family currency checks passed while the family view had never been drawn.
+Three faults stacked: an earlier section of the harness had left the Character panel in its
+whole-family reading, so the *one member's page* checks ran against the family view and passed
+because both show the same headings; `clickButton("Whole family")` then clicked another panel's
+switch, which also counts as on screen here; and `drawnText("2000")` matched *12000* in a
+reputation line, so the family's total was *seen* when it had not been drawn. A mutation making the
+total wrong survived, which is what showed it.
+
+**A check about one reading of a panel first puts the panel in that reading and asserts it**, by
+something only that reading draws - here the family view's status line - and a number is matched as
+it is drawn, colour codes and all, never as a bare substring.
+
+**Caught by:** `currency-family-total-last`, which survives a bare-number check, and the member-page
+check's `not visibleText("with currencies recorded")`, which fails in the wrong reading.
