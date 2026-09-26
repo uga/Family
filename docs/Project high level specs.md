@@ -294,6 +294,21 @@ broken down, with their type; they are excluded from the free-slot totals.
 
 Everything in the *Knowledge* and *Possessions* tables is stored as identifiers (§2.1).
 
+### Midnight, to be designed
+
+In Midnight's scope by Alberto's decision of 2026-09-26, and headings only until each is designed.
+Nothing here is promised yet.
+
+#### Crafting orders
+
+#### Delves
+
+#### The keystone a character holds
+
+#### Lockouts, boss by boss
+
+#### Values the client keeps secret
+
 ### When recording happens
 
 Most of it is read at login and whenever the game announces a change. Three things can only
