@@ -1,0 +1,7 @@
+name: Midnight's pet book drops the book's second word
+file: addons/Family/Scanners/Pets.lua
+--- old
+				rank = type(item.subName) == "string" and item.subName ~= ""
+					and item.subName or nil,
+--- new
+				rank = nil,

@@ -4174,3 +4174,25 @@ files a hunter's pet under, as on Classic. `UnitGUID("pet")` answered
 does not carry the tamed creature, so `creatureFrom` would file every pet under one number. Where the
 list answers, its `creatureID` is the one to keep. Whether 165189 is the same for every pet is a
 reading of a second pet, not assumed.
+
+**Read, same pet**: the two ability tables hold spell ids, `petAbilities` 16827, 24450, 263892 and
+`specAbilities` 264663, 264667. The book's fifteen slots, each `itemType 3`: the seven commands and
+stances (Assist, Attack, Defensive, Follow, Move To, Passive, Stay) have **no `spellID`**; the eight
+abilities have one - Avoidance 65220, Catlike Reflexes 263892, Claw 16827, Dash 61684, Growl 2649,
+Predator's Thirst 264663, Primal Rage 264667, Prowl 24450 - with `subName` *Passive*, *Special
+Ability*, *Basic Attack*, *Basic Ability*, *Ferocity Passive*, *Ferocity Ability*, *Bonus Ability*.
+`GetStabledPetList()` answered an empty list, `GetNumStablePets()` 0 and `GetNumActivePets()` 1, with
+the stable shut, on a hunter with one pet. And the GUID's last field, `0100559D9D`, holds the list's
+`petNumber` in its low half: 0x00559D9D is 5610909.
+
+**Built.** `Scanners/Pets.lua` asks the old calls first and Midnight's where they answer nothing:
+the stable from `GetActivePetList` with the stable shut, `GetStabledPetList` only while
+`IsAtStableMaster()` says so - an empty stabled list on a hunter with nothing stabled cannot say
+whether it answers shut - and, away from the master, the stabled pets the last reading there found
+are kept. The book from `C_SpellBook`, commands dropped by the Classic filter, `subName` kept where
+Classic keeps the rank. The creature out from its list row, by the pet number its GUID ends on,
+where the new capability `petGuidGeneric` (Midnight) says the GUID's own creature is generic. What
+`HasPetSpells` answers second, which Classic calls the kind, was cut off by the probe's `and` and is
+taken where it comes; a demon on Midnight is not read yet, and a warlock would say whether it keys
+right. `IsAtStableMaster` is listed and has never been asked. Thirteen checks, eleven mutations.
+**Not yet seen in the game.**

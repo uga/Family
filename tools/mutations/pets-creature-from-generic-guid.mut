@@ -1,0 +1,6 @@
+name: the creature out is read from a GUID that names a generic creature
+file: addons/Family/Scanners/Pets.lua
+--- old
+	if not Family.Capabilities:Has("petGuidGeneric") then return creatureFrom(guid) end
+--- new
+	if true then return creatureFrom(guid) end

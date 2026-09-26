@@ -1,0 +1,6 @@
+name: Midnight's pet book is never read
+file: addons/Family/Scanners/Pets.lua
+--- old
+		local modern, modernKind = readModernBook()
+--- new
+		local modern, modernKind = nil, nil

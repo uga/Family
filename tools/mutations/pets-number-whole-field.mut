@@ -1,0 +1,6 @@
+name: the pet number is read from the GUID's whole last field
+file: addons/Family/Scanners/Pets.lua
+--- old
+	return tonumber(last:sub(-8), 16)
+--- new
+	return tonumber(last, 16)

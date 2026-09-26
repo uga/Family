@@ -1,0 +1,9 @@
+name: Midnight's pet commands are counted as identified abilities
+file: addons/Family/Scanners/Pets.lua
+--- old
+		for _, entry in ipairs(found) do
+			if entry.id then identified = identified + 1 end
+		end
+		count = 0
+--- new
+		count = 0

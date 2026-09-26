@@ -1,0 +1,6 @@
+name: the stabled pets are read with the stable shut
+file: addons/Family/Scanners/Pets.lua
+--- old
+	local atMaster = Family:TryCall(api.IsAtStableMaster) == true
+--- new
+	local atMaster = true

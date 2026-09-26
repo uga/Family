@@ -4292,6 +4292,157 @@ print("pets on the fourth pretend client")
 end)()
 
 print()
+print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook")
+
+-- `docs/MIDNIGHT.md` §124, read on the PTR 2026-09-26 on Deiana with her cat out: the active list
+-- with the stable shut, the fifteen slots of the cat's book, and a GUID whose creature is generic.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	local CAT = { petNumber = 5610909, type = "Beast", isFavorite = false, specID = 74,
+		creatureID = 42718, slotID = 1, isExotic = false, displayID = 17090, name = "Cat",
+		level = 80, icon = 132185, familyName = "Cat", specialization = "Ferocity",
+		petAbilities = { 16827, 24450, 263892 }, specAbilities = { 264663, 264667 } }
+	local WOLF = { petNumber = 5610910, creatureID = 1131, name = "Wolfie", level = 70,
+		familyName = "Wolf", slotID = 6 }
+	local BOOK = {
+		{ nil, "Assist", "Pet Stance" }, { nil, "Attack", "Pet Command" },
+		{ 65220, "Avoidance", "Passive" }, { 263892, "Catlike Reflexes", "Special Ability" },
+		{ 16827, "Claw", "Basic Attack" }, { 61684, "Dash", "Basic Ability" },
+		{ nil, "Defensive", "Pet Stance" }, { nil, "Follow", "Pet Command" },
+		{ 2649, "Growl", "Basic Ability" }, { nil, "Move To", "Pet Command" },
+		{ nil, "Passive", "Pet Stance" }, { 264663, "Predator's Thirst", "Ferocity Passive" },
+		{ 264667, "Primal Rage", "Ferocity Ability" }, { 24450, "Prowl", "Bonus Ability" },
+		{ nil, "Stay", "Pet Command" },
+	}
+	local PET_BANK = 1
+
+	local active, stabled, atMaster = { CAT }, { WOLF }, false
+	set("HasPetSpells", nil)
+	set("GetPetTrainingPoints", nil)
+	set("GetStablePetInfo", nil)
+	set("GetSpellBookItemName", nil)
+	set("C_StableInfo", {
+		GetActivePetList = function() return active end,
+		GetStabledPetList = function() return stabled end,
+		IsAtStableMaster = function() return atMaster end,
+	})
+	set("C_SpellBook", setmetatable({
+		HasPetSpells = function() return #BOOK end,
+		GetSpellBookItemInfo = function(index, bank)
+			local row = bank == PET_BANK and BOOK[index]
+			if not row then return nil end
+			return { itemType = 3, spellID = row[1], name = row[2], subName = row[3],
+				isPassive = false, isOffSpec = false }
+		end,
+	}, { __index = _G.C_SpellBook or {} }))
+	set("Enum", setmetatable({ SpellBookSpellBank = { Player = 0, Pet = PET_BANK } },
+		{ __index = _G.Enum or {} }))
+	local guid = "Pet-0-5769-0-2041-165189-0100559D9D"
+	set("UnitGUID", function() return guid end)
+	set("UnitCreatureFamily", function() return "Cat", 2 end)
+	local realName, realLevel = _G.UnitName, _G.UnitLevel
+	set("UnitName", function(unit) if unit == "pet" then return "Cat" end return realName(unit) end)
+	set("UnitLevel", function(unit) if unit == "pet" then return 80 end return realLevel(unit) end)
+
+	local caps = { petGuidGeneric = true }
+	local stored = { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.Capabilities = { Has = function(_, feature) return caps[feature] == true end }
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function() end
+	midnight.OnDatabaseReady = function() end
+	midnight.After = function() end
+	midnight.Debug = function() end
+	midnight.Database = {
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+	}
+	load("addons/Family/Scanners/Pets.lua", "Family", midnight)
+	local Pets = midnight.Pets
+
+	-- The stable, shut: the active pets, and the stabled ones not read.
+	local stable, whole = Pets:ReadStable()
+	check("with the stable shut the active pet is read from Midnight's list",
+		stable and #stable == 1 and stable[1].name == "Cat" and stable[1].level == 80
+			and stable[1].family == "Cat" and stable[1].creature == 42718
+			and not stable[1].stabled, stable and tostring(#stable))
+	check("and the stabled ones are not taken away from the stable master", whole == false)
+
+	atMaster = true
+	stable, whole = Pets:ReadStable()
+	check("at the stable master the stabled pets are read too, and marked so",
+		whole == true and stable and #stable == 2 and stable[2].name == "Wolfie"
+			and stable[2].stabled == true, stable and tostring(#stable))
+	atMaster = false
+
+	-- The book: the abilities by id, the commands left out.
+	local abilities = Pets:ReadAbilities()
+	local ids = {}
+	for _, ability in ipairs(abilities or {}) do ids[#ids + 1] = tostring(ability.id) end
+	check("the cat's book is read from C_SpellBook, abilities by id and commands left out",
+		table.concat(ids, ",") == "2649,16827,24450,61684,65220,263892,264663,264667",
+		table.concat(ids, ","))
+	local claw
+	for _, ability in ipairs(abilities or {}) do if ability.id == 16827 then claw = ability end end
+	check("with the book's own words beside the id",
+		claw and claw.name == "Claw" and claw.rank == "Basic Attack")
+
+	-- The creature out: by the list row its GUID's number names, not the GUID's generic one.
+	local out = Pets:ReadOut()
+	check("the creature out is keyed by its family id and name",
+		out and out.key == "p:2:Cat" and out.familyID == 2, out and tostring(out.key))
+	check("and is the tamed creature from its list row, not the GUID's generic one",
+		out and out.creature == 42718, out and tostring(out.creature))
+	guid = "Pet-0-5769-0-2041-165189-0100000001"
+	check("a GUID whose number no row carries names no creature",
+		Pets:CreatureOut() == nil, tostring(Pets:CreatureOut()))
+	caps.petGuidGeneric = false
+	check("and where the GUID names the tamed creature, as on Classic, it is read from there",
+		Pets:CreatureOut() == 165189, tostring(Pets:CreatureOut()))
+	caps.petGuidGeneric = true
+	guid = "Pet-0-5769-0-2041-165189-0100559D9D"
+
+	-- Recording: away from the master the stabled pets last read there are kept.
+	stored.payload["Mirror-Midnight"] = { pets = {
+		stable = { { name = "Cat", level = 79 }, { name = "Wolfie", level = 70, stabled = true } },
+	} }
+	Pets:Scan()
+	local pets = stored.payload["Mirror-Midnight"].pets
+	local names = {}
+	for _, pet in ipairs(pets.stable or {}) do names[#names + 1] = pet.name .. ":" .. tostring(pet.level) end
+	check("a scan away from the stable master keeps the stabled pets and renews the active one",
+		table.concat(names, ",") == "Cat:80,Wolfie:70", table.concat(names, ","))
+	check("and records the creature out with its book",
+		pets.known and pets.known["p:2:Cat"] and #pets.known["p:2:Cat"].abilities == 8)
+
+	-- At the master the stable is read whole, so a pet released there is gone.
+	atMaster, stabled = true, {}
+	Pets:Scan()
+	names = {}
+	for _, pet in ipairs(stored.payload["Mirror-Midnight"].pets.stable or {}) do
+		names[#names + 1] = pet.name
+	end
+	check("and a scan at the master, where Wolfie is no longer stabled, lets him go",
+		table.concat(names, ",") == "Cat", table.concat(names, ","))
+
+	-- **The old walk first**: a client whose old stable answers is not asked Midnight's lists.
+	set("GetStablePetInfo", function(slot)
+		if slot == 1 then return nil, "Broken Tooth", 60, "Cat" end
+	end)
+	stable = Pets:ReadStable()
+	check("where the old stable call answers, it is the one read",
+		stable and #stable == 1 and stable[1].name == "Broken Tooth" and stable[1].creature == nil,
+		stable and stable[1] and tostring(stable[1].name))
+
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+end)()
+
+print()
 print("the auction house on the fourth pretend client")
 
 -- The one domain of the six that needs nothing, and the reason is worth a check rather than a

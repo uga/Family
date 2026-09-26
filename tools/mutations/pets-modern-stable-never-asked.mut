@@ -1,0 +1,8 @@
+name: Midnight's stable lists are never asked where the old walk finds nothing
+file: addons/Family/Scanners/Pets.lua
+--- old
+	if found then return found, true end
+	return readModernStable()
+--- new
+	if found then return found, true end
+	return nil

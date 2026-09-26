@@ -34,6 +34,24 @@
 --      spell, with the word the book printed kept beside it for the client that has never
 --      heard of another build's id.
 --
+-- **Midnight has none of the three old calls** (`docs/MIDNIGHT.md` §29) and answers the same
+-- questions through `C_StableInfo` and `C_SpellBook`, read on the PTR 2026-09-26 (§124). They are
+-- asked only where the old ones answer nothing, so the Classic clients keep the route they were
+-- measured on:
+--
+--   - `C_StableInfo.GetActivePetList()` answers with the stable shut: a row a pet, with its name,
+--     level, family as a word, `creatureID` and `petNumber`. `GetStabledPetList()` is the rest of
+--     the stable, and is taken only while the hunter stands at the stable master: whether it
+--     answers with the stable shut was read on a hunter with nothing stabled, which cannot say.
+--   - `C_SpellBook.HasPetSpells()` counts the creature's book, and `GetSpellBookItemInfo(i, Pet)`
+--     describes each slot as a table whose `spellID` is there for an ability and absent for a
+--     command - Claw 16827 beside Attack with none - so the Classic filter holds unchanged.
+--     `subName` is the book's second word, *Basic Attack* or *Ferocity Passive*, kept where
+--     Classic keeps *Rank 2*.
+--   - A pet's GUID carries a **generic** creature there, 165189 for a cat whose list row says
+--     42718, and the capability `petGuidGeneric` says so; its last field's low half is the
+--     list's `petNumber`, which is how the creature that is out finds its row.
+--
 -- What is deliberately not stored is the number `GetSpellBookItemInfo(i, "pet")` hands back
 -- second. It is a `PETACTION`, it moves with the rank, and it differs between builds for the
 -- same ability. Filing anything under it would be filing it under a bar position.
@@ -90,13 +108,64 @@ end
 -- Reading
 --------------------------------------------------------------------------------------------
 
+-- The pet number a GUID ends on: its last field's low eight hex digits. `...-0100559D9D` is
+-- 5610909, the `petNumber` of the same cat's list row (§124).
+local function petNumberFrom(guid)
+	if type(guid) ~= "string" then return nil end
+	local last = guid:match("%-(%x+)$")
+	if not last or #last < 8 then return nil end
+	return tonumber(last:sub(-8), 16)
+end
+
+local function listRows(call)
+	local rows = Family:TryCall(call)
+	if type(rows) ~= "table" then return {} end
+	return rows
+end
+
+local function stableRowFrom(pet, stabled)
+	if type(pet) ~= "table" or type(pet.name) ~= "string" or pet.name == "" then return nil end
+	return {
+		name = pet.name,
+		level = tonumber(pet.level),
+		family = type(pet.familyName) == "string" and pet.familyName ~= ""
+			and pet.familyName or nil,
+		-- The tamed creature, which Classic's stable never gave.
+		creature = tonumber(pet.creatureID),
+		-- Which part of the stable this came from, so a read away from the stable master
+		-- can keep the part it could not read (`Pets:Scan`).
+		stabled = stabled or nil,
+	}
+end
+
+-- Midnight's stable: the active pets always, the stabled ones only at the stable master. The
+-- second answer says whether the stabled part was read at all.
+local function readModernStable()
+	local api = _G.C_StableInfo
+	if type(api) ~= "table" then return nil end
+
+	local found = {}
+	for _, pet in ipairs(listRows(api.GetActivePetList)) do
+		found[#found + 1] = stableRowFrom(pet)
+	end
+
+	local atMaster = Family:TryCall(api.IsAtStableMaster) == true
+	if atMaster then
+		for _, pet in ipairs(listRows(api.GetStabledPetList)) do
+			found[#found + 1] = stableRowFrom(pet, true)
+		end
+	end
+
+	return #found > 0 and found or nil, atMaster
+end
+
 -- The stable, which answers with the door shut.
 --
 -- Deduplicated on what the client said rather than by skipping slot 0, because which of the
 -- two indices *means* the current pet was not settled by the measurement and does not need to
 -- be: what is wanted is the pets, and two rows the client describes identically are one pet
 -- as far as anything here can tell.
-function Pets:ReadStable()
+local function readOldStable()
 	local found, seen = {}, {}
 
 	for slot = STABLE_FIRST, STABLE_LAST do
@@ -123,14 +192,62 @@ function Pets:ReadStable()
 	return #found > 0 and found or nil
 end
 
+-- The old walk first, so the Classic clients keep the route they were measured on, and
+-- Midnight's lists where it finds nothing. The second answer is Midnight's: whether the stabled
+-- part was read, which the old walk always reads whole.
+function Pets:ReadStable()
+	local found = readOldStable()
+	if found then return found, true end
+	return readModernStable()
+end
+
+-- Midnight's book of the creature that is out: its slots by `C_SpellBook`, each a table.
+-- `HasPetSpells` answers the count first; what it answers second is not read yet, so the kind is
+-- taken where it comes and is nil otherwise, which keys a creature as a hunter's pet.
+local function readModernBook()
+	local book = _G.C_SpellBook
+	local banks = _G.Enum and _G.Enum.SpellBookSpellBank
+	if type(book) ~= "table" or type(banks) ~= "table" or banks.Pet == nil then return nil end
+
+	local count, kind = Family:TryCall(book.HasPetSpells)
+	count = tonumber(count)
+	if not count or count < 1 then return nil end
+
+	local found = {}
+	for index = 1, count do
+		local item = Family:TryCall(book.GetSpellBookItemInfo, index, banks.Pet)
+		local id = type(item) == "table" and tonumber(item.spellID) or nil
+		local name = type(item) == "table" and type(item.name) == "string" and item.name ~= ""
+			and item.name or nil
+		if id or name then
+			found[#found + 1] = {
+				id = id,
+				name = name,
+				rank = type(item.subName) == "string" and item.subName ~= ""
+					and item.subName or nil,
+			}
+		end
+	end
+	return found, type(kind) == "string" and kind or nil
+end
+
 -- One creature's book, read while that creature is out.
 function Pets:ReadAbilities()
 	local count, kind = Family:TryCall(HasPetSpells)
 
 	count = tonumber(count)
-	if not count or count < 1 then return nil, nil end
-
 	local found, identified = {}, 0
+
+	if not count or count < 1 then
+		-- The old count answers nothing: Midnight's book, where there is one.
+		local modern, modernKind = readModernBook()
+		if not modern then return nil, nil end
+		found, kind = modern, modernKind
+		for _, entry in ipairs(found) do
+			if entry.id then identified = identified + 1 end
+		end
+		count = 0
+	end
 
 	for index = 1, count do
 		-- Two returns: the name and the rank as a word - *Rank 2*, or *Passive* for one
@@ -187,6 +304,25 @@ function Pets:ReadAbilities()
 	return found, kind
 end
 
+-- Which creature is out, by id. From its GUID, as measured on Era and Burning Crusade; where
+-- the GUID names a generic creature, which is Midnight's (§124), from the active list's row
+-- whose `petNumber` the GUID ends on, or nothing where no row does - a generic number would
+-- file every pet under one creature.
+function Pets:CreatureOut()
+	local guid = Family:TryCall(UnitGUID, "pet")
+	if not Family.Capabilities:Has("petGuidGeneric") then return creatureFrom(guid) end
+
+	local number = petNumberFrom(guid)
+	local api = _G.C_StableInfo
+	if not number or type(api) ~= "table" then return nil end
+	for _, pet in ipairs(listRows(api.GetActivePetList)) do
+		if type(pet) == "table" and tonumber(pet.petNumber) == number then
+			return tonumber(pet.creatureID)
+		end
+	end
+	return nil
+end
+
 -- The creature that is out, or nothing.
 function Pets:ReadOut()
 	local abilities, kind = self:ReadAbilities()
@@ -224,7 +360,7 @@ function Pets:ReadOut()
 		level = tonumber((Family:TryCall(UnitLevel, "pet"))),
 		familyID = tonumber(familyID),
 		family = type(family) == "string" and family ~= "" and family or nil,
-		creature = creatureFrom((Family:TryCall(UnitGUID, "pet"))),
+		creature = self:CreatureOut(),
 		trainingTotal = total,
 		trainingSpent = total and (spent or 0) or nil,
 		abilities = abilities,
@@ -253,8 +389,16 @@ function Pets:Scan()
 	local record = payload.pets or {}
 	local known = record.known or {}
 
-	local stable = self:ReadStable()
+	local stable, whole = self:ReadStable()
 	local out = self:ReadOut()
+
+	-- Away from the stable master Midnight's stabled pets are not read, and are not gone: the
+	-- ones the last reading at the master found are kept beside the active ones just read.
+	if stable and not whole then
+		for _, pet in ipairs(record.stable or {}) do
+			if pet.stabled then stable[#stable + 1] = pet end
+		end
+	end
 
 	-- Nothing read at all leaves the record alone rather than writing an empty one. A
 	-- character who has stabled every pet and summoned none answers neither call, and that

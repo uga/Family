@@ -175,6 +175,12 @@ local EXPECTED = {
 	-- same place and draws no progress in its own Raid Information window, so there the call is
 	-- there and is not asked.
 	lockoutBosses = { [MIDNIGHT] = true },
+
+	-- **A pet's GUID that names a generic creature.** On Midnight a cat whose active-list row says
+	-- `creatureID=42718` had `Pet-0-5769-0-2041-165189-...` for a GUID (`docs/MIDNIGHT.md` §124),
+	-- where Era and Burning Crusade put the tamed creature in that field. The GUID answers and is
+	-- wrong there, so which reader names the creature is the game's and lives here.
+	petGuidGeneric = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -197,6 +203,7 @@ local CONFIRMED = {
 	reagentBag   = { [MIDNIGHT] = true },
 	questLogAsked = { [MIDNIGHT] = true },
 	lockoutBosses = { [MIDNIGHT] = true },
+	petGuidGeneric = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+name: the creature out takes the first active row whatever its number
+file: addons/Family/Scanners/Pets.lua
+--- old
+		if type(pet) == "table" and tonumber(pet.petNumber) == number then
+--- new
+		if type(pet) == "table" then

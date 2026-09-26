@@ -1,0 +1,6 @@
+name: a scan at the stable master keeps stabled pets the master no longer lists
+file: addons/Family/Scanners/Pets.lua
+--- old
+	if stable and not whole then
+--- new
+	if stable then
