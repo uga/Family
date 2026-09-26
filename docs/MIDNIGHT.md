@@ -3962,3 +3962,13 @@ filters of the whole-family reading apply, and the filter box searches by name.
 
 Two checks and four mutations, with a second member holding Honor beside the first. Getting the
 checks to test anything took three rounds, recorded as L-128. Not yet seen in the game.
+
+**Seen on the PTR the same day** (§118, §119): Maretta's page grouped as the game's window, *Legacy*'s
+seven expansions shut with their counts; the whole-family reading with *3 with currencies
+recorded*, and *Lesser Charm of Good Fortune* 274 opening onto Maretta 238 and Ahia 36. Two things
+from it. **Currencies nobody holds**, *Conquest* at 0 among them, were lines with nobody to list
+under them - Alberto: *some lines are at 0, and they don't drill down to any char* - so the family
+reading now leaves out a currency whose total is nought; one member's page keeps its noughts, as
+the game's own does. **Currencies below the headings, with no group** - *Coins of Air*, *Voidlight
+Marl* - are Ahia's and Deiana's, recorded before §116 kept headings, and join their groups when each
+of them next logs in. One check, one mutation.

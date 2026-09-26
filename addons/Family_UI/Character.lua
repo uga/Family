@@ -1431,6 +1431,15 @@ local function build(frame)
 				end
 			end
 
+			-- **Only what somebody holds.** A currency the whole family has none of has nobody to
+			-- list under it; one member's page keeps its noughts, as the game's own window does.
+			-- Alberto, 2026-09-26: *some lines are at 0, and they don't drill down to any char.*
+			local heldRows = {}
+			for _, row in ipairs(rows) do
+				if row.total > 0 then heldRows[#heldRows + 1] = row end
+			end
+			rows = heldRows
+
 			if #rows == 0 then
 				return finish(L["|cff9d9d9dNo currency has been recorded for anybody yet.|r"])
 			end

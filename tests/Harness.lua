@@ -46407,6 +46407,9 @@ print("one member's currencies, grouped as the game groups them")
 			{ id = 1792, name = "Honor", quantity = 600, order = 5, group = { "Player vs. Player" } },
 			{ id = 1220, name = "Order Resources", quantity = 13, order = 9,
 				group = { "Legacy", "Legion" } },
+			-- Held by nobody, as Conquest was on Maretta's family: not a line in this view.
+			{ id = 1602, name = "Conquest", quantity = 0, order = 6,
+				group = { "Player vs. Player" } },
 		} })
 	end
 	Family.UI.__currencyHeads = {}
@@ -46416,6 +46419,8 @@ print("one member's currencies, grouped as the game groups them")
 		other ~= nil and visibleText("with currencies recorded") and drawnText("Player vs. Player")
 			and drawnText("|cffffd7002000|r") and drawnText("+ Legion")
 			and not drawnText("Order Resources"))
+	check("and a currency nobody holds any of is not a line there",
+		visibleText("with currencies recorded") and not drawnText("Conquest"))
 	local honourRow
 	for _, f in ipairs(frames) do
 		local left = rawget(f, "left")

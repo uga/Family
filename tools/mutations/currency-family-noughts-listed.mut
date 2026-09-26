@@ -1,0 +1,6 @@
+name: the whole family's currencies list ones nobody holds, lines with nobody under them
+file: addons/Family_UI/Character.lua
+--- old
+				if row.total > 0 then heldRows[#heldRows + 1] = row end
+--- new
+				heldRows[#heldRows + 1] = row
