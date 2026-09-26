@@ -42416,6 +42416,39 @@ print("what a craftable thing costs to make")
 			and Family.Recipes:BoundReagent(BAR) == false,
 		tostring(Family.Recipes:BoundReagent(SKIN)))
 
+	-- **Midnight ships no table**, so the client is asked: the binding is the fourteenth answer,
+	-- 1 for Ironwood Lumber (Warband) and 0 for Copper Ore, read on the PTR (`docs/MIDNIGHT.md`
+	-- §112). Only the old item global is taken away, as on the PTR.
+	do
+		-- The expansion set by hand, as this section sets it: a `Detect` would put back the real
+		-- build rather than the one the section chose.
+		local heldExpansion, heldInfo, heldItem = Family.Capabilities.expansion, GetItemInfo, C_Item
+
+		-- Where a table is shipped it is the answer, whatever the client would say: the Classic
+		-- clients keep the route they were measured on.
+		GetItemInfo = function(id)
+			if id == BAR then
+				return "bar", nil, 1, 1, 1, "Tradeskill", "Metal", 20, "", 0, 0, 7, 7, 1
+			end
+			return heldInfo(id)
+		end
+		check("a client with a shipped table is not asked, even where it would say bound",
+			Family.Recipes:BoundReagent(BAR) == false)
+
+		Family.Capabilities.expansion = 12
+		GetItemInfo = nil
+		C_Item = setmetatable({ GetItemInfo = function(id)
+			local bind = ({ [245586] = 1, [2770] = 0 })[id]
+			if bind == nil then return nil end
+			return "item", nil, 1, 1, 1, "Tradeskill", "Other", 1000, "", 0, 0, 7, 11, bind
+		end }, { __index = heldItem })
+		check("on Midnight a material's binding is asked of the client, a Warband one included",
+			Family.Recipes:BoundReagent(245586) == true
+				and Family.Recipes:BoundReagent(2770) == false
+				and Family.Recipes:BoundReagent(999999) == false)
+		Family.Capabilities.expansion, GetItemInfo, C_Item = heldExpansion, heldInfo, heldItem
+	end
+
 	----------------------------------------------------------------------------------------
 	-- The prices, and which source wins
 	----------------------------------------------------------------------------------------

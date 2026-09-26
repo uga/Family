@@ -1,0 +1,6 @@
+name: a material the shipped table does not list is asked of the client anyway
+file: addons/Family/Recipes.lua
+--- old
+	if here then return here[itemID] == true end
+--- new
+	if here and here[itemID] then return true end

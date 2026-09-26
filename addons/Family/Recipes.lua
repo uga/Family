@@ -668,13 +668,20 @@ end
 -- cioè tali che lo debba farmare esclusivamente il crafter) sommano zero al totale non perché
 -- "valgano" zero, ma perché comunque non richiedono soldi per acquisirli.* Bind on pickup, read
 -- off `ItemSparse.Bonding` at generation time - Skin of Shadow is 12753 and reads 1.
+--
+-- **Asked of the client where no table is shipped**, which is Midnight: the item's binding is the
+-- fourteenth answer of its item info, the same field the table is generated from. On Midnight it
+-- reads 1 for *Ironwood Lumber*, which binds to the Warband, and 0 for Copper Ore and Aqirite
+-- (`docs/MIDNIGHT.md` §112) - so a Warband material is one no money buys, as it should be. An item
+-- the client has not loaded yet answers nothing and is taken as buyable until it has.
 function Recipes:BoundReagent(itemID)
 	itemID = tonumber(itemID)
 	local expansion = expansionHere()
 	if not (itemID and expansion) then return false end
 
 	local here = (Family.BoundReagents or {})[expansion]
-	return (here and here[itemID]) == true
+	if here then return here[itemID] == true end
+	return select(14, Family:ItemInfo(itemID)) == 1
 end
 
 -- **The cheapest way to come by one of a thing**, and where that price came from.

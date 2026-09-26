@@ -1,0 +1,6 @@
+name: where no table is shipped a material is never asked whether it binds, so Midnight prices every one as buyable
+file: addons/Family/Recipes.lua
+--- old
+	return select(14, Family:ItemInfo(itemID)) == 1
+--- new
+	return false

@@ -3808,3 +3808,20 @@ waits too, which reverses the yes Alberto gave it earlier the same afternoon. Th
 The research session reads Forever's side from which of the game's own interface parts load on
 Forever's kind of game; that is its reading, to be asked of the client when Forever's work starts.
 What Family already does on Midnight is not taken away by this.
+
+## 112. A material's binding, asked of the client on Midnight (2026-09-26)
+
+What a recipe costs counts a bind-on-pickup material as nought and says so, since no money buys it.
+On the Classic clients that comes from `Family.BoundReagents`, generated from `ItemSparse.Bonding`;
+no such table is shipped for Midnight, so every material there was priced as buyable.
+
+Asked on the PTR, the fourteenth answer of `C_Item.GetItemInfo` - the binding - read **1 for
+*Ironwood Lumber***, which the game calls *Binds to Warband*, and **0 for Copper Ore and for
+Aqirite**. So the one value covers both kinds a crafter must gather for themselves, the old bind on
+pickup and Midnight's Warband binding, and it is the field the Classic table is built from.
+
+`Recipes:BoundReagent` now asks the client where no table is shipped for the expansion, and the
+table stays the answer where one is. An item the client has not loaded yet answers nothing and is
+taken as buyable until it has. Two checks, two mutations; the check sets the section's expansion by
+hand, as the section does, after a `Detect` put the real build back under the checks that followed.
+Not yet seen in the game.
