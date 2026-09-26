@@ -3839,3 +3839,14 @@ first* would keep the wrong number. The size of the log is the game's, so it is 
 `questLogAsked`, Midnight's only: there the limit is asked of `GetMaxNumQuestsCanAccept`, and the
 Classic clients keep `MAX_QUESTS` even where a build of theirs carries the newer call. Two checks,
 two mutations; `Surface.lua` gains the call.
+
+## 114. The Skyriding tree and housing, by §111's rule (2026-09-26)
+
+Both were on the list as possible features. Under §111 a system joins Midnight's first release only
+where Forever has it too. Whether Forever has skyriding is not known - the research session's own
+reading says *unknown* - so the **Skyriding tree** waits until Forever's client is asked. **Housing**,
+already deferred at Alberto's word, is a Midnight system as well and waits for the same reason. The
+Mount column's flight style (§85) stays: it is already done, and §111 takes nothing away.
+
+What is left in scope for Midnight's first release, beyond what is done: **lockouts boss by boss**
+and **the client's secret-value predicates**, each a list of questions for the probe first.
