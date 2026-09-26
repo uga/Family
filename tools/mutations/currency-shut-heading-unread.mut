@@ -1,0 +1,6 @@
+name: a heading the player keeps shut is not opened, and its currencies are never recorded
+file: addons/Family/Scanners/Currencies.lua
+--- old
+			Family:TryCall(api.ExpandCurrencyList, index, true)
+--- new
+			Family:TryCall(function() end, index, true)

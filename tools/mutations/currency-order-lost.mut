@@ -1,0 +1,6 @@
+name: a currency's place in the game's order is not kept
+file: addons/Family/Scanners/Currencies.lua
+--- old
+				entry.order = row
+--- new
+				entry.order = nil

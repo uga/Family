@@ -81,6 +81,12 @@ end
 -- is what that build is read by (DATASOURCES, the currencies table). Kept because it is the
 -- route a client that has those calls takes, and because a table that hands over `currencyID`
 -- outright is worth more than any position - not because any build here was seen using it.
+-- When this file last opened or shut a heading itself. Whether the client announces that as a
+-- currency change is not measured yet; if it does, a scan answering its own opening would open the
+-- headings again three seconds later, for as long as one stays shut. So an announcement within a
+-- second of it is taken for the echo it would be.
+local ownToggle
+
 local function readModernList()
 	local api = _G.C_CurrencyInfo
 	if type(api) ~= "table" then return nil end
@@ -88,20 +94,55 @@ local function readModernList()
 	local size = tonumber((Family:TryCall(api.GetCurrencyListSize))) or 0
 	if size == 0 then return nil end
 
-	local found = {}
-	for index = 1, size do
+	-- **Every shut heading opened first, and shut again after.** A heading the player keeps shut
+	-- takes its currencies out of the list: Maretta's, 2026-09-26, went from 45 rows to 36 with
+	-- *Legacy > Legion* shut, and its nine currencies were not in it (`docs/MIDNIGHT.md` §116).
+	-- Top down, so a heading opened never moves one above it; shut again last first, so every
+	-- position noted is still the heading it was.
+	local opened = {}
+	local index = 1
+	while index <= size do
 		local info = Family:TryCall(api.GetCurrencyListInfo, index)
+		if type(info) == "table" and info.isHeader and info.isHeaderExpanded == false then
+			Family:TryCall(api.ExpandCurrencyList, index, true)
+			opened[#opened + 1] = index
+			size = tonumber((Family:TryCall(api.GetCurrencyListSize))) or size
+		end
+		index = index + 1
+	end
 
-		-- A table, and the headers in the list are not currencies.
-		if type(info) == "table" and not info.isHeader then
+	-- **The heading each currency sits under**, in the game's words and order, as a quest keeps
+	-- its zone: a heading's depth says where it goes on the path, and a currency takes the path
+	-- above it - *Legacy > Legion* for Order Resources, *Dungeon and Raid* for Timewarped Badge.
+	local found, path = {}, {}
+	for row = 1, size do
+		local info = Family:TryCall(api.GetCurrencyListInfo, row)
+		local depth = type(info) == "table" and tonumber(info.currencyListDepth) or 0
+
+		if type(info) == "table" and info.isHeader then
+			-- Deeper names left from the branch before are never read: a currency takes the path
+			-- only down to its own depth.
+			path[depth + 1] = info.name
+		elseif type(info) == "table" then
 			local id = tonumber(info.currencyID)
-				or idFromLink(Family:TryCall(api.GetCurrencyListLink, index))
+				or idFromLink(Family:TryCall(api.GetCurrencyListLink, row))
 
 			local entry = entryFrom(id, info.name, info.quantity, info.maxQuantity,
 				info.iconFileID or info.icon)
-			if entry then found[#found + 1] = entry end
+			if entry then
+				local group = {}
+				for level = 1, math.min(depth, #path) do group[level] = path[level] end
+				entry.group = #group > 0 and group or nil
+				entry.order = row
+				found[#found + 1] = entry
+			end
 		end
 	end
+
+	for last = #opened, 1, -1 do
+		Family:TryCall(api.ExpandCurrencyList, opened[last], false)
+	end
+	if #opened > 0 then ownToggle = Family:TryCall(_G.GetTime) end
 
 	return #found > 0 and found or nil
 end
@@ -283,6 +324,8 @@ Family:OnDatabaseReady("currencies", function()
 		"PLAYER_MONEY",
 	} do
 		Family:RegisterEvent(event, "currencies", function()
+			local now = Family:TryCall(_G.GetTime)
+			if ownToggle and now and now - ownToggle < 1 then return end
 			Family:After(3, "currencies", function() Currencies:Scan() end)
 		end)
 	end

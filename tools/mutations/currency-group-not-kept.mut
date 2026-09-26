@@ -1,0 +1,6 @@
+name: a currency does not keep the headings above it
+file: addons/Family/Scanners/Currencies.lua
+--- old
+				entry.group = #group > 0 and group or nil
+--- new
+				entry.group = nil

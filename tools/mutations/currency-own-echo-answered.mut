@@ -1,0 +1,6 @@
+name: the scan answers its own opening of a heading, and opens them again every three seconds
+file: addons/Family/Scanners/Currencies.lua
+--- old
+			if ownToggle and now and now - ownToggle < 1 then return end
+--- new
+

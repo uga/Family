@@ -3863,3 +3863,30 @@ client's language, with the kill as a flag.
 Not read yet: what the fourth value is, whether the name is the only identity a boss has here (a
 name is a word, and §2.1 stores ids), and whether a dungeon lockout answers the same way. The
 specification's heading stays bare until the design is settled.
+
+## 116. Currencies under a shut heading, and the heading each one sits under (2026-09-26)
+
+Alberto asked for the currency panels to be redesigned for a character with dozens of currencies;
+the decisions are in DECISIONS the same day. First, what the list answers, read on Maretta with
+`C_CurrencyInfo.GetCurrencyListInfo` over the whole list:
+
+- **Headings are rows** marked `isHeader`, with `currencyID` 0 and a **depth**, `currencyListDepth`:
+  *Midnight* 0 and *Season 2* 1 under it; *Dungeon and Raid*, *Miscellaneous*, *Player vs. Player*
+  0; *Legacy* 0 and one heading per expansion under it at 1, *Dragonflight* to *Wrath of the Lich
+  King*. A currency carries the depth below its heading and its own id.
+- All open, 45 rows, 13 headings, **32 currencies** - the number Family showed for her.
+- **With *Legacy > Legion* shut, 36 rows**: the heading still there with `isHeaderExpanded` false and
+  its nine currencies gone from the list. So a currency under a heading the player keeps shut was
+  never recorded, on Midnight or on any client reading this list.
+
+The reader now opens every shut heading first, top down, with `C_CurrencyInfo.ExpandCurrencyList`,
+reads, and shuts them again last first, as the quest log is read. It keeps each currency's heading
+path in the game's words - *Legacy > Legion* for Order Resources - and its place in the game's
+order, for the grouped panels. Whether opening a heading makes the client announce a currency change
+is being measured; until it is known, an announcement within a second of the scan's own opening is
+taken for its echo, so a shut heading cannot set off a scan every three seconds. The older list,
+which Mists reads, is unchanged: whether it has the same hole is `main`'s question.
+
+Five checks and five mutations, on a copy of Maretta's rows with *Legion* shut; one line the
+mutations showed did nothing came out, and the header mutation was moved to the line that now
+does its work. Not yet seen in the game.

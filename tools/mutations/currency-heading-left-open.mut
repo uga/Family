@@ -1,0 +1,6 @@
+name: the headings opened to read the list are left open in the player's window
+file: addons/Family/Scanners/Currencies.lua
+--- old
+		Family:TryCall(api.ExpandCurrencyList, opened[last], false)
+--- new
+		Family:TryCall(function() end, opened[last], false)

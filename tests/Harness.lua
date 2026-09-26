@@ -2772,32 +2772,73 @@ print("the currency list Midnight is the first client to answer")
 	-- or from the twelfth value of a row, and a row that hands it over outright is worth more
 	-- than either (DECISIONS, 2026-09-20). Honour carries the account-transfer fields the second
 	-- brief named, and §16 read 80 for its percentage.
+	-- A few of Maretta's rows, 2026-09-26 (`docs/MIDNIGHT.md` §116): headings with a depth, and
+	-- *Legacy > Legion* shut, its currency out of the list until the heading is opened. The client
+	-- answers only what is open, as it did there, and the heading opens and shuts when asked.
+	local ALL = {
+		{ name = "Midnight", isHeader = true, currencyListDepth = 0 },
+		{ name = "Season 2", isHeader = true, currencyListDepth = 1 },
+		{ name = "Venomblight Manaflux", currencyID = 3465, quantity = 8, currencyListDepth = 2 },
+		{ name = "Player vs. Player", isHeader = true, currencyListDepth = 0 },
+		{ name = "Honor", currencyID = 1792, quantity = 1400, maxQuantity = 15000,
+			iconFileID = 133784, isAccountTransferable = true, transferPercentage = 80,
+			currencyListDepth = 1 },
+		{ name = "Conquest", currencyID = 1602, quantity = 250, maxQuantity = 0,
+			iconFileID = 133785, currencyListDepth = 1 },
+		{ name = "Legacy", isHeader = true, currencyListDepth = 0 },
+		{ name = "Legion", isHeader = true, currencyListDepth = 1, shut = true },
+		{ name = "Order Resources", currencyID = 1220, quantity = 27187, currencyListDepth = 2 },
+		{ name = "Warlords of Draenor", isHeader = true, currencyListDepth = 1 },
+		{ name = "Apexis Crystal", currencyID = 823, quantity = 102110, currencyListDepth = 2 },
+	}
+	local function visible()
+		local rows, hiddenBelow = {}, nil
+		for _, row in ipairs(ALL) do
+			if hiddenBelow and row.currencyListDepth > hiddenBelow then
+				-- under a shut heading: not in the list
+			else
+				hiddenBelow = nil
+				rows[#rows + 1] = row
+				if row.isHeader and row.shut then hiddenBelow = row.currencyListDepth end
+			end
+		end
+		return rows
+	end
+	local toggled = {}
 	set("C_CurrencyInfo", {
-		GetCurrencyListSize = function() return 3 end,
+		GetCurrencyListSize = function() return #visible() end,
 		GetCurrencyListInfo = function(index)
-			if index == 1 then
-				-- A header as this client really writes one, read off the run: it carries a
-				-- name, a `currencyID` of 0 and a `quantity` of 0, so it looks exactly like a
-				-- currency nobody has any of. `isHeader` is the only thing that says otherwise,
-				-- and 0 is truthy in Lua, so without that flag it is filed under the key `c0`.
-				return { name = "Midnight", isHeader = true, currencyID = 0, quantity = 0,
-					maxQuantity = 0, isHeaderExpanded = true }
+			local row = visible()[index]
+			if not row then return nil end
+			-- A heading as this client really writes one: a `currencyID` and `quantity` of 0, so it
+			-- looks like a currency nobody has any of, and 0 is truthy in Lua. `isHeader` is the only
+			-- thing that says otherwise.
+			return { name = row.name, isHeader = row.isHeader or false,
+				currencyID = row.currencyID or 0, quantity = row.quantity or 0,
+				maxQuantity = row.maxQuantity or 0, iconFileID = row.iconFileID,
+				currencyListDepth = row.currencyListDepth,
+				isHeaderExpanded = row.isHeader and not row.shut or false,
+				isAccountTransferable = row.isAccountTransferable,
+				transferPercentage = row.transferPercentage }
+		end,
+		ExpandCurrencyList = function(index, open)
+			local row = visible()[index]
+			if row and row.isHeader then
+				row.shut = not open
+				toggled[#toggled + 1] = (open and "+" or "-") .. row.name
 			end
-			if index == 2 then
-				return { name = "Honor", currencyID = 1792, quantity = 1400,
-					maxQuantity = 15000, iconFileID = 133784,
-					isAccountTransferable = true, transferPercentage = 80 }
-			end
-			return { name = "Conquest", currencyID = 1602, quantity = 250,
-				maxQuantity = 0, iconFileID = 133785 }
 		end,
 	})
 
 	local stored = {}
 	local midnight = setmetatable({}, { __index = FamilyPrivate })
 	midnight.CurrentMember = function() return "Mirror-Midnight" end
-	midnight.RegisterEvent = function() end
-	midnight.OnDatabaseReady = function() end
+	local handlers, waits = {}, 0
+	midnight.RegisterEvent = function(_, event, _, fn) handlers[event] = fn end
+	midnight.OnDatabaseReady = function(_, _, fn) fn() end
+	midnight.After = function() waits = waits + 1 end
+	local clock = 100
+	set("GetTime", function() return clock end)
 	midnight.Database = {
 		Meta = function(_, k) return stored[k] end,
 		SetMeta = function(_, k, fields)
@@ -2810,8 +2851,31 @@ print("the currency list Midnight is the first client to answer")
 	midnight.Currencies:Scan()
 
 	local found = stored["Mirror-Midnight"] and stored["Mirror-Midnight"].currencies
-	check("the modern list answers where the loose calls are gone",
-		type(found) == "table" and #found == 2, found and #found or "nothing recorded")
+	check("the modern list answers where the loose calls are gone, a shut heading's currency among them",
+		type(found) == "table" and #found == 5, found and #found or "nothing recorded")
+	check("the shut heading was opened to read it and shut again after",
+		table.concat(toggled, ",") == "+Legion,-Legion", table.concat(toggled, ","))
+	local byId = {}
+	for _, entry in ipairs(found or {}) do byId[entry.id] = entry end
+	check("each currency keeps the headings above it, in the game's words",
+		byId[1220] and byId[1220].group and byId[1220].group[1] == "Legacy"
+			and byId[1220].group[2] == "Legion" and #byId[1220].group == 2
+			and byId[1602] and #byId[1602].group == 1 and byId[1602].group[1] == "Player vs. Player"
+			and byId[3465] and byId[3465].group[2] == "Season 2")
+	check("and its place in the game's order",
+		byId[3465] and byId[1220] and byId[823] and byId[3465].order < byId[1220].order
+			and byId[1220].order < byId[823].order)
+
+	-- **Its own opening is not taken for a change.** Whether the client announces one is not
+	-- measured; if it does, answering it would open the headings again every three seconds.
+	local update = handlers["CURRENCY_DISPLAY_UPDATE"]
+	waits = 0
+	if update then update() end
+	local echoed = waits
+	clock = clock + 5
+	if update then update() end
+	check("a currency announcement right after the scan's own opening is not answered, a later one is",
+		update ~= nil and echoed == 0 and waits == 1, tostring(echoed) .. " then " .. tostring(waits))
 	check("and the header in it is not filed as a currency",
 		found and not (function()
 			for _, entry in ipairs(found) do
