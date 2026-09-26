@@ -3670,5 +3670,6 @@ on the tree is the case that asked for it.
 Three of the older checks said a one-line tooltip off the maps is never a node, and are now the
 opposite; they were rewritten to the rule, with a name nobody holds, *Mailbox*, for the silent
 half. The mutation that guarded the old rule was pointed at the new line rather than removed, and
-the world-map check gained a vein, which only a pin is scored for. Five checks, four mutations.
+the world-map check gained a vein, which only a pin is scored for. Four checks new and three
+rewritten, 3975 to 3979 in all; four mutations.
 Not yet seen in the game.
