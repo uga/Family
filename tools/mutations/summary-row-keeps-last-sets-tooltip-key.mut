@@ -1,0 +1,5 @@
+name: a pooled Summary row keeps the tooltip key of the set shown before
+file: addons/Family_UI/Summary.lua
+--- old
+			row.__skills, row.__places, row.__riding, row.__stock = nil, nil, nil, nil
+--- new
