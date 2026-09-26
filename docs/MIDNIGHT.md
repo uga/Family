@@ -3414,3 +3414,24 @@ every row. It is now a capability, `chronoboon`, true on the three Classic colum
 Midnight, and a summary column may name the feature it `needs`; the panel asks when it draws, so
 Era, Burning Crusade and Mists draw exactly what they drew before. One check reads the columns drawn
 under Midnight's build and under the harness's own, and one mutation draws it everywhere again.
+
+## 94. Talents on Midnight: what Family draws, and the first reading of `C_Traits` (2026-09-26)
+
+**What Family draws.** Ahia, an Assassination rogue on the PTR, 12.1.5: the Talents panel says
+*Assassination - Damage | one talent a tier | seen just now* and lists *tier 1* to *tier 7*, each
+*nothing chosen*, with one icon beside tier 7. That is the Mists reader (`readChoices`) run on a
+client whose talents are not a grid: `talentTrees` is false there, so the scan took the only other
+route it has. The specialisation is right. The rest is nothing, drawn as seven empty choices.
+
+**What the game shows.** The Talents window has two trees side by side, *Rogue 8* and *Assassination
+16*, of nodes joined by lines. Some nodes are choices between two, shown as octagons. Points are
+gated by rows: 10 before the lower class rows and 4 before the lower spec rows. Hero talents sit at
+the bottom, three PvP slots at the bottom right, and a *Default Loadout* picker at the bottom left.
+
+**What the client answers**, three `/run` lines:
+
+- `C_ClassTalents.GetActiveConfigID()` is `25147678`. `C_Traits.GetConfigInfo` of it gives the name
+  *Assassination*, type 1, and **one** tree id, `852`, with **206** nodes. So the two trees on screen
+  are one tree to the client, class and specialisation nodes together.
+- The first node in that tree with a rank taken is `90628`: rank 1 of 1, active entry `112513`.
+- `C_Traits.GetEntryInfo(configID, 112513)` then `GetDefinitionInfo` gives the spell - asked next.
