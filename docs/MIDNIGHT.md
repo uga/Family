@@ -3462,6 +3462,6 @@ a rank where there is more than one. *Other* holds a node whose pool is neither 
 The Spec button goes round all of the class's specialisations, not two.
 
 Not yet seen in the game: the hero heading and its name (Ahia has no hero talents), `posX`/`posY`,
-another specialisation's record, and the whole panel. Thirteen checks and fourteen mutations.
+another specialisation's record, and the whole panel. Seventeen checks and fourteen mutations.
 `tools/FamilySurface/Surface.lua` is regenerated; the eleven names it gained include three from the
 flight-style work of §85, which had not been regenerated then.
