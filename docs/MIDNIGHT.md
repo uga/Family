@@ -3615,3 +3615,34 @@ A capability, `reagentBag`, true for Midnight only: the bag scanner reads contai
 bag where it holds, and the bank scanner skips container 5 where it holds. On the three Classic
 clients container 5 is the first bank bag and is read with the bank as before, which a new check
 holds on Classic's own fixture. Five checks, four mutations. Not yet seen in the game.
+
+## 103. Midnight's minimap refills its tooltip round after round (2026-09-26)
+
+After §102 the Copper Vein in the world drew *Family possessions: Copper Ore - 67, Deiana 67 (67
+bags)*, which is right. On the minimap the block still never showed, although the vein resolved.
+
+Hooking `SetText` printed nothing while the pointer was on the blip. Hooking `AddLine`,
+`ClearLines`, `SetOwner`, `Show`, `ProcessInfo` and `SetMinimapMouseover` together printed, over
+and over while it stayed there:
+
+    SetOwner table / ClearLines / Show / ProcessInfo table / SetMinimapMouseover
+
+and once, after the first `SetMinimapMouseover`, Family's two blank separator lines (its other
+lines go through `AddDoubleLine`, which was not hooked). So the minimap fills the tooltip through
+`ProcessInfo` and `SetMinimapMouseover` and does it again round after round, probably to turn the
+arrow beside the name, which on Midnight shows whether the node is above or below. Family wrote
+once, after `OnShow` and a frame later, and the next round wiped it.
+
+`GameTooltip.SetMinimapMouseover` is now followed with `hooksecurefunc`, so the block goes on
+inside every round. Through `TryCall`, because the Classic clients have no such method and
+`hooksecurefunc` refuses one that is not there. One check, one mutation; the harness's stub of
+`hooksecurefunc` now takes the method form the game takes. Not yet seen in the game.
+
+**Nodes named after what they give.** Alberto, the same day: side content has had players gather
+things from the world since Draenor, and some of it comes from nodes named exactly after the item
+they give - *Ironwood Lumber*, a one-line tooltip in the world. Of the 209 Retail vein names in
+his corpus, 12 are exactly an item's name, and most are that kind: *Alterac Granite*, *Nethervine
+Crystal*, *Draenethyst Mine Crystal*, *Strange Ore*, *Chunk of Saronite*, *Enchanted Earth*,
+*Krasari Iron*, *Sapphire of Aku'Mai*, *The Light of Souls*, *Azure Ore*, and *Aqirite* and
+*Bismuth*. wago cannot measure more: Midnight's `GameObjects` has 31,736 rows and no vein among
+them, because gathering nodes and what they give are the server's.

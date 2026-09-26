@@ -2222,6 +2222,19 @@ Family:OnDatabaseReady("tooltips", function()
 	-- from a setter, so a test that cannot call it cannot catch it breaking.
 	UI.__nodeCallback = onNode
 
+	-- **Midnight's minimap refills the tooltip itself, again and again.** Read in the game
+	-- 2026-09-26 with every setter hooked (`docs/MIDNIGHT.md` §103): while the pointer is on a
+	-- vein, the tooltip goes round `SetOwner`, `ClearLines`, `Show`, `ProcessInfo`,
+	-- `SetMinimapMouseover`, over and over. Family's block went on after the first round and the
+	-- next one wiped it, before the frame it waits for came. So it is written straight after
+	-- `SetMinimapMouseover` as well, inside the same round. Hooked through `TryCall`, because the
+	-- Classic clients have no such method and `hooksecurefunc` refuses one that is not there.
+	UI.__hookMinimapNode = function(tooltip)
+		if not tooltip then return end
+		Family:TryCall(_G.hooksecurefunc, tooltip, "SetMinimapMouseover",
+			function(self) onNode(self) end)
+	end
+
 	-- What a name resolves to is a fact about the game; whether anybody holds one is a fact
 	-- about the records, and that is the half that moves.
 	Family.Database:OnChanged("tooltip.nodes", function() wipe(resolvedNames) end)
@@ -2259,6 +2272,8 @@ Family:OnDatabaseReady("tooltips", function()
 			end
 		end)
 	end
+
+	UI.__hookMinimapNode(_G.GameTooltip)
 
 	Family.tooltipRoute = modern and "both" or "classic"
 	Family:Debug("tooltip hooks installed: %s", Family.tooltipRoute)

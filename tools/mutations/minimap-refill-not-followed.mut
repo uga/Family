@@ -1,0 +1,6 @@
+name: Midnight's minimap refill is not followed, so the block it wipes is never written again in time
+file: addons/Family_UI/Tooltip.lua
+--- old
+		Family:TryCall(_G.hooksecurefunc, tooltip, "SetMinimapMouseover",
+--- new
+		Family:TryCall(function() end, tooltip, "SetMinimapMouseover",

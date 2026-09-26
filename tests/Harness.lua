@@ -1059,10 +1059,14 @@ SendMail = function() end
 -- Hooking a global, the way the game does it: the original still runs, and the hook runs
 -- after it with the same arguments. Family uses this for exactly one thing and guards its
 -- existence, so a client without it loses the feature rather than the addon.
-hooksecurefunc = function(name, hook)
-	local original = _G[name]
+-- And a method, `hooksecurefunc(table, name, hook)`, which the game takes as well: Midnight's
+-- minimap tooltip is followed that way (`docs/MIDNIGHT.md` §103). A method that is not there is
+-- refused, as the game refuses it.
+hooksecurefunc = function(owner, name, hook)
+	if type(owner) ~= "table" then owner, name, hook = _G, owner, name end
+	local original = owner[name]
 	assert(type(original) == "function", "hooksecurefunc: no such function " .. tostring(name))
-	_G[name] = function(...)
+	owner[name] = function(...)
 		local results = { original(...) }
 		hook(...)
 		return unpack(results)
@@ -7981,6 +7985,37 @@ do
 		Family.Names.Item = realNames
 		GetBuildInfo = heldBuild
 		Family.Capabilities:Detect()
+	end
+
+	-- **Midnight's minimap refills the tooltip round after round** (`docs/MIDNIGHT.md` §103), and
+	-- the block has to go on inside the round, after `SetMinimapMouseover`: no `OnShow`, no clear
+	-- and no timer here, so only that hook can write it.
+	do
+		local realNames = Family.Names.Item
+		Family.Names.Item = function(self, id, key, callback)
+			local name, known = realNames(self, id, key, callback)
+			if known then return name, known end
+			return "Filler " .. tostring(id), true
+		end
+		local realFocus, realFoci = _G.GetMouseFocus, _G.GetMouseFoci
+		_G.GetMouseFocus = function() return Minimap end
+		_G.GetMouseFoci = function() return { Minimap } end
+
+		GameTooltip.SetMinimapMouseover = function(self)
+			self:ClearLines()
+			self:AddLine("Copper Vein")
+		end
+		Family.UI.__hookMinimapNode(GameTooltip)
+		GameTooltip:SetMinimapMouseover()
+		local written = {}
+		for _, line in ipairs(GameTooltip.__lines) do written[#written + 1] = tostring(line[1]) end
+		check("on Midnight's minimap the block is written inside the round that refills the tooltip",
+			table.concat(written, " | "):find("Family possessions", 1, true) ~= nil,
+			table.concat(written, " | "))
+
+		GameTooltip.SetMinimapMouseover = nil
+		_G.GetMouseFocus, _G.GetMouseFoci = realFocus, realFoci
+		Family.Names.Item = realNames
 	end
 
 	-- Named behind a complete candidate list, because without one the herb step stops the walk
