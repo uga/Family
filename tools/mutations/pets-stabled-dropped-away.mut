@@ -1,6 +1,6 @@
-name: a scan away from the stable master drops the stabled pets
+name: a stabled pet is not marked as stabled
 file: addons/Family/Scanners/Pets.lua
 --- old
-			if pet.stabled then stable[#stable + 1] = pet end
+		stabled = stabled or nil,
 --- new
-			if false then stable[#stable + 1] = pet end
+		stabled = nil,

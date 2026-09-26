@@ -41,8 +41,8 @@
 --
 --   - `C_StableInfo.GetActivePetList()` answers with the stable shut: a row a pet, with its name,
 --     level, family as a word, `creatureID` and `petNumber`. `GetStabledPetList()` is the rest of
---     the stable, and is taken only while the hunter stands at the stable master: whether it
---     answers with the stable shut was read on a hunter with nothing stabled, which cannot say.
+--     the stable, and answers shut too: Deiana's Wolf, read at the stable master and again away
+--     from it with the window closed, the same row both times.
 --   - `C_SpellBook.HasPetSpells()` counts the creature's book, and `GetSpellBookItemInfo(i, Pet)`
 --     describes each slot as a table whose `spellID` is there for an ability and absent for a
 --     command - Claw 16827 beside Attack with none - so the Classic filter holds unchanged.
@@ -134,14 +134,12 @@ local function stableRowFrom(pet, stabled)
 			and pet.familyName or nil,
 		-- The tamed creature, which Classic's stable never gave.
 		creature = tonumber(pet.creatureID),
-		-- Which part of the stable this came from, so a read away from the stable master
-		-- can keep the part it could not read (`Pets:Scan`).
+		-- Which part of the stable this came from: out on call, or stabled.
 		stabled = stabled or nil,
 	}
 end
 
--- Midnight's stable: the active pets always, the stabled ones only at the stable master. The
--- second answer says whether the stabled part was read at all.
+-- Midnight's stable: the pets on call, then the stabled ones, both answered with the stable shut.
 local function readModernStable()
 	local api = _G.C_StableInfo
 	if type(api) ~= "table" then return nil end
@@ -150,15 +148,11 @@ local function readModernStable()
 	for _, pet in ipairs(listRows(api.GetActivePetList)) do
 		found[#found + 1] = stableRowFrom(pet)
 	end
-
-	local atMaster = Family:TryCall(api.IsAtStableMaster) == true
-	if atMaster then
-		for _, pet in ipairs(listRows(api.GetStabledPetList)) do
-			found[#found + 1] = stableRowFrom(pet, true)
-		end
+	for _, pet in ipairs(listRows(api.GetStabledPetList)) do
+		found[#found + 1] = stableRowFrom(pet, true)
 	end
 
-	return #found > 0 and found or nil, atMaster
+	return #found > 0 and found or nil
 end
 
 -- The stable, which answers with the door shut.
@@ -195,12 +189,9 @@ local function readOldStable()
 end
 
 -- The old walk first, so the Classic clients keep the route they were measured on, and
--- Midnight's lists where it finds nothing. The second answer is Midnight's: whether the stabled
--- part was read, which the old walk always reads whole.
+-- Midnight's lists where it finds nothing.
 function Pets:ReadStable()
-	local found = readOldStable()
-	if found then return found, true end
-	return readModernStable()
+	return readOldStable() or readModernStable()
 end
 
 -- Midnight's book of the creature that is out: its slots by `C_SpellBook`, each a table.
@@ -395,16 +386,8 @@ function Pets:Scan()
 	local record = payload.pets or {}
 	local known = record.known or {}
 
-	local stable, whole = self:ReadStable()
+	local stable = self:ReadStable()
 	local out = self:ReadOut()
-
-	-- Away from the stable master Midnight's stabled pets are not read, and are not gone: the
-	-- ones the last reading at the master found are kept beside the active ones just read.
-	if stable and not whole then
-		for _, pet in ipairs(record.stable or {}) do
-			if pet.stabled then stable[#stable + 1] = pet end
-		end
-	end
 
 	-- Nothing read at all leaves the record alone rather than writing an empty one. A
 	-- character who has stabled every pet and summoned none answers neither call, and that

@@ -1,10 +1,6 @@
 name: Midnight's stable lists are asked before the old walk
 file: addons/Family/Scanners/Pets.lua
 --- old
-	local found = readOldStable()
-	if found then return found, true end
+	return readOldStable() or readModernStable()
 --- new
-	local found = readModernStable()
-	if found then return found, true end
-	found = readOldStable()
-	if found then return found, true end
+	return readModernStable() or readOldStable()

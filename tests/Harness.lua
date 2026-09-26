@@ -4321,7 +4321,7 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 	}
 	local PET_BANK = 1
 
-	local active, stabled, atMaster = { CAT }, { WOLF }, false
+	local active, stabled = { CAT }, { WOLF }
 	set("HasPetSpells", nil)
 	set("GetPetTrainingPoints", nil)
 	set("GetStablePetInfo", nil)
@@ -4329,7 +4329,6 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 	set("C_StableInfo", {
 		GetActivePetList = function() return active end,
 		GetStabledPetList = function() return stabled end,
-		IsAtStableMaster = function() return atMaster end,
 	})
 	set("C_SpellBook", setmetatable({
 		HasPetSpells = function() return #BOOK end,
@@ -4365,20 +4364,15 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 	load("addons/Family/Scanners/Pets.lua", "Family", midnight)
 	local Pets = midnight.Pets
 
-	-- The stable, shut: the active pets, and the stabled ones not read.
-	local stable, whole = Pets:ReadStable()
-	check("with the stable shut the active pet is read from Midnight's list",
-		stable and #stable == 1 and stable[1].name == "Cat" and stable[1].level == 80
+	-- The stable, shut: the pets on call and the stabled ones, both answered away from the master.
+	local stable = Pets:ReadStable()
+	check("with the stable shut the pet on call is read from Midnight's list",
+		stable and stable[1] and stable[1].name == "Cat" and stable[1].level == 80
 			and stable[1].family == "Cat" and stable[1].creature == 42718
 			and not stable[1].stabled, stable and tostring(#stable))
-	check("and the stabled ones are not taken away from the stable master", whole == false)
-
-	atMaster = true
-	stable, whole = Pets:ReadStable()
-	check("at the stable master the stabled pets are read too, and marked so",
-		whole == true and stable and #stable == 2 and stable[2].name == "Wolfie"
-			and stable[2].stabled == true, stable and tostring(#stable))
-	atMaster = false
+	check("and the stabled one after it, marked so",
+		stable and #stable == 2 and stable[2].name == "Wolfie" and stable[2].stabled == true
+			and stable[2].creature == 1131, stable and tostring(#stable))
 
 	-- The book: the abilities by id, the commands left out.
 	local abilities = Pets:ReadAbilities()
@@ -4407,7 +4401,7 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 	caps.petGuidGeneric = true
 	guid = "Pet-0-5769-0-2041-165189-0100559D9D"
 
-	-- Recording: away from the master the stabled pets last read there are kept.
+	-- Recording: the stable is a whole answer, renewed each scan.
 	stored.payload["Mirror-Midnight"] = { pets = {
 		stable = { { name = "Cat", level = 79 }, { name = "Wolfie", level = 70, stabled = true } },
 	} }
@@ -4415,19 +4409,19 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 	local pets = stored.payload["Mirror-Midnight"].pets
 	local names = {}
 	for _, pet in ipairs(pets.stable or {}) do names[#names + 1] = pet.name .. ":" .. tostring(pet.level) end
-	check("a scan away from the stable master keeps the stabled pets and renews the active one",
+	check("a scan renews the stable, on call and stabled",
 		table.concat(names, ",") == "Cat:80,Wolfie:70", table.concat(names, ","))
 	check("and records the creature out with its book",
 		pets.known and pets.known["p:2:Cat"] and #pets.known["p:2:Cat"].abilities == 8)
 
-	-- At the master the stable is read whole, so a pet released there is gone.
-	atMaster, stabled = true, {}
+	-- A pet released is gone from the next reading, and from the record.
+	stabled = {}
 	Pets:Scan()
 	names = {}
 	for _, pet in ipairs(stored.payload["Mirror-Midnight"].pets.stable or {}) do
 		names[#names + 1] = pet.name
 	end
-	check("and a scan at the master, where Wolfie is no longer stabled, lets him go",
+	check("and a pet no longer stabled is let go",
 		table.concat(names, ",") == "Cat", table.concat(names, ","))
 
 	-- **A warlock's Imp** (§124): `11 DEMON`, family 23, and a `Creature-` GUID naming 416.
@@ -4455,7 +4449,9 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 		table.concat(impIds, ",") == "3110,32233,89792,89808", table.concat(impIds, ","))
 	BOOK = heldBook
 
-	-- **The old walk first**: a client whose old stable answers is not asked Midnight's lists.
+	-- **The old walk first**: a client whose old stable answers is not asked Midnight's lists,
+	-- here answering too.
+	active, stabled = { CAT }, { WOLF }
 	set("GetStablePetInfo", function(slot)
 		if slot == 1 then return nil, "Broken Tooth", 60, "Cat" end
 	end)

@@ -4264,3 +4264,24 @@ just before *You have opted into War Mode.*, with `PVP_TIMER_UPDATE` beside it e
 talents scanner now listens to `PLAYER_FLAGS_CHANGED` and re-reads the switch alone - the event is
 AFK and the rest too, and not only the player's - writing only when the answer moved, without
 reading the trees again. Four checks, three mutations, one re-anchored. **Not yet seen in the game.**
+
+**The stable open, Deiana at the stable master** (the PTR): `IsAtStableMaster()` **true**, one active
+pet, and `GetStabledPetList()` one row - *Wolf*, family *Wolf*, level 80, `slotID` 7, `creatureID`
+525 - with `GetNumStablePets()` 1. So the stabled list answers there with the fields the reader
+takes, and the call the reader waits on says yes where it should. Whether the stabled list also
+answers with the stable shut, now that there is a pet in it, is one more reading.
+
+**And with the stable shut**, Deiana walked away from the master and the window closed: `false 1 1 1`
+and the same *Wolf Wolf 80 7 525*. So `GetStabledPetList` answers shut as well, and the condition on
+`IsAtStableMaster` - and the keeping of stabled rows away from the master that it needed - came out:
+the stable is read whole, on call and stabled, at every scan, and a pet let go leaves the record at
+the next. Five mutations rewritten to guard that shape instead, since removing one is not this
+session's; the check that the old walk comes first now has Midnight's lists answering beside it,
+which it did not after the demon's part emptied them, and a mutation putting the lists first
+survived until it did. `IsAtStableMaster` leaves the surface list.
+
+**War Mode seen on the PTR** (`97a464f`): switched on, the talents line said *War Mode on* with no
+reload and no rescan; switched off, it said nothing, the same way. `PLAYER_FLAGS_CHANGED` joins the
+surface list here, which that commit should have regenerated and did not: `surface.py --check` was
+not run before it. A local renamed `api` in the same function made the generator pair `C_PvP` with
+the specialisation calls for a moment; named `pvpApi`, as it was, the list is right.

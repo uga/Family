@@ -630,8 +630,8 @@ local function readPvp()
 end
 
 local function warModeNow()
-	local api = _G.C_PvP
-	local on = Family:TryCall(api and api.IsWarModeDesired)
+	local pvpApi = _G.C_PvP
+	local on = Family:TryCall(pvpApi and pvpApi.IsWarModeDesired)
 	return type(on) == "boolean" and on or nil
 end
 

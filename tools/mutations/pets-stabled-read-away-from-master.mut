@@ -1,6 +1,6 @@
-name: the stabled pets are read with the stable shut
+name: the stabled pets are not read, only the ones on call
 file: addons/Family/Scanners/Pets.lua
 --- old
-	local atMaster = Family:TryCall(api.IsAtStableMaster) == true
+		found[#found + 1] = stableRowFrom(pet, true)
 --- new
-	local atMaster = true
+		local _ = pet

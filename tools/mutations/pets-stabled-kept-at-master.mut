@@ -1,6 +1,11 @@
-name: a scan at the stable master keeps stabled pets the master no longer lists
+name: a pet let go from the stable is kept in the record
 file: addons/Family/Scanners/Pets.lua
 --- old
-	if stable and not whole then
+	if stable then record.stable = stable end
 --- new
 	if stable then
+		for _, pet in ipairs(record.stable or {}) do
+			if pet.stabled then stable[#stable + 1] = pet end
+		end
+		record.stable = stable
+	end
