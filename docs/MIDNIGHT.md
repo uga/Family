@@ -3925,3 +3925,9 @@ yet seen in the game.
 (25)*, *Warrior (21)*, *Fury (12)* - with no Arms or Protection. *General* holds what the Skyriding
 flyout keeps behind it - *Skyward Ascent*, *Surge Forward*, *Whirling Surge*, *Aerial Halt*, *Lift
 Off* - so the flyout calls answer on Midnight as they did on Mists. The spell tooltip opens on a row.
+
+**§116's open question, answered on the PTR:** with *Legion* shut, `GetCurrencyListSize()` answered
+36, `C_CurrencyInfo.ExpandCurrencyList(22, true)` opened it and the size became 45, and a listener
+on `CURRENCY_DISPLAY_UPDATE` printed nothing. So the call works on Midnight, and opening a heading is
+not announced as a currency change. The guard against the scan answering its own opening stays as a
+precaution that costs one comparison; it was not needed for this.
