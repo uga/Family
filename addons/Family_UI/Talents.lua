@@ -954,8 +954,9 @@ local function build(frame)
 				chosen.role and string.format(L[" |cff888888- %s|r"], chosen.role) or "",
 				-- The loadout's name is recorded and not drawn: the active config's name is the
 				-- specialisation's again (*Assassination*), while the game's picker says *Default
-				-- Loadout* (`docs/MIDNIGHT.md` §96). Drawn once the right name is measured.
-				"",
+				-- Loadout* (`docs/MIDNIGHT.md` §96, §97). War Mode is drawn here instead, where it
+				-- is switched on - the member's, not the specialisation's.
+				talents.warMode and ("   |cff888888|||r   " .. L["War Mode on"]) or "",
 				count > 1 and string.format(
 					L["   |cff888888|||r   specialisation %d of %d%s"],
 					group, count,
@@ -990,6 +991,17 @@ local function build(frame)
 				if matches(name) then
 					local list = bySide[key]
 					list[#list + 1] = { talent = talent, name = name, icon = icon }
+				end
+			end
+
+			-- PvP talents last, below the hero tree, as the game puts its three slots below
+			-- the trees (`docs/MIDNIGHT.md` §99).
+			for _, spellID in ipairs(data.pvp or {}) do
+				side("pvp", _G.PVP_TALENTS or L["PvP talents"])
+				local name, icon = Family.Names:Spell(spellID)
+				if matches(name) then
+					local list = bySide.pvp
+					list[#list + 1] = { talent = { spellID = spellID }, name = name, icon = icon }
 				end
 			end
 

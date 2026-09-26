@@ -1,0 +1,6 @@
+name: the PvP talents are recorded and not drawn
+file: addons/Family_UI/Talents.lua
+--- old
+			for _, spellID in ipairs(data.pvp or {}) do
+--- new
+			for _, spellID in ipairs({}) do

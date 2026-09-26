@@ -1,0 +1,6 @@
+name: War Mode is not kept
+file: addons/Family/Scanners/Talents.lua
+--- old
+		warMode = type(warMode) == "boolean" and warMode or nil,
+--- new
+		warMode = nil,

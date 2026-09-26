@@ -607,12 +607,31 @@ local function specCount(index)
 	return math.max(count or 0, index or 0, 1)
 end
 
+-- **PvP talents, and War Mode.** Deiana, 2026-09-26: `GetAllSelectedPvpTalentIDs()` answered 5443,
+-- 662 and 664, and `GetPvpTalentInfoByID` the spell sixth - 356707 *Wild Kingdom*, 212640, 407028
+-- (`docs/MIDNIGHT.md` §99). They belong to the specialisation, so they are kept with it. War Mode
+-- is the player's switch, `IsWarModeDesired`, true there while `IsWarModeActive` was false: the
+-- second is where the character stands, and the switch is what a member has.
+local function readPvp()
+	local api = _G.C_SpecializationInfo
+	local ids = Family:TryCall(api and api.GetAllSelectedPvpTalentIDs)
+	local spells = {}
+	for _, id in ipairs(type(ids) == "table" and ids or {}) do
+		local spellID = tonumber((select(6, Family:TryCall(_G.GetPvpTalentInfoByID, id))))
+		if spellID then spells[#spells + 1] = spellID end
+	end
+	return spells
+end
+
 local function scanNodes(key, previous)
 	local index = specIndex() or 1
 	local data = readNodes() or { system = "nodes", talents = {}, points = {}, heroes = {} }
 	data.group = index
 	data.visited = true
 	data.specID = specIDFor(activeGroup())
+	data.pvp = readPvp()
+	local pvpApi = _G.C_PvP
+	local warMode = Family:TryCall(pvpApi and pvpApi.IsWarModeDesired)
 
 	-- The other specialisations, as they were when they were last played.
 	local groups = {}
@@ -628,6 +647,7 @@ local function scanNodes(key, previous)
 		activeGroup = index,
 		groupCount = specCount(index),
 		groups = groups,
+		warMode = type(warMode) == "boolean" and warMode or nil,
 	}
 	Family.Database:SetPayload(key, payload, "talents")
 	Family.Database:SetMeta(key, { specID = data.specID, talentPoints = nil })

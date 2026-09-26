@@ -1,0 +1,6 @@
+name: War Mode is recorded and not drawn
+file: addons/Family_UI/Talents.lua
+--- old
+				talents.warMode and ("   |cff888888|||r   " .. L["War Mode on"]) or "",
+--- new
+				"",

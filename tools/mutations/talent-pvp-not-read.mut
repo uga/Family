@@ -1,0 +1,6 @@
+name: a specialisation's PvP talents are not kept
+file: addons/Family/Scanners/Talents.lua
+--- old
+	data.pvp = readPvp()
+--- new
+	data.pvp = {}

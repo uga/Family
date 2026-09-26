@@ -45755,7 +45755,7 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 	local NAMES = { [1247993] = "Motivated Murderer", [5001] = "A Spec Talent",
 		[5002] = "A Hero Talent", [5004] = "A Class Talent", [5005] = "A Top Talent",
 		[5006] = "An Unchosen Hero Root",
-		[5009] = "Not Taken" }
+		[5009] = "Not Taken", [356707] = "Wild Kingdom", [212640] = "Mending Bandage" }
 	local spec = 1
 	local configAsked = 0
 	local activeHero = 52
@@ -45764,7 +45764,22 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 	set("GetSpecialization", function() return spec end)
 	set("GetSpecializationInfo", function(index) return 258 + index end)
 	set("GetNumSpecializations", nil)
-	set("C_SpecializationInfo", { GetNumSpecializationsForClassID = function() return 3 end })
+	-- Deiana's three PvP talents and War Mode, 2026-09-26 (`docs/MIDNIGHT.md` §99), answered as
+	-- the client answered them: the talent id, then the spell sixth.
+	set("C_SpecializationInfo", {
+		GetNumSpecializationsForClassID = function() return 3 end,
+		GetAllSelectedPvpTalentIDs = function() return { 5443, 662 } end,
+	})
+	set("GetPvpTalentInfoByID", function(id)
+		if id == 5443 then
+			return 5443, "Wild Kingdom", 236159, false, true, 356707, true, 1, 1, true, false
+		end
+		if id == 662 then
+			return 662, "Mending Bandage", 1014022, false, true, 212640, true, 1, 1, true, false
+		end
+	end)
+	set("C_PvP", { IsWarModeDesired = function() return true end,
+		IsWarModeActive = function() return false end })
 	set("C_ClassTalents", {
 		GetActiveConfigID = function()
 			configAsked = configAsked + 1
@@ -45845,6 +45860,10 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		group.points.class and group.points.class.spent == 13 and group.points.class.left == 8
 			and group.points.spec and group.points.spec.spent == 4)
 	check("and the specialisation reaches meta", Family.Database:Meta(key).specID == 259)
+	check("the PvP talents are kept with the specialisation, as their spells",
+		group.pvp and group.pvp[1] == 356707 and group.pvp[2] == 212640 and #group.pvp == 2)
+	check("and War Mode as the player's switch, not where the character stands",
+		talents.warMode == true)
 
 	-- A specialisation with no hero tree chosen lists no hero talents at all.
 	activeHero = nil
@@ -45880,6 +45899,9 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		drawnText("A Hero Tree") and drawnText("2/2"))
 	check("and each side's points", drawnText("13|r spent") and drawnText("(8 to spend)"))
 	check("the Mists tiers are not drawn", not drawnText("nothing chosen"))
+	check("the PvP talents are drawn under their own heading",
+		drawnText("PvP talents") and drawnText("Wild Kingdom") and drawnText("Mending Bandage"))
+	check("and War Mode on the status line", visibleText("War Mode on"))
 
 	-- And no client whose game has no node trees asks for them.
 	set("GetBuildInfo", function() return "5.5.4", "69585", "Sep 1 2026", 50504 end)

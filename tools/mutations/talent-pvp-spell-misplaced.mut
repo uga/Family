@@ -1,0 +1,6 @@
+name: a PvP talent is kept as its talent id rather than the spell sixth in the answer
+file: addons/Family/Scanners/Talents.lua
+--- old
+		local spellID = tonumber((select(6, Family:TryCall(_G.GetPvpTalentInfoByID, id))))
+--- new
+		local spellID = tonumber((select(1, Family:TryCall(_G.GetPvpTalentInfoByID, id))))

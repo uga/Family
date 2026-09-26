@@ -3517,3 +3517,17 @@ above Pack Leader's, holding one talent, *Sentinel*. Two readings, both speciali
 So every hero tree's first node answers a rank whether the tree is chosen or not, and the game
 names the chosen tree. A hero node is now kept only where its tree is the one
 `GetActiveHeroTalentSpec` names, and none where it names none. Two checks, two mutations.
+
+## 99. PvP talents and War Mode (2026-09-26)
+
+Deiana, Survival, with PvP talents chosen and War Mode switched on:
+`C_PvP.IsWarModeDesired()` true and `IsWarModeActive()` **false in Stormwind, true just outside
+it** - the second is where the character stands, a sanctuary or not, and the first is the switch.
+`C_SpecializationInfo.GetAllSelectedPvpTalentIDs()` answered 5443, 662 and 664, and
+`GetPvpTalentInfoByID` of each eleven values with the spell sixth: *Wild Kingdom* 356707, *Mending
+Bandage* 212640, *Sticky Tar Bomb* 407028.
+
+Family keeps each specialisation's PvP talents with it, as spells, and War Mode as the switch, on
+the talents record. The panel lists the PvP talents under their own heading after the hero tree,
+as the game puts its three slots below its trees, headed by the game's own `PVP_TALENTS` where the
+client has it; the status line says *War Mode on* where it is on. Four checks, five mutations.
