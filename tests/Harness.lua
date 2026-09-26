@@ -3562,6 +3562,21 @@ print("talents on the fourth pretend client")
 	check("which it could only be by inspecting the returns rather than unpacking them",
 		looseAsked > 0, tostring(looseAsked))
 
+	-- **Which group is active, where both old globals are gone** (`docs/MIDNIGHT.md` §108): the
+	-- namespace is asked, and it is not taken for 1 without asking.
+	-- Taken away by hand: `set` here keeps only the value it replaced last, and the stub of 1
+	-- above would come back in place of the real global.
+	local heldSpecGroup, heldTalentGroup = _G.GetActiveSpecGroup, _G.GetActiveTalentGroup
+	_G.GetActiveSpecGroup, _G.GetActiveTalentGroup = nil, nil
+	_G.C_SpecializationInfo = { GetActiveSpecGroup = function() return 2 end }
+	stored.payload["Mirror-Midnight"] = nil
+	midnight.Talents:Scan()
+	local scanned = stored.payload["Mirror-Midnight"]
+	check("where the old globals are gone the active group is asked of the namespace",
+		scanned and scanned.talents and scanned.talents.activeGroup == 2,
+		scanned and scanned.talents and tostring(scanned.talents.activeGroup))
+	_G.GetActiveSpecGroup, _G.GetActiveTalentGroup = heldSpecGroup, heldTalentGroup
+
 	for name, saved in pairs(was) do _G[name] = saved[1] end
 	Family.Capabilities:Detect()
 end)()
@@ -11433,6 +11448,26 @@ end)()
 	check("a client with no way of being asked leaves what was recorded alone",
 		meta.specs and meta.specs[1] == ARMOURSMITH and type(meta.specsSeen) == "number",
 		tostring(meta.specs and meta.specs[1]))
+
+	-- **And where the old call is gone and the spellbook's is there**, the spellbook is asked:
+	-- Midnight keeps `IsSpellKnown` only while its old functions are loaded (`docs/MIDNIGHT.md`
+	-- §108). Asked for the player's book, and answering none this time, so the record changes.
+	local heldBook, heldEnum = _G.C_SpellBook, _G.Enum
+	_G.Enum = _G.Enum or {}
+	local heldBanks = _G.Enum.SpellBookSpellBank
+	_G.Enum.SpellBookSpellBank = { Player = 0, Pet = 1 }
+	_G.C_SpellBook = { IsSpellInSpellBook = function(spell, bank)
+		if bank ~= 0 then return nil end
+		return KNOWN_SPELLS[spell] == true
+	end }
+	KNOWN_SPELLS = {}
+	Family.Professions:Scan(true)
+	meta = Family.Database:Members()[key].meta or {}
+	check("without the old call the player's spellbook is asked instead",
+		meta.specs == nil and type(meta.specsSeen) == "number", tostring(meta.specs))
+	_G.C_SpellBook = heldBook
+	_G.Enum.SpellBookSpellBank = heldBanks
+	_G.Enum = heldEnum
 	IsSpellKnown = held
 	KNOWN_SPELLS = {}
 end)()
@@ -30846,6 +30881,16 @@ print("a guild that spans a connected group")
 	check("a client with no such call falls back to an exact match",
 		Family.Guild:SameRealmGroup("Garalon", "Garalon")
 			and Family.Guild:SameRealmGroup("Garalon", "Mirage Raceway") == false)
+
+	-- **Unless the namespace answers**, which is Midnight's second route: its old call lives
+	-- only while the old functions are loaded (`docs/MIDNIGHT.md` §108).
+	local heldComplete = _G.C_AutoComplete
+	_G.C_AutoComplete = { GetAutoCompleteRealms = function()
+		return { "MirageRaceway", "Garalon" }
+	end }
+	check("and where the old call is gone the namespace's list is asked",
+		Family.Guild:SameRealmGroup("Garalon", "Mirage Raceway"))
+	_G.C_AutoComplete = heldComplete
 
 	-- **An empty table, which is what a realm with no partners actually answers.** Measured on
 	-- Burning Crusade: `GetAutoCompleteRealms() -> 1:{}(table)`, the call present and the list

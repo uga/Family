@@ -722,12 +722,23 @@ end
 -- clients and any client with no connected realms: widening on a list nobody returned would be
 -- offering a character in a guild called *Ronin* on one realm to a guild called *Ronin* on an
 -- unconnected other, which is the conflation the realm test was there to prevent.
+-- **The old call first, then the new one where the old answers nothing.** `GetAutoCompleteRealms`
+-- lives on Midnight only while the client keeps its old functions loaded, a setting that is on by
+-- default; `C_AutoComplete.GetAutoCompleteRealms` answered the same list on the PTR, *Iridikron,
+-- Fyrakk* both ways (`docs/MIDNIGHT.md` §108).
+local function connectedRealms()
+	local list = Family:TryCall(_G.GetAutoCompleteRealms)
+	if list ~= nil then return list end
+	local api = _G.C_AutoComplete
+	return Family:TryCall(api and api.GetAutoCompleteRealms)
+end
+
 function Guild:SameRealmGroup(theirs, ours)
 	local a, b = realmKey(theirs), realmKey(ours)
 	if not (a and b) then return false end
 	if a == b then return true end
 
-	local list = Family:TryCall(GetAutoCompleteRealms)
+	local list = connectedRealms()
 	if type(list) ~= "table" then return false end
 
 	local group = {}
@@ -758,7 +769,7 @@ Guild.RealmKey = function(_, realm) return realmKey(realm) end
 local function rememberGroup()
 	if type(_G.FamilyDB) ~= "table" then return end
 	local here = realmKey(Family:TryCall(GetRealmName))
-	local list = Family:TryCall(GetAutoCompleteRealms)
+	local list = connectedRealms()
 	if not here or type(list) ~= "table" then return end
 
 	FamilyDB.realmGroups = type(FamilyDB.realmGroups) == "table" and FamilyDB.realmGroups or {}

@@ -3731,3 +3731,33 @@ not explained by it.
 keystone a character holds**, **lockouts boss by boss**, and **the client's secret-value
 predicates** - the last as a possible replacement for §75's `pcall`, which works as seen. Each is
 first a list of questions for the probe; the specification gains each as it is designed.
+
+## 108. The four old-global call sites, measured and given a second route (2026-09-26)
+
+§107's questions, asked on the PTR (12.1.5) and on live (12.1.0), each the same three lines:
+
+| | PTR | live |
+|---|---|---|
+| `GetCVarBool("loadDeprecationFallbacks")` | true | true |
+| `GetActiveSpecGroup()` / `C_SpecializationInfo.GetActiveSpecGroup()` | 1 / 1 | 1 / 1 |
+| spell 90265 (Master Riding): `IsSpellKnown` / `C_SpellBook.IsSpellKnown` / `IsSpellInSpellBook(id, Player, false)` / `IsPlayerSpell` | true, true, true, true | the same |
+| spell 33388 (Apprentice Riding, replaced by Master): the same four | false, false, false, false | the same |
+| `GetAutoCompleteRealms()` / `C_AutoComplete.GetAutoCompleteRealms()` | *Iridikron, Fyrakk* both | an empty list both |
+
+So on both clients the old functions are loaded, and every new call answered what the old one did.
+The live realm answered no connected realms either way. My first version of the realm line named a
+variable it never set and printed `nil` for the new call; the corrected one printed an empty line.
+
+**A second route at three sites**, the old call first and the new one where the old answers nothing,
+the pattern of step 3:
+
+- `Scanners/Talents.lua` `activeGroup()`: `C_SpecializationInfo.GetActiveSpecGroup` after the two
+  old globals, so a client without them no longer answers 1 unasked.
+- `Scanners/Professions.lua`, the profession specialisations: `C_SpellBook.IsSpellInSpellBook` for
+  the player's book after `IsSpellKnown`; the question counts as put where either answers. This
+  replaced `if type(_G.IsSpellKnown) == "function"`, a test of the kind step 3 rules out.
+- `Guild.lua`: `C_AutoComplete.GetAutoCompleteRealms` after `GetAutoCompleteRealms`, at both sites.
+
+**`Mounts.lua` is left as it is.** Its fallback, `C_SpellBook.IsSpellKnown`, agreed with
+`IsSpellKnown` on a spell known and on one replaced, which are the two cases the riding table asks
+about. Four checks, four mutations; `Surface.lua` regenerated with five new names.

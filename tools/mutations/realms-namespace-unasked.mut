@@ -1,0 +1,6 @@
+name: where GetAutoCompleteRealms is gone the namespace is not asked, and connected realms are split
+file: addons/Family/Guild.lua
+--- old
+	return Family:TryCall(api and api.GetAutoCompleteRealms)
+--- new
+	return nil

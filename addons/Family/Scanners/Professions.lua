@@ -1667,16 +1667,28 @@ function Professions:ScanNow(includeRecipes)
 	-- ignorance and asserting an absence.
 	local branches, askedSpecs = nil, false
 
-	if type(_G.IsSpellKnown) == "function" then
-		askedSpecs = true
-		for spell in pairs(Family.Specialisations or {}) do
-			if Family:TryCall(_G.IsSpellKnown, spell) then
-				branches = branches or {}
-				branches[#branches + 1] = spell
-			end
-		end
-		if branches then table.sort(branches) end
+	-- **The old call first, then the spellbook's where it answers nothing.** `IsSpellKnown` lives
+	-- on Midnight only while the client keeps its old functions loaded; what it answers there is
+	-- `C_SpellBook.IsSpellInSpellBook` for the player's book, and the two agreed on the PTR for a
+	-- spell known and one replaced (`docs/MIDNIGHT.md` §108). A question is put where either
+	-- answers.
+	local function spellKnown(spell)
+		local old = Family:TryCall(_G.IsSpellKnown, spell)
+		if old ~= nil then return old end
+		local book = _G.C_SpellBook
+		local banks = _G.Enum and _G.Enum.SpellBookSpellBank
+		return Family:TryCall(book and book.IsSpellInSpellBook, spell, banks and banks.Player, false)
 	end
+
+	for spell in pairs(Family.Specialisations or {}) do
+		local known = spellKnown(spell)
+		if known ~= nil then askedSpecs = true end
+		if known then
+			branches = branches or {}
+			branches[#branches + 1] = spell
+		end
+	end
+	if branches then table.sort(branches) end
 
 	Family.Database:SetMeta(key, {
 		-- Both written only where the question could be put. `SetMeta` merges and skips a

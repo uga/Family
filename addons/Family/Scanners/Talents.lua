@@ -71,8 +71,14 @@ local function groupCount()
 	return math.min(tonumber(count) or 1, MAX_GROUPS)
 end
 
+-- And the namespace's where both old globals answer nothing: on Midnight they live only while the
+-- client keeps its old functions loaded, and without them this said 1 whatever was active.
+-- `C_SpecializationInfo.GetActiveSpecGroup` answered 1 beside the old call's 1 on the PTR
+-- (`docs/MIDNIGHT.md` §108).
 local function activeGroup()
+	local api = _G.C_SpecializationInfo
 	local active = Family:TryCall(GetActiveSpecGroup) or Family:TryCall(GetActiveTalentGroup)
+		or Family:TryCall(api and api.GetActiveSpecGroup)
 	return tonumber(active) or 1
 end
 

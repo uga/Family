@@ -1,0 +1,6 @@
+name: where IsSpellKnown is gone the spellbook is not asked, and the branches go unread
+file: addons/Family/Scanners/Professions.lua
+--- old
+		return Family:TryCall(book and book.IsSpellInSpellBook, spell, banks and banks.Player, false)
+--- new
+		return nil

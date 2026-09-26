@@ -1,0 +1,6 @@
+name: where both old globals are gone the active group is taken for 1 without asking
+file: addons/Family/Scanners/Talents.lua
+--- old
+		or Family:TryCall(api and api.GetActiveSpecGroup)
+--- new
+		or nil

@@ -1,0 +1,6 @@
+name: the spellbook is asked about the pet's book rather than the player's
+file: addons/Family/Scanners/Professions.lua
+--- old
+		return Family:TryCall(book and book.IsSpellInSpellBook, spell, banks and banks.Player, false)
+--- new
+		return Family:TryCall(book and book.IsSpellInSpellBook, spell, banks and banks.Pet, false)
