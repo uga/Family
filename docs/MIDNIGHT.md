@@ -3920,3 +3920,8 @@ the book, and were left alone on Midnight while there was no book. With a book r
 those branches in it, the record now says none. Midnight has no such branches, so that is the
 reading. Three checks new and one rewritten, five mutations; `Surface.lua` gains three names. Not
 yet seen in the game.
+
+**Seen on the PTR the same day**: Maretta's Spellbook page, *58 abilities in 3 schools* - *General
+(25)*, *Warrior (21)*, *Fury (12)* - with no Arms or Protection. *General* holds what the Skyriding
+flyout keeps behind it - *Skyward Ascent*, *Surge Forward*, *Whirling Surge*, *Aerial Halt*, *Lift
+Off* - so the flyout calls answer on Midnight as they did on Mists. The spell tooltip opens on a row.
