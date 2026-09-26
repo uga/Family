@@ -7912,7 +7912,7 @@ do
 	-- rule took that away, and the list generated under the older rule had never needed to
 	-- refuse it. Era alone could not show this, having no khorium.
 	local missing = {}
-	for _, expansion in ipairs { 1, 2, 5 } do
+	for _, expansion in ipairs { 1, 2, 5, 12 } do
 		local found = false
 		for _, id in ipairs((Family.Gathered[expansion] or {}).places or {}) do
 			if id == 1446 then found = true end
@@ -7921,6 +7921,35 @@ do
 	end
 	check("and every build refuses it, including the two where khorium used to hide it",
 		#missing == 0, "missing on " .. table.concat(missing, ", "))
+
+	-- **Midnight's own list** (`docs/MIDNIGHT.md` §100, §101). A Copper Vein on its minimap drew
+	-- nothing, because the table had no list for expansion 12. Midnight's is read off the items
+	-- themselves, and two veins hold it: one of Midnight's own ores, and a True Iron vein, which
+	-- scored as plain Iron Ore until True Iron Ore was named by id.
+	do
+		local heldBuild = GetBuildInfo
+		GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
+		Family.Capabilities:Detect()
+		ITEM_NAMES[237359] = "Refulgent Copper Ore"
+		ITEM_NAMES[109119] = "True Iron Ore"
+		local realNames = Family.Names.Item
+		Family.Names.Item = function(self, id, key, callback)
+			local name, known = realNames(self, id, key, callback)
+			if known then return name, known end
+			return "Filler " .. tostring(id), true
+		end
+
+		local refulgent = nodeSays("Rich Refulgent Copper", MINE)
+		check("on Midnight a vein of its own ore names that ore",
+			namedIn(refulgent) == "Refulgent Copper Ore", tostring(namedIn(refulgent)))
+		local trueIron = nodeSays("Smoldering True Iron Deposit", MINE)
+		check("and a True Iron vein names True Iron Ore, not Iron Ore",
+			namedIn(trueIron) == "True Iron Ore", tostring(namedIn(trueIron)))
+
+		Family.Names.Item = realNames
+		GetBuildInfo = heldBuild
+		Family.Capabilities:Detect()
+	end
 
 	-- Named behind a complete candidate list, because without one the herb step stops the walk
 	-- before the ores are ever scored - and it is the ore score this refusal exists to head off.

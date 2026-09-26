@@ -1,0 +1,6 @@
+name: True Iron Ore is not named by id, so every True Iron vein scores as plain Iron Ore
+file: addons/Family/Gathered.lua
+--- old
+			72093, 72094, 72103, 109118, 109119, 123918, 123919, 151564, 152512, 152513,
+--- new
+			72093, 72094, 72103, 109118, 123918, 123919, 151564, 152512, 152513,

@@ -3546,3 +3546,52 @@ Three ways offered to Alberto: generate a Midnight list with `tools/gathered.py`
 Midnight's build, which needs the script to stop reading the recipe tables Family ships only for
 Classic; lend Mists' list to Midnight, which places the old world's nodes and nothing newer; or leave
 nodes for later.
+
+## 101. Midnight's gathering list, generated and measured (2026-09-26)
+
+Alberto chose a generated list over lending Mists' (§100). `tools/gathered.py` now reads a fourth
+build, live Midnight **12.1.0.69933** from wago.tools - the source the Classic lists already come
+from - and writes `Family.Gathered[12]`: **215 herbs, 56 ores, 275 places to refuse**. The three
+Classic blocks came out byte for byte as they were.
+
+**The Classic rule cannot be used.** It reads what Alchemy and Inscription consume and what a smelt
+turns into a bar out of `RecipeReagents.lua` and `RecipeTeaches.lua`, which are shipped for Classic
+only, and from Dragonflight on a recipe's reagents are not in `SpellReagents` at all. So Midnight's
+list is read off the items, in the client's own tables at the build:
+
+- **a herb** is a trade good of the herb class, `Item` class 7 subclass 9;
+- **an ore** is a trade good of the metal and stone class, 7/7, that is prospectable (`ItemSparse`
+  `Flags_0` bit `0x40000`), or the only reagent of a spell of Mining or one of its twelve expansion
+  lines, or carries a `CraftingQualityID` - one mark per era of ore;
+- **neither is anything a profession makes**: a spell of any skill line creating it (`SpellEffect`
+  24 or 59), or a crafted item of any quality (`CraftingData`, `CraftingDataItemQuality`). Effect
+  157 is left out on purpose: counting it dropped Leystone, Monelite and every ore after them.
+
+Each rule is there because a reading put it there. Without the exclusions, bars, ingots and alloys
+share a metal's word with its ore and tie with it - *Refulgent Copper Ingot* against *Refulgent
+Copper Ore* - and a tie is silence. Three ores carry none of the marks: **True Iron Ore, Blackrock
+Ore and Dazzling Thorium**. They are named by id in the generator. Without True Iron Ore, *True
+Iron Deposit*, *Rich True Iron Deposit* and *Smoldering True Iron Deposit* scored as plain Iron Ore,
+the only wrong answers the measurement below turned up.
+
+**Measured against every mining node Wowhead lists for Retail**, the corpus Alberto read on
+2026-09-21 and keeps outside the tree, used for this one purpose as before. Each node's name in
+each language was scored against the ore names from Midnight's own `ItemSparse` in that language,
+and compared with what its English name took:
+
+| | same ore as English | **a different ore** | silent | answers where English is silent |
+|---|---|---|---|---|
+| English | 213 | **0** | 81 | - |
+| German | 200 | **0** | 93 | 1 |
+| French | 165 | **0** | 126 | 3 |
+| Spanish | 164 | **0** | 114 | 16 |
+| Russian | 83 | **0** | 201 | 10 |
+
+The answers where English is silent were each read and are right: the Ironclaw veins, which tie
+between *Ironclaw Ore* and *Iron Ore* in English, the thorium veins, and a Brilliant Leystone Seam.
+The English silences include the gems, stones and oddities with no ore, the Ironclaw veins, the
+Blackrock veins and *Trillium Vein*, which yields two ores.
+
+All five locales of Midnight's `ItemSparse` came back whole, about 175,000 rows each, unlike the
+Mists exports that are short in German and Spanish. Two checks and two mutations; not yet seen in
+the game.

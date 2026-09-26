@@ -39,9 +39,20 @@ BUILDS = {
     "Classic Era": "1.15.9.69109",
     "Burning Crusade Anniversary": "2.5.6.69110",
     "Mists of Pandaria Classic": "5.5.4.69078",
+    # Live Midnight, the build the harness pretends to be. The PTR, 12.1.5, is the same
+    # expansion and reads the same list.
+    "Midnight": "12.1.0.69933",
 }
 EXPANSION = {"Classic Era": 1, "Burning Crusade Anniversary": 2,
-             "Mists of Pandaria Classic": 5}
+             "Mists of Pandaria Classic": 5, "Midnight": 12}
+
+# **Midnight's three ores no table marks.** `True Iron Ore`, `Blackrock Ore` and `Dazzling
+# Thorium` are not prospectable, not smelted by a Mining recipe and carry no crafting quality, and
+# the professions that consume them consume coal and stone too, so no rule reaches them without
+# reaching those. Named by id - the client still names them - because without True Iron Ore every
+# True Iron vein scored as plain Iron Ore, the one wrong answer the Retail nodes gave
+# (docs/MIDNIGHT.md section 101).
+UNMARKED_ORES = (109119, 109118, 237366)
 
 HERB_CUSTOMERS = (171, 773)     # Alchemy, Inscription
 SMELTING = 186                  # Mining's own window
@@ -210,6 +221,72 @@ def places_that_read_as_ore(build, ore_ids):
     return caught
 
 
+def from_tables(build):
+    """**Herbs and ores for a build Family ships no recipe tables for** - Midnight.
+
+    The Classic rule reads what Alchemy and Inscription consume and what a smelt turns into a
+    bar, from `RecipeReagents.lua` and `RecipeTeaches.lua`. Neither is shipped for Midnight, and
+    from Dragonflight on a recipe's reagents are not in `SpellReagents` at all. So this asks the
+    item itself, in the client's own tables at the build:
+
+    * **a herb** is a trade good of the herb class (7, 9);
+    * **an ore** is a trade good of the metal and stone class (7, 7) that is prospectable, or the
+      only reagent of a Mining recipe, or made in crafting qualities - each is how one era of ore
+      is marked - and the three ids above;
+    * and **neither is anything a profession makes**: a spell of any skill line creating it, or a
+      crafted item of any quality. That is what keeps out bars, ingots and alloys, which share a
+      metal's word with its ore and would tie with it.
+
+    Measured 2026-09-26 against every mining node Wowhead lists for Retail, in five languages:
+    no node took a different ore in any language from the one its English name took
+    (docs/MIDNIGHT.md section 101)."""
+    items = {int(r["ID"]): r for r in table_for("Item", build)}
+    sparse = {int(r["ID"]): r for r in table_for("ItemSparse", build, "enUS")}
+    skills = table_for("SkillLine", build)
+    abilities = table_for("SkillLineAbility", build)
+    if not items or not sparse or not abilities:
+        raise SystemExit("an item or skill table came back empty for %s" % build)
+    for table, columns in ((items, ("ClassID", "SubclassID", "CraftingQualityID")),
+                           (sparse, ("Flags_0", "Display_lang"))):
+        if any(c not in next(iter(table.values())) for c in columns):
+            raise SystemExit("the columns of an item table have moved at %s" % build)
+
+    every = {int(r["Spell"]) for r in abilities}
+    mining = {SMELTING} | {int(r["ID"]) for r in skills if r["ParentSkillLineID"] == str(SMELTING)}
+    mined = {int(r["Spell"]) for r in abilities if int(r["SkillLine"]) in mining}
+
+    made = set()
+    for r in table_for("SpellEffect", build):
+        # 24 creates an item and 59 creates one of several; 157 is left out on purpose, because
+        # it is also how a gatherer's own rank spells hand out ore, and counting it dropped
+        # Leystone, Monelite and every ore after them.
+        if int(r["SpellID"]) in every and r["Effect"] in ("24", "59") and r["EffectItemType"] != "0":
+            made.add(int(r["EffectItemType"]))
+    made |= {int(r["CraftedItemID"]) for r in table_for("CraftingData", build)
+             if r["CraftedItemID"] not in ("", "0")}
+    made |= {int(r["ItemID"]) for r in table_for("CraftingDataItemQuality", build)
+             if r["ItemID"] not in ("", "0")}
+
+    smelted = set()
+    for r in table_for("SpellReagents", build):
+        if int(r["SpellID"]) in mined:
+            used = [int(r["Reagent_%d" % k]) for k in range(8) if r["Reagent_%d" % k] not in ("0", "")]
+            if len(used) == 1:
+                smelted.add(used[0])
+
+    def trade_good(item, subclass):
+        row, named = items.get(item), sparse.get(item, {}).get("Display_lang", "")
+        return (row is not None and row["ClassID"] == "7" and row["SubclassID"] == subclass
+                and item not in made and named != "" and not named.startswith("<"))
+
+    herbs = {i for i in items if trade_good(i, "9")}
+    ores = {i for i in items if trade_good(i, "7")
+            and (int(sparse[i]["Flags_0"]) & 0x40000 or i in smelted
+                 or items[i]["CraftingQualityID"] != "0")}
+    ores |= set(UNMARKED_ORES)
+    return herbs, ores
+
+
 def lua_table(path, opener):
     """One expansion-keyed generated table, read back out of the file the addon ships."""
     text = open(path, encoding="utf-8").read()
@@ -236,6 +313,13 @@ def main():
     lines = []
     for game, build in BUILDS.items():
         expansion = EXPANSION[game]
+        if expansion not in reagents_text:
+            herbs, ores = from_tables(build)
+            places = places_that_read_as_ore(build, ores)
+            print("   %-28s %3d herbs, %2d ores, %2d places to refuse"
+                  % (game, len(herbs), len(ores), len(places)), file=sys.stderr)
+            lines.append((expansion, game, sorted(herbs), sorted(ores), sorted(places)))
+            continue
         by_skill = skill_lines(build)
 
         reagents = {}
@@ -304,6 +388,10 @@ HEADER = '''-- Family - an alt manager for World of Warcraft Classic
 -- bar and nothing else. A vein is not named after its ore - Copper Vein against Copper Ore - so
 -- it is scored rather than matched, and Coal, Fiery Core and Elemental Flux in the running were
 -- the closest wrong answers until they came out.
+--
+-- Midnight's are read off the items themselves, because no recipe table is shipped for it: a
+-- herb is a trade good of the herb class, an ore one of the metal class that is prospectable,
+-- smelted alone or made in qualities, and neither is anything a profession makes.
 
 local _, Family = ...
 
