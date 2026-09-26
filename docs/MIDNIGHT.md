@@ -3686,3 +3686,10 @@ The Copper Vein blip on the minimap followed, the same day: *Family possessions:
 Deiana 70 (70 bags)*. The vein is placed by Midnight's ore list (§101), counted from the reagent
 bag (§102), and kept on a tooltip the minimap refills (§103) - the three fixes of the afternoon,
 seen together on one blip.
+
+## 106. The slow Engineering draw of §57 is gone (2026-09-26)
+
+Alberto on the PTR: *the problem does not happen anymore since collapsed headings are a thing.* The
+fifteen to twenty seconds §57 recorded were never measured apart, and now there is nothing to
+measure: every expansion's line opens shut (§63 onward), so opening Engineering draws its headings
+and no rows until a line is opened. Closed with no change of its own.
