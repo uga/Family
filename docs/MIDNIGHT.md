@@ -3531,3 +3531,18 @@ Family keeps each specialisation's PvP talents with it, as spells, and War Mode 
 the talents record. The panel lists the PvP talents under their own heading after the hero tree,
 as the game puts its three slots below its trees, headed by the game's own `PVP_TALENTS` where the
 client has it; the status line says *War Mode on* where it is on. Four checks, five mutations.
+
+## 100. A vein on Midnight's minimap is found and cannot be placed (2026-09-26)
+
+Alberto on the PTR, *No possession tooltips for veins in Midnight yet*, hovering a Copper Vein on the
+minimap in Elwynn with `/family debug` on. Every hover narrated the same pair:
+*GameTooltip shown with 1 line(s): Copper Vein / nil* and *"Copper Vein" on the minimap, skill not
+said, and nothing here can place it*. So the tooltip is read, its one line is plain text and not a
+secret string, and the minimap test passes. What fails is the join: `Family.Gathered` has lists for
+expansions 1, 2 and 5 only (`tools/gathered.py`, three Classic builds), so on Midnight there is no
+ore to score *Copper Vein* against.
+
+Three ways offered to Alberto: generate a Midnight list with `tools/gathered.py` from wago.tools at
+Midnight's build, which needs the script to stop reading the recipe tables Family ships only for
+Classic; lend Mists' list to Midnight, which places the old world's nodes and nothing newer; or leave
+nodes for later.
