@@ -299,15 +299,14 @@ Everything in the *Knowledge* and *Possessions* tables is stored as identifiers 
 In Midnight's scope by Alberto's decision of 2026-09-26, and headings only until each is designed.
 Nothing here is promised yet.
 
-#### Crafting orders
-
-#### Delves
-
-#### The keystone a character holds
-
 #### Lockouts, boss by boss
 
 #### Values the client keeps secret
+
+**Waiting for Forever.** Family Midnight ships with what it has and with what Forever will have as
+well; a system only Midnight has joins after Forever is released (Alberto, 2026-09-26). So crafting
+orders, delves, the keystone a character holds and the Omnium Folio are not in Midnight's first
+release, and neither is any other system Midnight alone has.
 
 ### When recording happens
 

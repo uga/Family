@@ -3795,3 +3795,16 @@ three mutations.
 The grid check could not see the change at first: `UI:Refresh()` left the grid as it was, and the
 panel's own button redraws it. The check now asks for the ranged slot by the name its empty picture
 carries, after showing that the Classic grid has five of them, so it cannot pass by finding nothing.
+
+## 111. What waits for Forever (2026-09-26)
+
+Alberto, relayed from the research session and confirmed here: Family Midnight ships with what it has
+and with what Forever will also have, and a system only Midnight has joins after Forever is
+released. Of §107's five, **lockouts boss by boss** and **the secret-value predicates** stay in scope;
+**crafting orders, delves and the keystone a character holds** wait. The **Omnium Folio** of §109
+waits too, which reverses the yes Alberto gave it earlier the same afternoon. The specification's
+*Midnight, to be designed* keeps the two headings and says which wait.
+
+The research session reads Forever's side from which of the game's own interface parts load on
+Forever's kind of game; that is its reading, to be asked of the client when Forever's work starts.
+What Family already does on Midnight is not taken away by this.
