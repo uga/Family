@@ -4236,3 +4236,16 @@ commands, which have no spell id and which the filter written for Mists leaves o
 *Paguri (4)*, *Imp, Level 80*, with Avoidance, Firebolt, Flee and Singe Magic and the book's words
 beside each. The level reads 80 where the probe's `UnitLevel` said 79, taken earlier the same
 evening; the page is the later reading.
+
+## 125. Four things seen on the PTR at last (2026-09-26)
+
+Alberto's screenshots of Gulliver, a level-80 warlock on the PTR:
+
+- **No ranged slot** (§110): the gear sheet ends on the main hand and the off hand, nothing beside.
+- **The quest log's size asked, not taken** (§113): *7 quests of 35*.
+- **PvP talents** (§97): Demonology's list ends under *PvP Talents* with Bonds of Fel, Nether Ward
+  and Gateway Mastery. The status line says no War Mode, which is drawn only when it is on; whether
+  Gulliver had it on was not said, so *War Mode on* on the line is still not seen.
+- **The Summary's currencies footer** (§120): with nothing starred on the PTR, whose saved variables
+  are its own, it reads *The game's current currencies, Legacy left out. Right-click up to four in
+  Character > Currencies to choose your own.* and *39 more not shown*.
