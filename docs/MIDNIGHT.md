@@ -3693,3 +3693,41 @@ Alberto on the PTR: *the problem does not happen anymore since collapsed heading
 fifteen to twenty seconds §57 recorded were never measured apart, and now there is nothing to
 measure: every expansion's line opens shut (§63 onward), so opening Engineering draws its headings
 and no rows until a line is opened. Closed with no change of its own.
+
+## 107. A research handoff: questions for the probe, and five categories in scope (2026-09-26)
+
+A research session in `~/dev/varie` compared client interfaces and left a handoff for this branch at
+`~/dev/varie/forever-handoff/HANDOFF-FOREVER-API.md`, outside the tree. Nothing in it was measured
+in a running client; by Alberto's decision (DECISIONS, 2026-09-26) every point is a question for the
+probe, and its sources are neither adopted nor cited here. Part B, about Forever, is filed for later.
+What Part A asks of this branch, checked against the tree at `1311d23` where it names Family's code:
+
+**Old globals that live only as long as a client setting says so.** The handoff reads the surviving
+old globals on Midnight as wrappers loaded only while the setting `loadDeprecationFallbacks` is on,
+by default. Four call sites have no second route, read in the tree:
+
+- `Scanners/Talents.lua` `activeGroup()` asks `GetActiveSpecGroup` and `GetActiveTalentGroup` and
+  answers **1 without a word** when neither answers. Candidate:
+  `C_SpecializationInfo.GetActiveSpecGroup`.
+- `Scanners/Professions.lua`, the profession specialisations, asks `IsSpellKnown` behind
+  `if type(_G.IsSpellKnown) == "function"`, and without it records *unknown*, which is honest and
+  loses the answer.
+- `Guild.lua` asks `GetAutoCompleteRealms` twice and has no second route. Candidate:
+  `C_AutoComplete.GetAutoCompleteRealms`.
+- `Mounts.lua` `knows()` falls back from `IsSpellKnown` to `C_SpellBook.IsSpellKnown`, which the
+  handoff reads as possibly a different question: the old global in the spellbook, the new call
+  whether the player has the spell at all. On Midnight the first answers, so the second has not
+  been reached in play.
+
+First questions: the setting's value on the live client and on the PTR, so each reading of an old
+global says which it was taken under; each candidate asked beside the call it would replace.
+
+**Why the PTR lost the item globals** (§73): the handoff reads it as a package of old item and
+currency wrappers the PTR build no longer ships. Of Family's surface only `GetItemIcon`, `GetItemInfo`
+and `GetItemInfoInstant` came from it, and §74 already routes all three. `GetSpellInfo`'s loss is
+not explained by it.
+
+**Five categories now in Midnight's scope**, Alberto's decision: **crafting orders**, **delves**, **the
+keystone a character holds**, **lockouts boss by boss**, and **the client's secret-value
+predicates** - the last as a possible replacement for §75's `pcall`, which works as seen. Each is
+first a list of questions for the probe; the specification gains each as it is designed.
