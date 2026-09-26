@@ -952,7 +952,10 @@ local function build(frame)
 			status:SetText(string.format(L["|cff88bbff%s|r%s%s%s   |cff888888|||r   seen %s"],
 				chosen.label,
 				chosen.role and string.format(L[" |cff888888- %s|r"], chosen.role) or "",
-				data.loadout and ("   |cff888888|||r   " .. data.loadout) or "",
+				-- The loadout's name is recorded and not drawn: the active config's name is the
+				-- specialisation's again (*Assassination*), while the game's picker says *Default
+				-- Loadout* (`docs/MIDNIGHT.md` §96). Drawn once the right name is measured.
+				"",
 				count > 1 and string.format(
 					L["   |cff888888|||r   specialisation %d of %d%s"],
 					group, count,

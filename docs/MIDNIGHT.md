@@ -3465,3 +3465,27 @@ Not yet seen in the game: the hero heading and its name (Ahia has no hero talent
 another specialisation's record, and the whole panel. Seventeen checks and fourteen mutations.
 `tools/FamilySurface/Surface.lua` is regenerated; the eleven names it gained include three from the
 flight-style work of §85, which had not been regenerated then.
+
+## 96. §95 seen on the PTR: two specialisations, each its own list (2026-09-26)
+
+Ahia after deploying §95. **Spec 1, Assassination (active)**: *Rogue - 13 spent (8 to spend)* over
+fourteen talents, Shiv, Blind and Cloak of Shadows first - the top row of the game's class tree - and
+Danger Sense and Swift Slasher last; *Assassination - 4 spent (16 to spend)* over Deadly Poison,
+Motivated Murderer, Improved Poisons and Canny Strikes. The spell tooltip opens on a row. So the
+sides by point pool hold, and `posX`/`posY` answer and give the tree's order.
+
+**Motivated Murderer is the specialisation's**, not the class's. §94's first node taken in the
+tree's list was that one, and the harness had filed it under the class, which was its own guess. The
+fixture now puts it where the game does.
+
+**Switched to Outlaw in the game**: Spec 1 still showed Assassination's lists, no longer marked
+active, and **Spec 2, Outlaw (active)** showed its own, *Rogue - 14 spent (7 to spend)*. So each
+specialisation is kept as last played, and the scan follows a switch.
+
+**The loadout's name is the specialisation's.** The status line read *Assassination | Assassination*
+and then *Outlaw | Outlaw*: `GetConfigInfo` of the active config names it after the specialisation,
+while the game's picker reads *Default Loadout*. The name is still recorded and is no longer drawn,
+until the right call is measured - `C_ClassTalents.GetLastSelectedSavedConfigID(specID)` is asked
+next, beside `GetStarterBuildActive()`.
+
+Not seen yet: a hero tree, and a rank of more than one.

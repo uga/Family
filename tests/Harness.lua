@@ -45737,18 +45737,21 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 
 	local NODES = {
 		[90628] = { activeRank = 1, maxRanks = 1, entry = 112513, posY = 300, posX = 100,
-			cost = 2801 },
+			cost = 2800 },
 		[90700] = { activeRank = 2, maxRanks = 2, entry = 200, posY = 100, posX = 200, cost = 2800 },
+		[90705] = { activeRank = 1, maxRanks = 1, entry = 205, posY = 20, posX = 100, cost = 2801 },
 		[90701] = { activeRank = 0, maxRanks = 1, entry = 201, posY = 150, posX = 100, cost = 2801 },
 		[90702] = { activeRank = 1, maxRanks = 1, entry = 202, posY = 50, posX = 100, subTreeID = 52 },
 		[90703] = { activeRank = 1, maxRanks = 1, entry = 203, posY = 40, posX = 100, cost = 2988 },
 		[90704] = { activeRank = 1, maxRanks = 1, entry = 204, posY = 100, posX = 50, cost = 2801 },
 	}
 	local DEFINITIONS = { [112513] = 117518, [200] = 300, [201] = 301, [202] = 302, [203] = 303,
-		[204] = 304 }
-	local SPELLS = { [117518] = 1247993, [300] = 5001, [301] = 5009, [302] = 5002, [304] = 5004 }
+		[204] = 304, [205] = 305 }
+	local SPELLS = { [117518] = 1247993, [300] = 5001, [301] = 5009, [302] = 5002, [304] = 5004,
+		[305] = 5005 }
 	local NAMES = { [1247993] = "Motivated Murderer", [5001] = "A Spec Talent",
-		[5002] = "A Hero Talent", [5004] = "A Class Talent", [5009] = "Not Taken" }
+		[5002] = "A Hero Talent", [5004] = "A Class Talent", [5005] = "A Top Talent",
+		[5009] = "Not Taken" }
 	local spec = 1
 	local configAsked = 0
 
@@ -45773,7 +45776,7 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		end,
 		GetTreeNodes = function(tree)
 			if tree ~= 852 then return {} end
-			return { 90628, 90700, 90701, 90702, 90703, 90704 }
+			return { 90628, 90700, 90701, 90702, 90703, 90704, 90705 }
 		end,
 		GetNodeInfo = function(_, id)
 			local node = NODES[id]
@@ -45810,17 +45813,20 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 	end
 	check("a node taken is recorded as its spell, entry to definition to spell",
 		bySpell[1247993] ~= nil and bySpell[1247993].rank == 1 and bySpell[1247993].maxRank == 1)
+	-- *Motivated Murderer* under Assassination, as the game and Family's panel both showed it
+	-- (`docs/MIDNIGHT.md` §96): the first node taken in the tree's list is not the class's.
 	check("and filed under the side whose pool it costs from",
-		bySpell[1247993] and bySpell[1247993].side == "class"
+		bySpell[1247993] and bySpell[1247993].side == "spec"
+			and bySpell[5004] and bySpell[5004].side == "class"
 			and bySpell[5001] and bySpell[5001].side == "spec" and bySpell[5001].rank == 2)
 	check("a hero node under its hero tree, which is named",
 		bySpell[5002] and bySpell[5002].side == "hero" and bySpell[5002].hero == 52
 			and group.heroes[52] == "A Hero Tree")
 	check("a node not taken is not listed, nor one whose entry leads to no spell",
-		bySpell[5009] == nil and #group.talents == 4, tostring(group and #group.talents))
+		bySpell[5009] == nil and #group.talents == 5, tostring(group and #group.talents))
 	check("in the order the tree reads, top first and left first",
-		bySpell[5002].at == 1 and bySpell[5004].at == 2 and bySpell[5001].at == 3
-			and bySpell[1247993].at == 4)
+		bySpell[5005].at == 1 and bySpell[5002].at == 2 and bySpell[5004].at == 3
+			and bySpell[5001].at == 4 and bySpell[1247993].at == 5)
 	check("with each side's points spent and still to spend",
 		group.points.class and group.points.class.spent == 13 and group.points.class.left == 8
 			and group.points.spec and group.points.spec.spent == 4)
@@ -45843,7 +45849,7 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 			or visibleText("specialisation 2 of 3")))
 	check("and draws each talent taken by the name its spell has",
 		drawnText("Motivated Murderer") and drawnText("A Class Talent")
-			and drawnText("A Hero Talent") and not drawnText("Not Taken"))
+			and drawnText("A Hero Talent") and drawnText("A Top Talent") and not drawnText("Not Taken"))
 	check("under the hero tree's name, with a rank where there is more than one",
 		drawnText("A Hero Tree") and drawnText("2/2"))
 	check("and each side's points", drawnText("13|r spent") and drawnText("(8 to spend)"))
