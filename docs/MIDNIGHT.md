@@ -3825,3 +3825,17 @@ table stays the answer where one is. An item the client has not loaded yet answe
 taken as buyable until it has. Two checks, two mutations; the check sets the section's expansion by
 hand, as the section does, after a `Detect` put the real build back under the checks that followed.
 Not yet seen in the game.
+
+## 113. Midnight's quest log holds 35, and `MAX_QUESTS` says 25 (2026-09-26)
+
+Family records the log's size beside its count, so a summary reads *20 of 25*, and took it from
+`MAX_QUESTS`. On Midnight: `MAX_QUESTS` **25**, `C_QuestLog.GetMaxNumQuests()` **175**,
+`C_QuestLog.GetMaxNumQuestsCanAccept()` **35**, and `GetNumQuestLogEntries()` 22 rows and 7 quests.
+Thirty-five is how many a character may hold; 175 is a ceiling of another kind. So Family would have
+said *7 of 25* where the game allows 35.
+
+Not a second route: the old constant does not go missing, it answers and is wrong, so *the old call
+first* would keep the wrong number. The size of the log is the game's, so it is a capability,
+`questLogAsked`, Midnight's only: there the limit is asked of `GetMaxNumQuestsCanAccept`, and the
+Classic clients keep `MAX_QUESTS` even where a build of theirs carries the newer call. Two checks,
+two mutations; `Surface.lua` gains the call.

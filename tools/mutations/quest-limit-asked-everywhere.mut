@@ -1,0 +1,6 @@
+name: every client's quest log size is asked of C_QuestLog, off the route the Classic clients were measured on
+file: addons/Family/Scanners/Quests.lua
+--- old
+	if Family.Capabilities:Has("questLogAsked") then
+--- new
+	if true then

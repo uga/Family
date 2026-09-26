@@ -315,6 +315,17 @@ function Quests:IsScanning()
 	return scanning
 end
 
+-- How many quests the log holds: Midnight's is asked of `C_QuestLog`, where `MAX_QUESTS` still
+-- says 25 against the 35 it takes; everywhere else the constant, as it always was.
+local function questLimit()
+	if Family.Capabilities:Has("questLogAsked") then
+		local api = _G.C_QuestLog
+		local asked = tonumber((Family:TryCall(api and api.GetMaxNumQuestsCanAccept)))
+		if asked and asked > 0 then return asked end
+	end
+	return tonumber(_G.MAX_QUESTS) or nil
+end
+
 function Quests:Scan()
 	if scanning then return end
 	scanning = true
@@ -443,8 +454,9 @@ function Quests:ScanNow()
 		questsComplete = complete,
 		questsSeen = time(),
 		-- The cap is what makes the count mean anything: twenty of twenty-five is a
-		-- different situation from twenty of a hundred.
-		questMax = tonumber(_G.MAX_QUESTS) or nil,
+		-- different situation from twenty of a hundred. Asked of the log where the game's log
+		-- is Midnight's, whose 35 `MAX_QUESTS` does not know (Capabilities.lua).
+		questMax = questLimit(),
 	})
 
 	lastScan = time()

@@ -162,6 +162,12 @@ local EXPECTED = {
 	-- two weapons (`docs/MIDNIGHT.md` §110). Mists took the slot away too; it is true there only to
 	-- keep drawing what Mists draws today, which is `main`'s to change.
 	rangedSlot   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+
+	-- **A quest log whose size is asked, not taken from `MAX_QUESTS`.** Midnight's holds 35:
+	-- `C_QuestLog.GetMaxNumQuestsCanAccept()` answered 35 there, while `MAX_QUESTS` still says 25
+	-- and `GetMaxNumQuests()` answers 175, a ceiling of another kind (`docs/MIDNIGHT.md` §113). The
+	-- old constant answers and is wrong, so the choice of reader is the game's and lives here.
+	questLogAsked = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -182,6 +188,7 @@ local CONFIRMED = {
 	skyriding    = { [MIDNIGHT] = true },
 	talentNodes  = { [MIDNIGHT] = true },
 	reagentBag   = { [MIDNIGHT] = true },
+	questLogAsked = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

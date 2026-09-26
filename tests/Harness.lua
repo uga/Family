@@ -3303,7 +3303,11 @@ print("the quest log on the fourth pretend client")
 		GetInfo = function(index) asked = asked + 1 return rows()[index] end,
 		GetQuestIDForLogIndex = function() return nil end,
 		GetNumQuestObjectives = function() return 0 end,
+		-- The log's size, read on Midnight (`docs/MIDNIGHT.md` §113): 35 it can accept, beside a
+		-- `MAX_QUESTS` that still says 25.
+		GetMaxNumQuestsCanAccept = function() return 35 end,
 	})
+	set("MAX_QUESTS", 25)
 
 	local stored = { meta = {}, payload = {} }
 	local midnight = setmetatable({}, { __index = FamilyPrivate })
@@ -3381,6 +3385,14 @@ print("the quest log on the fourth pretend client")
 	check("every heading was opened, and the two found shut are shut again, last first",
 		expanded[1] == 0 and #shut == 2 and shut[1] == 6 and shut[2] == 4,
 		"opened " .. #expanded .. ", shut " .. table.concat(shut, ","))
+
+	-- **Of 35, not of 25**: Midnight's log size is asked of the log, since `MAX_QUESTS` answers
+	-- and is wrong there.
+	Family.Capabilities:Detect()
+	midnight.Quests:Scan()
+	check("the log's size is Midnight's 35, asked of the log, not the 25 the old constant says",
+		stored.meta["Mirror-Midnight"] and stored.meta["Mirror-Midnight"].questMax == 35,
+		stored.meta["Mirror-Midnight"] and tostring(stored.meta["Mirror-Midnight"].questMax))
 
 	-- **And a client with both counts reads the old one**, which is what keeps the three
 	-- Classic clients on the route they have always been measured on, should any of their
@@ -6930,6 +6942,20 @@ check("and so does what is ready to hand in", questMeta.questsComplete == 1,
 	tostring(questMeta.questsComplete))
 check("with the cap, so twenty of twenty-five means something",
 	questMeta.questMax == 25, tostring(questMeta.questMax))
+
+-- **The constant on a Classic client even where the log would answer**: only Midnight's log size
+-- is asked of `C_QuestLog` (`docs/MIDNIGHT.md` §113), and a Classic build carrying the call keeps
+-- the route it was measured on.
+do
+	local heldLog = _G.C_QuestLog
+	_G.C_QuestLog = setmetatable({ GetMaxNumQuestsCanAccept = function() return 35 end },
+		{ __index = heldLog or {} })
+	Family.Quests:Scan()
+	check("and a Classic client keeps MAX_QUESTS even where the log would say otherwise",
+		Family.Database:Meta(key).questMax == 25, tostring(Family.Database:Meta(key).questMax))
+	_G.C_QuestLog = heldLog
+	Family.Quests:Scan()
+end
 
 -- Scanning twice must produce the same log, not two of it.
 Family.Quests:Scan()

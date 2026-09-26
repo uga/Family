@@ -1,0 +1,6 @@
+name: Midnight's quest log is counted against the 25 the old constant says, not the 35 it holds
+file: addons/Family/Scanners/Quests.lua
+--- old
+	if Family.Capabilities:Has("questLogAsked") then
+--- new
+	if false then
