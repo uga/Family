@@ -4050,3 +4050,43 @@ this call and is already answered. **Not yet seen in the game.**
 **Profession specialisations wait for Forever** (Alberto, the same afternoon): Family does not read
 them - no scanner asks the specialisation calls - and Forever will not have them, so by §111's rule
 they are not in Midnight's first release.
+
+**Seen on Midnight the same evening**: Maretta's Cooldowns page with *Auchindoun: Mana-Tombs Heroic*
+at **1/4** and *Molten Core 40 Player* at **1/10**, and the tooltip naming Mana-Tombs' four with
+Pandemonius *defeated*. So a dungeon lock answers as a raid's does. Alberto: *works ok, apart from
+the order in which the bosses are listed in that dungeon* - the call gave Nexus-Prince Shaffar,
+Pandemonius, Yor, Tavarok, which is not the order the dungeon is played in. Asked next: the order
+the game's own Raid Information window uses, and whether the Encounter Journal answers the order
+by the lock's instance id. `C_EncounterJournal.GetInstanceForGameMap` answered **741** for Molten
+Core (409) and **250** for Mana-Tombs (557); `EJ_GetEncounterInfoByIndex(k, journalID)` answered
+nothing for either, k 1 to 6, so the id alone does not reach the list.
+
+**Closed by the game's own window**: Raid Information's lock tooltip, *Maretta's Auchindoun:
+Mana-Tombs Instance Lock*, lists Nexus-Prince Shaffar, Pandemonius, Yor, Tavarok - the call's order,
+Pandemonius *Defeated* and the rest *Available*. Family's order is the game's, Alberto: *this closes
+the case*. The Journal is not asked, and nothing is changed.
+
+## 122. *Script ran too long* in the deferred bag scan (2026-09-26)
+
+Reported from play on Midnight, looting in Mana-Tombs: *Family: error in deferred bags:
+Interface/AddOns/Family/Core.lua:244: script ran too long*. Line 244 is inside `Family:ItemString`'s
+split loop, which runs once per occupied slot - where the budget ran out, which is not where the
+time went (L-094). The bag scan is timed next, in three parts, before anything is changed.
+
+**Timed on the same character, out of combat**: `Bags:Scan()` whole **36 ms**; storing the bags part
+**2.0 ms**; `Mounts:Recompute` **0.6 ms**; `BoundIn` over the **46** occupied slots **4.2 ms**. So the
+scan alone is nowhere near a budget. Alberto: the error came *right after I killed the first boss
+in MT, while still in combat due to the adds coming to me*, and from Mists on the game loots all
+the nearby corpses at once. A boss kill makes many things due together - the lockouts ask again on
+`BOSS_KILL`, the loot fills the bags, a reputation and currencies change - and `Family:After` ran
+**every job due in a frame in that frame**, so they shared one budget, and the bag scan was the one
+standing when it ran out.
+
+**Changed**: the deferred jobs run longest overdue first, and stop for the frame once it has spent
+10 ms; the rest go on the next frame. Cheap jobs still all run at once, a costly one starts on a
+frame nothing else has spent, and an error that still comes names the job that spent it. A client
+without `debugprofilestop` runs them all, as before. A job asked for again by one run earlier in
+the same frame now waits its new delay rather than running on the old request. What the client's
+budget is, in combat or out, has not been measured, and neither has what else was due in that
+frame: this removes the shared frame, and a second report would be about one job alone. Five checks
+and four mutations; not yet seen in the game.

@@ -1,0 +1,6 @@
+name: a job asked for again in the frame runs on its old request and drops the new one
+file: addons/Family/Core.lua
+--- old
+		if pending[job.key] and pending[job.key].fn == job.fn then
+--- new
+		if pending[job.key] then

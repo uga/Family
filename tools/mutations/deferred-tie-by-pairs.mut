@@ -1,0 +1,8 @@
+name: jobs due at the same moment run in whatever order pairs gives, reversed by name
+file: addons/Family/Core.lua
+--- old
+	return a.key < b.key
+end
+--- new
+	return a.key > b.key
+end
