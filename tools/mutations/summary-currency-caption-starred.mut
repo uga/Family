@@ -1,0 +1,6 @@
+name: the Summary says its currencies are the most held when they are the starred ones
+file: addons/Family_UI/Summary.lua
+--- old
+			if UI.__currencyColumnsWhy == "starred" then
+--- new
+			if false then

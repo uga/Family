@@ -46440,8 +46440,8 @@ print("one member's currencies, grouped as the game groups them")
 		return table.concat(keys, ",")
 	end
 	local starred = summaryColumns()
-	check("the Summary shows the starred currency and nothing else",
-		starred == "c1792", starred)
+	check("the Summary shows the starred currency and nothing else, and says so under it",
+		starred == "c1792" and visibleText("The currencies starred in Character"), starred)
 	-- One set for the account: played as somebody else, the same column.
 	local playing = Family.CurrentMember
 	Family.CurrentMember = function() return "Someone-Else" end
@@ -46454,6 +46454,7 @@ print("one member's currencies, grouped as the game groups them")
 	check("and with nothing starred, the current groups in the game's order, never Legacy's",
 		current:find("c3465,c1792", 1, true) == 1 and not current:find("c1220", 1, true)
 			and not current:find("c823", 1, true), current)
+	check("and says that is what they are", visibleText("The game's current currencies"))
 	FamilyDB.currencyStars = heldStars
 	Family.UI:ShowTab("character")
 

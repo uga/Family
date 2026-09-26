@@ -1,0 +1,6 @@
+name: the Summary says its currencies are the most held when they are the game's current ones
+file: addons/Family_UI/Summary.lua
+--- old
+			elseif UI.__currencyColumnsWhy == "current" then
+--- new
+			elseif false then

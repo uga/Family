@@ -2028,7 +2028,10 @@ end
 local function currenciesChosen(held)
 	local stars = UI:CurrencyStars()
 	local chosen = {}
+	-- Which rule chose them, for the footer to say (on `UI`: this file is at Lua's upvalue limit).
+	UI.__currencyColumnsWhy = "most"
 	if next(stars) then
+		UI.__currencyColumnsWhy = "starred"
 		for _, currency in ipairs(held) do
 			if stars[currency.key] then chosen[#chosen + 1] = currency end
 		end
@@ -2043,6 +2046,7 @@ local function currenciesChosen(held)
 			end
 		end
 		if not anyGroup then return held end
+		UI.__currencyColumnsWhy = "current"
 		for _, currency in ipairs(held) do
 			local top = currency.group and currency.group[1]
 			local count = 0
@@ -4389,16 +4393,26 @@ local function build(frame)
 				.. "whoever has it underneath and when theirs comes back. A lockout is read "
 				.. "when that character logs in.|r"])
 		elseif currentSet.id == "currencies" then
-			-- The columns are whatever the family holds most of, so the panel has to say
-			-- that: five columns out of twelve currencies is not the same claim as five
-			-- columns out of five, and they look identical.
-			note:SetText(string.format(L["|cff888888The currencies this family holds most "
-				.. "of, most first.%s Character shows one member's in full, with what "
-				.. "each is capped at.|r"],
-				currenciesOmitted > 0
-					and string.format(L[" |cffffaa00%d more not shown - there is only so "
-						.. "much room in a row.|r|cff888888"], currenciesOmitted)
-					or ""))
+			-- The panel says which rule chose the columns: five columns out of twelve
+			-- currencies is not the same claim as five out of five, and they look identical.
+			-- Starred, the game's current groups, or on a family with no headings the most held.
+			local omitted = currenciesOmitted > 0
+				and string.format(L[" |cffffaa00%d more not shown - there is only so "
+					.. "much room in a row.|r|cff888888"], currenciesOmitted)
+				or ""
+			if UI.__currencyColumnsWhy == "starred" then
+				note:SetText(string.format(L["|cff888888The currencies starred in Character > "
+					.. "Currencies, four at most - right-click one there to change them.%s|r"],
+					omitted))
+			elseif UI.__currencyColumnsWhy == "current" then
+				note:SetText(string.format(L["|cff888888The game's current currencies, Legacy "
+					.. "left out. Right-click up to four in Character > Currencies to choose "
+					.. "your own.%s|r"], omitted))
+			else
+				note:SetText(string.format(L["|cff888888The currencies this family holds most "
+					.. "of, most first.%s Character shows one member's in full, with what "
+					.. "each is capped at.|r"], omitted))
+			end
 		elseif currentSet.id == "overview" then
 			note:SetText(string.format(L["|cff888888Rest XP est. is worked out from the last "
 				.. "reading: 5%% of a level every 8 hours where the character was resting, every "

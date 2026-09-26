@@ -3998,3 +3998,10 @@ line in chat saying to take a star away first; `FamilyDB.currencyStars` is a fla
 the per-character shape the first build wrote is read as nothing starred. The mutation that guarded
 the per-character set was rewritten to guard the account's, since removing one is not this
 session's to decide; two checks and two mutations added.
+
+**Seen on the PTR**: Mara with *Darkmoon Prize Ticket*, *Epicurean's Award* and *Ironpaw Token*
+starred, the raid marker's star drawn before each, and the Summary showing those three as its
+columns - *all ok*, Alberto's word. The footer under them still read *the currencies this family
+holds most of, most first*, which was no longer what they were, so the footer now says which rule
+chose them: the starred ones, the game's current ones with Legacy left out, or - a family with no
+headings - the most held, as before. Two checks widened, two mutations.
