@@ -1,0 +1,6 @@
+name: the reagent bag is filed as the bank as well whenever the bank is open
+file: addons/Family/Scanners/Bank.lua
+--- old
+		if bag == REAGENT_BAG and Family.Capabilities:Has("reagentBag") then isBankBag = false end
+--- new
+

@@ -149,6 +149,13 @@ local EXPECTED = {
 	-- talents, with loadouts. Seen on the PTR, 12.1.5, 2026-09-26, on Ahia: the game's window, and
 	-- `C_Traits` answering one tree of 206 nodes for the active loadout (`docs/MIDNIGHT.md` §94).
 	talentNodes  = { [MIDNIGHT] = true },
+
+	-- **A reagent bag**, a sixth carried bag for crafting reagents, which gathered ore and herbs go
+	-- into by themselves. Seen on Midnight: Mara's *Gatherer's Reagent Bag*, 26 slots, in Alberto's
+	-- screenshot of 2026-09-19, and container 5 answering 26 slots in the same login sweep
+	-- (`docs/MIDNIGHT.md` §6). Alberto's Copper Ore was in it and the family's count said none
+	-- (§102).
+	reagentBag   = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -168,6 +175,7 @@ local CONFIRMED = {
 	addonCasts   = {                   [TBC] = true                 },
 	skyriding    = { [MIDNIGHT] = true },
 	talentNodes  = { [MIDNIGHT] = true },
+	reagentBag   = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

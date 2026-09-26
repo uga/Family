@@ -1,0 +1,6 @@
+name: container 5 is read as carried on a client where it is the first bank bag
+file: addons/Family/Scanners/Bags.lua
+--- old
+	if Family.Capabilities:Has("reagentBag") then order[#order + 1] = REAGENT_BAG end
+--- new
+	order[#order + 1] = REAGENT_BAG

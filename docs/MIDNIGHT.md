@@ -3595,3 +3595,23 @@ Blackrock veins and *Trillium Vein*, which yields two ores.
 All five locales of Midnight's `ItemSparse` came back whole, about 175,000 rows each, unlike the
 Mists exports that are short in German and Spanish. Two checks and two mutations; not yet seen in
 the game.
+
+## 102. Veins and herbs seen on Midnight; the reagent bag was never read (2026-09-26)
+
+After §101, on the PTR: a Copper Vein **in the world** drew *Family possessions: Copper Ore*, and a
+Peacebloom in the world drew its block on a character without Herbalism (*Requires Herbalism*), so
+Midnight's herb nodes are named exactly after their herbs, as on Classic. The Copper Vein **on the
+minimap** resolved too - *"Copper Vein" is 1 thing(s), the first being item 2770* - and drew no
+block there. Whether a blip leaves its block out where nobody holds the item is to be seen once
+the counts below are right.
+
+**Both blocks said *none*, and Alberto had Copper Ore in his bags.** It was in the reagent bag, which
+gathered ore and herbs go into by themselves. §6 had measured it - container 5, Mara's *Gatherer's
+Reagent Bag*, 26 slots - and said then that the bag scanner, reading 0 to 4, would miss it. It did,
+and nobody had gone back. A second fault was behind it: the bank scanner walks 5 to 11 on Midnight
+(§22), so with the bank open a reagent bag was filed as the bank as well.
+
+A capability, `reagentBag`, true for Midnight only: the bag scanner reads container 5 as a carried
+bag where it holds, and the bank scanner skips container 5 where it holds. On the three Classic
+clients container 5 is the first bank bag and is read with the bank as before, which a new check
+holds on Classic's own fixture. Five checks, four mutations. Not yet seen in the game.

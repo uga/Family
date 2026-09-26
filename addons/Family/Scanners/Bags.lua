@@ -44,6 +44,11 @@ local GetLink = container.GetContainerItemLink or _G.GetContainerItemLink
 
 local lastBagSlot = _G.NUM_BAG_SLOTS or 4
 
+-- **The reagent bag is container 5 on Midnight**, measured (`docs/MIDNIGHT.md` §6) and read where
+-- the game has one (Capabilities.lua). Asked for by number, because the constant that would name
+-- it has not been read on that client.
+local REAGENT_BAG = 5
+
 -- A world buff banked in a Chronoboon Displacer.
 --
 -- **A charged one is a different item from an empty one**: 184937 is the Displacer and 184938
@@ -242,6 +247,7 @@ function Bags:Scan()
 	local order = {}
 	if Family.Capabilities:Has("keyring") then order[#order + 1] = KEYRING end
 	for bag = BACKPACK, lastBagSlot do order[#order + 1] = bag end
+	if Family.Capabilities:Has("reagentBag") then order[#order + 1] = REAGENT_BAG end
 
 	for _, bag in ipairs(order) do
 		local size = GetNumSlots and GetNumSlots(bag) or 0

@@ -2638,17 +2638,24 @@ print("the same bag scan on the fourth pretend client")
 	-- both characters. **The answers are the new shape**: `GetContainerItemInfo` hands back a
 	-- table here, where the loose global handed back ten returns beginning with a texture.
 	-- That difference is the one this whole section exists to put a check on.
+	-- And container 5, Mara's reagent bag of 26 slots (`docs/MIDNIGHT.md` §6, §102), with Copper
+	-- Ore in it: where gathered ore goes by itself, and what the family's count missed.
 	set("C_Container", {
 		GetContainerNumSlots = function(bag)
 			if bag == 0 then return 20 end
 			if bag == 1 then return 30 end
+			if bag == 5 then return 26 end
 			return 0
 		end,
 		GetContainerNumFreeSlots = function(bag)
 			if bag == 0 then return 18, 0 end
+			if bag == 5 then return 25, 0 end
 			return 28, 0
 		end,
 		GetContainerItemInfo = function(bag, slot)
+			if bag == 5 and slot == 1 then
+				return { itemID = 2770, stackCount = 12, hasLoot = false }
+			end
 			if bag == 0 and slot == 1 then
 				return { itemID = 6948, stackCount = 1, hasLoot = false }
 			end
@@ -2698,10 +2705,13 @@ print("the same bag scan on the fourth pretend client")
 
 	local meta = stored.meta["Mirror-Midnight"]
 	local payload = stored.payload["Mirror-Midnight"]
-	check("a Midnight-build scan counts the bags it was given",
-		meta ~= nil and meta.bagSlots == 50, meta and tostring(meta.bagSlots))
+	check("a Midnight-build scan counts the bags it was given, the reagent bag among them",
+		meta ~= nil and meta.bagSlots == 76, meta and tostring(meta.bagSlots))
 	check("and their free slots with them",
-		meta and meta.bagFree == 46, meta and tostring(meta.bagFree))
+		meta and meta.bagFree == 71, meta and tostring(meta.bagFree))
+	check("and the ore in the reagent bag is recorded",
+		payload and payload.bags[5] and payload.bags[5].slots[1]
+			and payload.bags[5].slots[1].id == 2770 and payload.bags[5].slots[1].count == 12)
 	check("and no bag is taken for a special one on a client with no quivers",
 		meta and meta.specialSlots == 0, meta and tostring(meta.specialSlots))
 
@@ -2852,13 +2862,16 @@ print("the bank on the fourth pretend client")
 	set("GetContainerItemInfo", nil)
 	set("ContainerIDToInventoryID", nil)
 	set("GetContainerItemLink", nil)
+	Family.Capabilities:Detect()
 
-	-- The layout §6 read: -1 and 5 answer nothing, 6 to 11 are the tabs, 12 is the warband one
+	-- The layout §6 read: -1 answers nothing, 6 to 11 are the tabs, 12 is the warband one
 	-- with something in it. The number of slots is the shape rather than the exact count.
 	-- The carried backpack is in here as well, with the twenty slots this client gives it. It
 	-- is not a bank container and nothing should read it as one - which is only worth checking
 	-- if it is there to be read wrongly (L-209).
-	local TABS = { [0] = 20,
+	-- Container 5 is Mara's reagent bag, carried and not the bank's (§102): Ahia has none, and the
+	-- range the bank walks reaches it.
+	local TABS = { [0] = 20, [5] = 26,
 		[6] = 20, [7] = 20, [8] = 20, [9] = 20, [10] = 20, [11] = 20, [12] = 98 }
 	set("C_Container", {
 		GetContainerNumSlots = function(bag) return TABS[bag] or 0 end,
@@ -2919,7 +2932,7 @@ print("the bank on the fourth pretend client")
 
 	-- The two the old layout expects and this client does not have. Neither is an error, and
 	-- both would be if the client answered slots for them holding nothing (L-019).
-	check("nothing is recorded for the bank window container or for bag 5",
+	check("nothing is recorded for the bank window container, nor for the reagent bag, which is carried",
 		bank and bank[-1] == nil and bank[5] == nil)
 
 	-- And the one it does not reach. Not a defect to fix here: container 12 is the warband
@@ -6584,6 +6597,25 @@ check("a bank never has more free slots than it has slots",
 
 local bank = Family.Database:Payload(key).bank
 check("bank contents kept by id", bank and bank.containers[-1].slots[1].id == 7909)
+
+-- **Container 5 is the first bank bag on a Classic client**, and the reagent bag on Midnight
+-- (`docs/MIDNIGHT.md` §102). Here it is the bank's: read with the bank, and never with the bags.
+do
+	BANK_BAGS[5] = { size = 12, free = 11, bagType = 0, items = { [1] = { 4306, 7 } } }
+	fire("BANKFRAME_OPENED")
+	advance(1)
+	local held = Family.Database:Payload(key).bank
+	check("on a Classic client the first bank bag, container 5, is read with the bank",
+		held and held.containers[5] and held.containers[5].slots[1]
+			and held.containers[5].slots[1].id == 4306)
+	Family.Bags:Scan()
+	local carried = Family.Database:Payload(key).bags
+	check("and not with the carried bags", carried and carried[5] == nil)
+	BANK_BAGS[5] = nil
+	fire("BANKFRAME_OPENED")
+	advance(1)
+	Family.Bags:Scan()
+end
 
 -- The client says twenty of those twenty-four are free while one of them holds something.
 -- Believing it is what put "56 of 52 free" on somebody's screen; counting is what does not.

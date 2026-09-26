@@ -1,0 +1,6 @@
+name: the first bank bag of a Classic client is skipped as a reagent bag
+file: addons/Family/Scanners/Bank.lua
+--- old
+		if bag == REAGENT_BAG and Family.Capabilities:Has("reagentBag") then isBankBag = false end
+--- new
+		if bag == REAGENT_BAG then isBankBag = false end

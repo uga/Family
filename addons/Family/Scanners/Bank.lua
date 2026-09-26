@@ -36,6 +36,11 @@ local BANK = _G.BANK_CONTAINER or -1
 local FIRST_BANK_BAG = (_G.NUM_BAG_SLOTS or 4) + 1
 local LAST_BANK_BAG = FIRST_BANK_BAG + (_G.NUM_BANKBAGSLOTS or 7) - 1
 
+-- **Container 5 is carried on Midnight**: the reagent bag, which the bag scanner reads. The range
+-- above reaches it, because on that client it runs 5 to 11 (`docs/MIDNIGHT.md` §22), so without
+-- this a reagent bag was filed as the bank as well whenever the bank was open (§102).
+local REAGENT_BAG = 5
+
 -- The third return is the item string, and only for the items whose id does not describe them
 -- - a random-enchantment suffix, an enchant, a gem. See Family:ItemString in Core.lua.
 local function slotContents(bag, slot)
@@ -99,6 +104,7 @@ function Bank:Scan()
 		-- The bank container is -1 and the bank bags start above the carried ones, so the
 		-- carried bags in between are skipped rather than scanned twice.
 		local isBankBag = (bag == BANK) or (bag >= FIRST_BANK_BAG)
+		if bag == REAGENT_BAG and Family.Capabilities:Has("reagentBag") then isBankBag = false end
 
 		if isBankBag then
 			local size = GetNumSlots and GetNumSlots(bag) or 0

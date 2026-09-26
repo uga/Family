@@ -1,0 +1,6 @@
+name: the reagent bag is not read, so gathered ore in it counts as none
+file: addons/Family/Scanners/Bags.lua
+--- old
+	if Family.Capabilities:Has("reagentBag") then order[#order + 1] = REAGENT_BAG end
+--- new
+
