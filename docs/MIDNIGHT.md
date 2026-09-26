@@ -3990,3 +3990,11 @@ is there on every client. The footer still counts what is not shown. The star is
 and textures cannot be probed, so it is to be looked at in a screenshot.
 
 Four checks and six mutations. Not yet seen in the game.
+
+**Taken back within the hour**: the stars are **one set for the account, four at most**. Alberto: the
+Summary is one line per character, so columns per character would be more a mess than a value, and
+a character's own currencies are on Character > Currencies. A fifth right-click is refused with a
+line in chat saying to take a star away first; `FamilyDB.currencyStars` is a flat set of keys, and
+the per-character shape the first build wrote is read as nothing starred. The mutation that guarded
+the per-character set was rewritten to guard the account's, since removing one is not this
+session's to decide; two checks and two mutations added.

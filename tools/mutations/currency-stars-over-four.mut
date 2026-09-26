@@ -1,0 +1,6 @@
+name: a fifth currency can be starred, and the Summary is short of room for them
+file: addons/Family_UI/Character.lua
+--- old
+						if count >= UI.CURRENCY_STARS then
+--- new
+						if false then

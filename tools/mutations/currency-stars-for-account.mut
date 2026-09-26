@@ -1,7 +1,6 @@
-name: the stars are one set for the account, not the character being played
+name: the stars are kept per character, not one set for the account
 file: addons/Family_UI/Character.lua
 --- old
-	local who = Family:CurrentMember()
-	if not who then return {} end
+	local stars = FamilyDB.currencyStars
 --- new
-	local who = "account"
+	local stars = (FamilyDB.currencyStars or {})[Family:CurrentMember()]

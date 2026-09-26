@@ -424,6 +424,7 @@ Family.locales.esES = {
 	["|cff9d9d9dNo currency has been recorded for anybody yet.|r"] = "|cff9d9d9dTodavía no se ha registrado ninguna moneda de nadie.|r",
 	["|cffffd700%d|r currencies   |cff888888|||r   %d with currencies recorded"] = "|cffffd700%d|r monedas   |cff888888|||r   %d con monedas registradas",
 	["   |cff888888|||r   |cff888888right-click one to star it for the Summary|r"] = "   |cff888888|||r   |cff888888clic derecho para marcar una para el Resumen|r",
+	["|cff888888%d currencies are starred already - right-click one of them to take its star away first.|r"] = "|cff888888Ya hay %d monedas marcadas - haz clic derecho en una de ellas para quitarle antes la marca.|r",
 	["Hero talents"] = "Talentos de héroe",
 	["Other"] = "Otros",
 	["|cffffd700%d|r spent |cff40bf40(%d to spend)|r"] = "|cffffd700%d|r gastados |cff40bf40(%d por gastar)|r",

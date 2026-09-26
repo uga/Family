@@ -424,6 +424,7 @@ Family.locales.ruRU = {
 	["|cff9d9d9dNo currency has been recorded for anybody yet.|r"] = "|cff9d9d9dНи у кого ещё не записано ни одной валюты.|r",
 	["|cffffd700%d|r currencies   |cff888888|||r   %d with currencies recorded"] = "|cffffd700%d|r валют   |cff888888|||r   %d с записанными валютами",
 	["   |cff888888|||r   |cff888888right-click one to star it for the Summary|r"] = "   |cff888888|||r   |cff888888правый щелчок отмечает валюту для сводки|r",
+	["|cff888888%d currencies are starred already - right-click one of them to take its star away first.|r"] = "|cff888888Уже отмечено валют: %d - сначала снимите отметку с одной из них правым щелчком.|r",
 	["Hero talents"] = "Героические таланты",
 	["Other"] = "Прочие",
 	["|cffffd700%d|r spent |cff40bf40(%d to spend)|r"] = "|cffffd700%d|r потрачено |cff40bf40(%d осталось)|r",

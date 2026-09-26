@@ -46406,9 +46406,24 @@ print("one member's currencies, grouped as the game groups them")
 		end
 	end
 	if honourLine then honourLine.__scripts.OnClick(honourLine, "RightButton") end
-	check("a right-click on a currency stars it for the character being played, and it wears the star",
-		FamilyDB.currencyStars and FamilyDB.currencyStars[key]
-			and FamilyDB.currencyStars[key].c1792 == true and drawnText("UI-RaidTargetingIcon_1"))
+	check("a right-click on a currency stars it for the Summary, and it wears the star",
+		FamilyDB.currencyStars and FamilyDB.currencyStars.c1792 == true
+			and drawnText("UI-RaidTargetingIcon_1"))
+
+	-- Four at most: a fifth is refused and the four stand.
+	FamilyDB.currencyStars = { c1792 = true, c1 = true, c2 = true, c3 = true }
+	local fifth
+	for _, f in ipairs(frames) do
+		if f.__shown == true and onScreen(f) and rawget(f, "currencyKey") == "c3465" then fifth = f end
+	end
+	if fifth then fifth.__scripts.OnClick(fifth, "RightButton") end
+	check("and a fifth star is refused, the four standing",
+		fifth ~= nil and FamilyDB.currencyStars.c3465 == nil and FamilyDB.currencyStars.c3 == true)
+	-- And the per-character shape of the build taken back is read as nothing starred.
+	FamilyDB.currencyStars = { [key] = { c1792 = true } }
+	check("the per-character stars of the build taken back count as none",
+		next(Family.UI:CurrencyStars()) == nil)
+	FamilyDB.currencyStars = { c1792 = true }
 
 	-- **And the Summary's columns** (`docs/MIDNIGHT.md` §120): the starred one alone while there is
 	-- a star; with none, the current groups and never Legacy's, in the game's order.
@@ -46427,13 +46442,13 @@ print("one member's currencies, grouped as the game groups them")
 	local starred = summaryColumns()
 	check("the Summary shows the starred currency and nothing else",
 		starred == "c1792", starred)
-	-- Another character's stars are theirs: played as somebody else, the default comes back.
+	-- One set for the account: played as somebody else, the same column.
 	local playing = Family.CurrentMember
 	Family.CurrentMember = function() return "Someone-Else" end
 	local elsewhere = summaryColumns()
 	Family.CurrentMember = playing
-	check("and another character, with no stars of their own, sees the default",
-		elsewhere ~= "c1792" and elsewhere:find("c3465", 1, true) ~= nil, elsewhere)
+	check("and another character sees the same starred column",
+		elsewhere == "c1792", elsewhere)
 	FamilyDB.currencyStars = nil
 	local current = summaryColumns()
 	check("and with nothing starred, the current groups in the game's order, never Legacy's",

@@ -2019,8 +2019,8 @@ local function currenciesHeld()
 	return order
 end
 
--- **Which currencies get a column** - Alberto, 2026-09-26. The ones the character being played
--- has starred in Character > Currencies; with none starred, the game's current groups, which is
+-- **Which currencies get a column** - Alberto, 2026-09-26. The ones starred in Character >
+-- Currencies, four at most and one set for the account; with none starred, the game's current groups, which is
 -- every top heading but one holding several of its own - *Legacy* - so the season's currencies
 -- and not the leftovers of every expansion before it; the starred and the current in the game's
 -- order. A family whose records carry no headings, which is every Classic one, keeps the most

@@ -177,21 +177,27 @@ end)
 -- Which currency headings are open, by their path; nil means the default below.
 UI.__currencyHeads = {}
 
--- **The currencies the character being played has starred for the Summary**, by currency key.
--- Per character - Alberto, 2026-09-26: *we need to be able to customise the columns per
--- character* - under `FamilyDB.currencyStars[member]`. Made only when a star is written.
+-- **The currencies starred for the Summary**, by currency key, one set for the account and at
+-- most four - Alberto, 2026-09-26, taking back a set per character the same afternoon: *the
+-- summary is one line per character, so starred columns per character would be more a mess than
+-- a value; if I want my own character I go to Character > Currencies.* A table of tables is that
+-- per-character build's shape, and is read as nothing starred. Made only when a star is written.
+UI.CURRENCY_STARS = 4
+
 function UI:CurrencyStars(making)
 	if type(FamilyDB) ~= "table" then return {} end
-	local who = Family:CurrentMember()
-	if not who then return {} end
-	if making then
-		FamilyDB.currencyStars = type(FamilyDB.currencyStars) == "table" and FamilyDB.currencyStars
-			or {}
-		FamilyDB.currencyStars[who] = type(FamilyDB.currencyStars[who]) == "table"
-			and FamilyDB.currencyStars[who] or {}
+	local stars = FamilyDB.currencyStars
+	if type(stars) == "table" then
+		for _, value in pairs(stars) do
+			if value ~= true then stars = nil break end
+		end
 	end
-	local all = FamilyDB.currencyStars
-	return type(all) == "table" and type(all[who]) == "table" and all[who] or {}
+	if type(stars) ~= "table" then
+		if not making then return {} end
+		stars = {}
+		FamilyDB.currencyStars = stars
+	end
+	return stars
 end
 
 -- The star a currency carries once it is chosen for the Summary: the raid marker's, a picture
@@ -771,12 +777,24 @@ local function build(frame)
 		-- lives on the gear buttons themselves, where it can still happen.
 		r:SetScript("OnClick", function(self, button)
 			-- **A right-click stars a currency for the Summary**, or takes its star away, and
-			-- does nothing on any other row (Alberto, 2026-09-26; `docs/MIDNIGHT.md` §120).
-			-- Kept for the character being played: each has its own Summary columns.
+			-- does nothing on any other row (Alberto, 2026-09-26; `docs/MIDNIGHT.md` §120). Four
+			-- at most, for the account: a fifth is refused and says why.
 			if button == "RightButton" then
 				if self.currencyKey then
 					local stars = UI:CurrencyStars(true)
-					stars[self.currencyKey] = (not stars[self.currencyKey]) or nil
+					if stars[self.currencyKey] then
+						stars[self.currencyKey] = nil
+					else
+						local count = 0
+						for _ in pairs(stars) do count = count + 1 end
+						if count >= UI.CURRENCY_STARS then
+							Family:Print(L["|cff888888%d currencies are starred already - "
+								.. "right-click one of them to take its star away first.|r"],
+								UI.CURRENCY_STARS)
+							return
+						end
+						stars[self.currencyKey] = true
+					end
 					frame:Refresh()
 				end
 				return

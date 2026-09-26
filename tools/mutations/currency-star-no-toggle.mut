@@ -1,6 +1,6 @@
 name: a right-click on a currency does not star it
 file: addons/Family_UI/Character.lua
 --- old
-					stars[self.currencyKey] = (not stars[self.currencyKey]) or nil
+						stars[self.currencyKey] = true
 --- new
-					stars[self.currencyKey] = nil
+						stars[self.currencyKey] = nil

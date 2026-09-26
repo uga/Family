@@ -1,0 +1,6 @@
+name: the per-character stars of the build taken back are read as stars
+file: addons/Family_UI/Character.lua
+--- old
+			if value ~= true then stars = nil break end
+--- new
+			if false then stars = nil break end
