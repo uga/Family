@@ -156,6 +156,12 @@ local EXPECTED = {
 	-- (`docs/MIDNIGHT.md` §6). Alberto's Copper Ore was in it and the family's count said none
 	-- (§102).
 	reagentBag   = { [MIDNIGHT] = true },
+
+	-- **A ranged slot on the character.** Midnight has none: slot 18 is still numbered
+	-- `INVSLOT_RANGED` there and answered nothing on Ahia, a rogue, while Family drew it beside the
+	-- two weapons (`docs/MIDNIGHT.md` §110). Mists took the slot away too; it is true there only to
+	-- keep drawing what Mists draws today, which is `main`'s to change.
+	rangedSlot   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.

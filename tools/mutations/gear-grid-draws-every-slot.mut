@@ -1,0 +1,6 @@
+name: the whole family's gear grid draws a ranged slot the game does not have
+file: addons/Family_UI/Character.lua
+--- old
+						for index, slot in ipairs(UI:GearSlotsHere(FAMILY_ORDER)) do
+--- new
+						for index, slot in ipairs(FAMILY_ORDER) do

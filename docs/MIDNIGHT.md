@@ -3776,3 +3776,22 @@ Nothing of it is measured, and none of it is in scope yet: whether Family record
 If it is, the node reader of §95 is most of the work - one more tree read the same way - and the
 first questions for the probe are the config's id on a character who has unlocked the page, its
 tree's node count, and one taken node's entry, definition and spell, as §94 asked of the talents.
+
+## 110. No ranged slot on Midnight (2026-09-26)
+
+The "?" of the first Midnight test, beside the two weapons on Ahia's sheet, is now Midnight's own
+picture for an empty ranged slot, with no tooltip: Alberto's screenshot, the same day. Asked of the
+client, `GetInventoryItemID("player", 18)` and `GetInventoryItemLink("player", 18)` answered nil,
+`INVSLOT_RANGED` 18 and `INVSLOT_LAST_EQUIPPED` 19. So the slot is still numbered and never holds
+anything, and Family drew it because its slot table has it for every client.
+
+A capability, `rangedSlot`, true on the three Classic columns and absent for Midnight, and a slot in
+the table may name the feature it `needs`; the sheet and the whole family's grid ask for the slots
+the game has when they draw. **Mists removed the ranged slot too**, in 5.0; it stays true there so
+that Mists draws what it draws today, and whether Mists should stop is `main`'s question, by
+Alberto's decision on points that touch the Classic releases (DECISIONS, 2026-09-26). Two checks,
+three mutations.
+
+The grid check could not see the change at first: `UI:Refresh()` left the grid as it was, and the
+panel's own button redraws it. The check now asks for the ranged slot by the name its empty picture
+carries, after showing that the Classic grid has five of them, so it cannot pass by finding nothing.

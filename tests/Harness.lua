@@ -13684,6 +13684,27 @@ check("every slot of the character sheet is drawn, worn or not", worn + empty ==
 	tostring(worn) .. " worn and " .. tostring(empty) .. " empty")
 check("with something in at least one of them", worn > 0, tostring(worn))
 
+-- **Eighteen on Midnight**, which has no ranged slot for any class (`docs/MIDNIGHT.md` §110): slot
+-- 18 is still numbered there and never holds anything, and it was drawn beside the weapons.
+do
+	local heldBuild = GetBuildInfo
+	GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
+	Family.Capabilities:Detect()
+	Family.UI:Refresh()
+	local drawn, ranged = 0, false
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.slotName then
+			drawn = drawn + 1
+			if f.slotName == (_G.RANGEDSLOT or "RANGEDSLOT") then ranged = true end
+		end
+	end
+	check("on Midnight the sheet has no ranged slot, and the other eighteen are drawn",
+		drawn == 18 and not ranged, tostring(drawn))
+	GetBuildInfo = heldBuild
+	Family.Capabilities:Detect()
+	Family.UI:Refresh()
+end
+
 -- The middle says who they are, because there is no model of somebody who is not logged in
 -- and a blank space says less than a name does.
 check("and the middle names the member, their class, their race and their side",
@@ -20607,6 +20628,36 @@ print("the whole family's gear on one screen")
 	-- Nineteen slots and the class picture in front of them, so one member alone is twenty.
 	check("and the grid draws a class picture and every slot, per member", drawn >= 20,
 		tostring(drawn))
+
+	-- **No ranged slot on Midnight**, whose game has none (`docs/MIDNIGHT.md` §110). Found by the
+	-- name an empty slot's picture carries, and first shown to be there on this client, so the
+	-- check cannot pass by finding nothing anywhere.
+	do
+		local rangedName = _G.RANGEDSLOT or "RANGEDSLOT"
+		local function rangedCells()
+			local found = 0
+			for _, f in ipairs(frames) do
+				local lines = rawget(f, "lines")
+				if f.__shown == true and rawget(f, "border") and type(lines) == "table"
+					and lines[1] and lines[1][1] == rangedName then
+					found = found + 1
+				end
+			end
+			return found
+		end
+		local here = rangedCells()
+		local heldBuild = GetBuildInfo
+		GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
+		Family.Capabilities:Detect()
+		Family.UI:Refresh()
+		clickHere("Equipped gear")
+		local midnight = rangedCells()
+		check("and on Midnight the grid leaves the ranged slot out", here > 0 and midnight == 0,
+			tostring(here) .. " here, " .. tostring(midnight) .. " on Midnight")
+		GetBuildInfo = heldBuild
+		Family.Capabilities:Detect()
+		clickHere("Equipped gear")
+	end
 
 	------------------------------------------------------------------------------------
 	-- Which side each row is on

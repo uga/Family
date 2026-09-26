@@ -82,8 +82,19 @@ local RIGHT_SLOTS = {
 local BOTTOM_SLOTS = {
 	{ 16, "MAINHANDSLOT",      "MainHand" },
 	{ 17, "SECONDARYHANDSLOT", "SecondaryHand" },
-	{ 18, "RANGEDSLOT",        "Ranged" },
+	{ 18, "RANGEDSLOT",        "Ranged", needs = "rangedSlot" },
 }
+
+-- **The slots this client's game has**, asked when a panel draws, because the capability table is
+-- filled after this file loads. A slot that `needs` a feature is left out where the game lacks it.
+-- On `UI` rather than a local: this file is close to Lua's limit on what one function may reach.
+function UI:GearSlotsHere(list)
+	local here = {}
+	for _, entry in ipairs(list) do
+		if not entry.needs or Family.Capabilities:Has(entry.needs) then here[#here + 1] = entry end
+	end
+	return here
+end
 
 -- The same size the talents are drawn at. Bigger looked like a character sheet and read
 -- like one thing per screen; at this size the whole of somebody's gear is one glance, which
@@ -862,7 +873,7 @@ local function build(frame)
 
 			-- Wide enough for a full row of slots even when the panel is not, so the last
 			-- weapon is reachable by scrolling rather than simply absent.
-			local rowWidth = 4 + GRID + 8 + (#FAMILY_ORDER * (GRID + GRID_GAP))
+			local rowWidth = 4 + GRID + 8 + (#UI:GearSlotsHere(FAMILY_ORDER) * (GRID + GRID_GAP))
 			list:SetWidth(math.max(UI:ListWidth(scroll), rowWidth))
 
 			-- The widget reconciles as it answers, so a realm that stops existing the
@@ -1021,7 +1032,7 @@ local function build(frame)
 								.. "log in on this member once.|r"] }
 						end
 
-						for index, slot in ipairs(FAMILY_ORDER) do
+						for index, slot in ipairs(UI:GearSlotsHere(FAMILY_ORDER)) do
 							local cell = placeCell(
 								4 + GRID + 8 + (index - 1) * (GRID + GRID_GAP), y)
 
@@ -1613,9 +1624,10 @@ local function build(frame)
 			end
 
 			local bottomY = #LEFT_SLOTS * (GEAR + GEAR_GAP) + 8
+			local bottomSlots = UI:GearSlotsHere(BOTTOM_SLOTS)
 			local bottomX = leftX
-				+ (blockWidth - leftX - (#BOTTOM_SLOTS * (GEAR + GEAR_GAP))) / 2
-			for index, entry in ipairs(BOTTOM_SLOTS) do
+				+ (blockWidth - leftX - (#bottomSlots * (GEAR + GEAR_GAP))) / 2
+			for index, entry in ipairs(bottomSlots) do
 				place(entry, bottomX + (index - 1) * (GEAR + GEAR_GAP), bottomY)
 			end
 

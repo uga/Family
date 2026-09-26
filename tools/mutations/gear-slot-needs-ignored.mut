@@ -1,0 +1,6 @@
+name: a slot the game lacks is drawn anyway, as the ranged slot was on Midnight
+file: addons/Family_UI/Character.lua
+--- old
+		if not entry.needs or Family.Capabilities:Has(entry.needs) then here[#here + 1] = entry end
+--- new
+		here[#here + 1] = entry

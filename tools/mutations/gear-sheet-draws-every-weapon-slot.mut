@@ -1,0 +1,6 @@
+name: the character sheet draws every weapon slot whatever the game has
+file: addons/Family_UI/Character.lua
+--- old
+			for index, entry in ipairs(bottomSlots) do
+--- new
+			for index, entry in ipairs(BOTTOM_SLOTS) do
