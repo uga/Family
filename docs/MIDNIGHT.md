@@ -4090,3 +4090,20 @@ the same frame now waits its new delay rather than running on the old request. W
 budget is, in combat or out, has not been measured, and neither has what else was due in that
 frame: this removes the shared frame, and a second report would be about one job alone. Five checks
 and four mutations; not yet seen in the game.
+
+## 123. Values the client keeps secret: the questions first (2026-09-26)
+
+The last item in Midnight's scope (§111). What Family does today is §75's: a tooltip line is read
+through `Family:TooltipText`, which hands its text back only when comparing it does not raise, tried
+inside `pcall`, and it works as seen on the PTR (§77). The scan's own reads were measured not to turn
+secret in combat (the *Secret Values: no* reading above). So the question is only whether the client
+has a way to **ask** whether a value is secret that is better than trying it, and what it answers.
+Nothing is changed until it is read. Asked of the game, on the PTR where §75's secret lines were seen
+and on live:
+
+1. Which names in the global table mention *secret* at all, and what each is - read off the client,
+   so no name is guessed.
+2. What `C_Secrets` holds, if it exists.
+3. Pointing at a creature, as §75 did: for the tooltip's first three lines, whether each is a string,
+   what `issecretvalue` and `canaccessvalue` answer for it where they exist, and whether comparing it
+   raises - the predicate beside the `pcall` it would replace.
