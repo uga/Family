@@ -4231,3 +4231,8 @@ Three checks and two mutations, and one mutation re-anchored.
 Thirst, Primal Rage and Prowl with the book's own second words, against the game's pet book of
 fifteen beside it. Alberto asked whether some were missing: the seven not drawn are the stances and
 commands, which have no spell id and which the filter written for Mists leaves out on purpose.
+
+**The warlock seen on the PTR**: Gulliver's *Pets* page reads *4 abilities across 1 creatures*,
+*Paguri (4)*, *Imp, Level 80*, with Avoidance, Firebolt, Flee and Singe Magic and the book's words
+beside each. The level reads 80 where the probe's `UnitLevel` said 79, taken earlier the same
+evening; the page is the later reading.
