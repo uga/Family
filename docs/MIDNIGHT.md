@@ -3850,3 +3850,16 @@ Mount column's flight style (§85) stays: it is already done, and §111 takes no
 
 What is left in scope for Midnight's first release, beyond what is done: **lockouts boss by boss**
 and **the client's secret-value predicates**, each a list of questions for the probe first.
+
+## 115. Lockouts boss by boss: the first reading (2026-09-26)
+
+§114 left lockouts boss by boss in scope. Asked on Midnight, a character saved to one raid:
+`GetSavedInstanceInfo(1)` names **Molten Core**, the difficulty *40 Player* and **10** encounters,
+the eleventh return; `GetSavedInstanceEncounterInfo(1, j)` for each of the ten answers the boss's
+name, **nil** where a picture might be, whether it is killed, and a fourth value, false for all ten.
+**Gehennas** alone reads killed. So a lockout's bosses are one call each, by position, named in the
+client's language, with the kill as a flag.
+
+Not read yet: what the fourth value is, whether the name is the only identity a boss has here (a
+name is a word, and §2.1 stores ids), and whether a dungeon lockout answers the same way. The
+specification's heading stays bare until the design is settled.
