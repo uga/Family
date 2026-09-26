@@ -1,0 +1,6 @@
+name: with nothing starred the Summary fills with Legacy's leftovers
+file: addons/Family_UI/Summary.lua
+--- old
+			if top and count <= 1 then chosen[#chosen + 1] = currency end
+--- new
+			if top then chosen[#chosen + 1] = currency end

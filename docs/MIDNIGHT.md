@@ -3972,3 +3972,21 @@ reading now leaves out a currency whose total is nought; one member's page keeps
 the game's own does. **Currencies below the headings, with no group** - *Coins of Air*, *Voidlight
 Marl* - are Ahia's and Deiana's, recorded before §116 kept headings, and join their groups when each
 of them next logs in. One check, one mutation.
+
+## 120. Summary > Currencies: the starred ones, per character (2026-09-26)
+
+The Summary's currency set showed the five the family holds most of, which on Midnight are the old
+expansions' leftovers - Apexis Crystal, Order Resources - and said *35 more not shown*. By Alberto's
+choice, **a right-click on a currency in Character > Currencies stars it**, in either reading, and a
+starred currency wears the raid marker's star before its name; a second right-click takes it away.
+The stars are kept **per character being played**, `FamilyDB.currencyStars[member]`, so each
+character's Summary shows the currencies it starred, in the game's order.
+
+**With nothing starred**, the columns are the game's current groups: every top heading but one
+holding several of its own, which is *Legacy*, so *Midnight*, *Dungeon and Raid*, *Miscellaneous*
+and *Player vs. Player*. A family whose records carry no headings - every Classic one - keeps the
+most held, so nothing changes on the Classic clients until somebody stars; the right-click itself
+is there on every client. The footer still counts what is not shown. The star is a texture escape
+and textures cannot be probed, so it is to be looked at in a screenshot.
+
+Four checks and six mutations. Not yet seen in the game.

@@ -2001,6 +2001,9 @@ local function currenciesHeld()
 						found.best, found.name = currency.quantity, currency.name
 					end
 					found.total = found.total + (currency.quantity or 0)
+					-- The game's headings and order, from whoever's record has them.
+					found.group = found.group or currency.group
+					found.order = found.order or currency.order
 				end
 			end
 		end
@@ -2014,6 +2017,44 @@ local function currenciesHeld()
 	end)
 
 	return order
+end
+
+-- **Which currencies get a column** - Alberto, 2026-09-26. The ones the character being played
+-- has starred in Character > Currencies; with none starred, the game's current groups, which is
+-- every top heading but one holding several of its own - *Legacy* - so the season's currencies
+-- and not the leftovers of every expansion before it; the starred and the current in the game's
+-- order. A family whose records carry no headings, which is every Classic one, keeps the most
+-- held, as before (`docs/MIDNIGHT.md` §120).
+local function currenciesChosen(held)
+	local stars = UI:CurrencyStars()
+	local chosen = {}
+	if next(stars) then
+		for _, currency in ipairs(held) do
+			if stars[currency.key] then chosen[#chosen + 1] = currency end
+		end
+	else
+		local subs, anyGroup = {}, false
+		for _, currency in ipairs(held) do
+			local group = currency.group
+			if group and group[1] then
+				anyGroup = true
+				subs[group[1]] = subs[group[1]] or {}
+				if group[2] then subs[group[1]][group[2]] = true end
+			end
+		end
+		if not anyGroup then return held end
+		for _, currency in ipairs(held) do
+			local top = currency.group and currency.group[1]
+			local count = 0
+			for _ in pairs(top and subs[top] or {}) do count = count + 1 end
+			if top and count <= 1 then chosen[#chosen + 1] = currency end
+		end
+	end
+	table.sort(chosen, function(a, b)
+		if (a.order or 1e9) ~= (b.order or 1e9) then return (a.order or 1e9) < (b.order or 1e9) end
+		return tostring(a.name or a.key) < tostring(b.name or b.key)
+	end)
+	return chosen
 end
 
 -- How many were left out, so the panel can say so rather than quietly showing five of twelve.
@@ -2182,12 +2223,13 @@ function craftingColumns()
 end
 
 function currencyColumns()
-	local held = currenciesHeld()
+	local all = currenciesHeld()
+	local held = currenciesChosen(all)
 	local columns = {}
 
 	local room = math.floor((ROW_BUDGET - MEMBER_COLUMN.width) / CURRENCY_WIDTH)
 	local limit = math.min(room, MAX_BUILT_COLUMNS, #held)
-	currenciesOmitted = #held - limit
+	currenciesOmitted = #all - limit
 
 	for index = 1, limit do
 		local currency = held[index]

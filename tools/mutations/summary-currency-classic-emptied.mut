@@ -1,0 +1,6 @@
+name: a family with no headings, every Classic one, loses its most-held columns
+file: addons/Family_UI/Summary.lua
+--- old
+		if not anyGroup then return held end
+--- new
+

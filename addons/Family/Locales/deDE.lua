@@ -423,6 +423,7 @@ Family.locales.deDE = {
 	["War Mode on"] = "Kriegsmodus an",
 	["|cff9d9d9dNo currency has been recorded for anybody yet.|r"] = "|cff9d9d9dFür niemanden wurde bisher eine Währung aufgezeichnet.|r",
 	["|cffffd700%d|r currencies   |cff888888|||r   %d with currencies recorded"] = "|cffffd700%d|r Währungen   |cff888888|||r   %d mit aufgezeichneten Währungen",
+	["   |cff888888|||r   |cff888888right-click one to star it for the Summary|r"] = "   |cff888888|||r   |cff888888Rechtsklick markiert eine für die Übersicht|r",
 	["Hero talents"] = "Heldentalente",
 	["Other"] = "Sonstige",
 	["|cffffd700%d|r spent |cff40bf40(%d to spend)|r"] = "|cffffd700%d|r ausgegeben |cff40bf40(%d zu vergeben)|r",

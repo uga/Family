@@ -46304,13 +46304,13 @@ print("one member's currencies, grouped as the game groups them")
 -- reader records them, each currency with its path and its place in the game's order.
 ;(function()
 	local held = {
-		{ id = 3465, name = "Venomblight Manaflux", quantity = 8, order = 3,
+		{ id = 3465, key = "c3465", name = "Venomblight Manaflux", quantity = 8, order = 3,
 			group = { "Midnight", "Season 2" } },
-		{ id = 1792, name = "Honor", quantity = 1400, max = 15000, order = 5,
+		{ id = 1792, key = "c1792", name = "Honor", quantity = 1400, max = 15000, order = 5,
 			group = { "Player vs. Player" } },
-		{ id = 1220, name = "Order Resources", quantity = 27187, order = 9,
+		{ id = 1220, key = "c1220", name = "Order Resources", quantity = 27187, order = 9,
 			group = { "Legacy", "Legion" } },
-		{ id = 823, name = "Apexis Crystal", quantity = 102110, order = 11,
+		{ id = 823, key = "c823", name = "Apexis Crystal", quantity = 102110, order = 11,
 			group = { "Legacy", "Warlords of Draenor" } },
 	}
 	local function said(lines)
@@ -46393,6 +46393,55 @@ print("one member's currencies, grouped as the game groups them")
 	end
 	if heading then fireClick(heading) end
 	check("and a click on its heading opens it", heading ~= nil and drawnText("Order Resources"))
+
+	-- **A right-click stars a currency for the Summary** (`docs/MIDNIGHT.md` §120), and a second
+	-- takes the star away.
+	local heldStars = FamilyDB.currencyStars
+	FamilyDB.currencyStars = nil
+	local honourLine
+	for _, f in ipairs(frames) do
+		local left = rawget(f, "left")
+		if f.__shown == true and onScreen(f) and rawget(f, "currencyKey") == "c1792" then
+			honourLine = f
+		end
+	end
+	if honourLine then honourLine.__scripts.OnClick(honourLine, "RightButton") end
+	check("a right-click on a currency stars it for the character being played, and it wears the star",
+		FamilyDB.currencyStars and FamilyDB.currencyStars[key]
+			and FamilyDB.currencyStars[key].c1792 == true and drawnText("UI-RaidTargetingIcon_1"))
+
+	-- **And the Summary's columns** (`docs/MIDNIGHT.md` §120): the starred one alone while there is
+	-- a star; with none, the current groups and never Legacy's, in the game's order.
+	local function summaryColumns()
+		Family.UI:ShowTab("summary")
+		clickButton("Currencies")
+		Family.UI:Refresh()
+		local keys = {}
+		for _, column in ipairs(Family.UI.__summaryColumns or {}) do
+			if type(column.key) == "string" and column.key:find("^cur:") then
+				keys[#keys + 1] = column.key:sub(5)
+			end
+		end
+		return table.concat(keys, ",")
+	end
+	local starred = summaryColumns()
+	check("the Summary shows the starred currency and nothing else",
+		starred == "c1792", starred)
+	-- Another character's stars are theirs: played as somebody else, the default comes back.
+	local playing = Family.CurrentMember
+	Family.CurrentMember = function() return "Someone-Else" end
+	local elsewhere = summaryColumns()
+	Family.CurrentMember = playing
+	check("and another character, with no stars of their own, sees the default",
+		elsewhere ~= "c1792" and elsewhere:find("c3465", 1, true) ~= nil, elsewhere)
+	FamilyDB.currencyStars = nil
+	local current = summaryColumns()
+	check("and with nothing starred, the current groups in the game's order, never Legacy's",
+		current:find("c3465,c1792", 1, true) == 1 and not current:find("c1220", 1, true)
+			and not current:find("c823", 1, true), current)
+	FamilyDB.currencyStars = heldStars
+	Family.UI:ShowTab("character")
+
 
 	-- **The whole family** (`docs/MIDNIGHT.md` §119): a row per currency with the family's total,
 	-- grouped the same way, and who holds how many once the row is opened.

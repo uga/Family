@@ -177,6 +177,32 @@ end)
 -- Which currency headings are open, by their path; nil means the default below.
 UI.__currencyHeads = {}
 
+-- **The currencies the character being played has starred for the Summary**, by currency key.
+-- Per character - Alberto, 2026-09-26: *we need to be able to customise the columns per
+-- character* - under `FamilyDB.currencyStars[member]`. Made only when a star is written.
+function UI:CurrencyStars(making)
+	if type(FamilyDB) ~= "table" then return {} end
+	local who = Family:CurrentMember()
+	if not who then return {} end
+	if making then
+		FamilyDB.currencyStars = type(FamilyDB.currencyStars) == "table" and FamilyDB.currencyStars
+			or {}
+		FamilyDB.currencyStars[who] = type(FamilyDB.currencyStars[who]) == "table"
+			and FamilyDB.currencyStars[who] or {}
+	end
+	local all = FamilyDB.currencyStars
+	return type(all) == "table" and type(all[who]) == "table" and all[who] or {}
+end
+
+-- The star a currency carries once it is chosen for the Summary: the raid marker's, a picture
+-- every client ships. Nothing where it is not starred.
+function UI:CurrencyStar(key)
+	if key and self:CurrencyStars()[key] then
+		return "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:0|t "
+	end
+	return ""
+end
+
 -- **One member's currencies as the game's window lays them out**, as a list of lines: a heading
 -- line wherever the path changes, then the currencies under it in the game's order. Nil where no
 -- currency carries a heading, which is every list read before 2026-09-26 and every Classic one.
@@ -738,12 +764,24 @@ local function build(frame)
 		-- Clicking a quest opens it in the log and clicking a worn item opens the
 		-- character sheet - for the member being played, and only for them. Somebody
 		-- else's quest log is not open and their gear is not on anybody.
-		r:RegisterForClicks("LeftButtonUp")
+		r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 		-- Quests, and nothing else. Worn gear used to be a list of these rows and is a paper
 		-- doll now, so the branch that opened the character sheet from here has had nothing
 		-- to open it from for some time: no row in this panel carries an item. That click
 		-- lives on the gear buttons themselves, where it can still happen.
-		r:SetScript("OnClick", function(self)
+		r:SetScript("OnClick", function(self, button)
+			-- **A right-click stars a currency for the Summary**, or takes its star away, and
+			-- does nothing on any other row (Alberto, 2026-09-26; `docs/MIDNIGHT.md` §120).
+			-- Kept for the character being played: each has its own Summary columns.
+			if button == "RightButton" then
+				if self.currencyKey then
+					local stars = UI:CurrencyStars(true)
+					stars[self.currencyKey] = (not stars[self.currencyKey]) or nil
+					frame:Refresh()
+				end
+				return
+			end
+
 			-- A faction with more people than fit, opened and closed again. The same
 			-- unfolding the professions search does for a recipe more of the family can
 			-- make than a line will hold, and kept on the panel rather than in the row so
@@ -889,6 +927,7 @@ local function build(frame)
 			r.right:SetWidth(140)
 			r.expandFaction, r.expandQuest = nil, nil
 			r.expandCurrency, r.expandCurrencyRow = nil, nil
+			r.currencyKey = nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
 			r.achievementID, r.fallback = nil, nil
 			r.progress = nil
@@ -1412,7 +1451,8 @@ local function build(frame)
 							local row = byId[id]
 							if not row then
 								row = { id = currency.id, rowKey = id, name = currency.name,
-									icon = currency.icon, total = 0, people = {} }
+									key = currency.key, icon = currency.icon, total = 0,
+									people = {} }
 								byId[id] = row
 								rows[#rows + 1] = row
 							end
@@ -1476,8 +1516,9 @@ local function build(frame)
 					shown = shown + 1
 					local open = UI.__openCurrency == row.rowKey
 					r.icon:SetTexture(row.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-					r.left:SetText(string.rep("  ", line.level)
+					r.left:SetText(string.rep("  ", line.level) .. UI:CurrencyStar(row.key)
 						.. (row.name or string.format(L["Currency #%s"], tostring(row.id))))
+					r.currencyKey = row.key
 					r.middle:SetText(#row.people > 0
 						and string.format("|cff888888(%d)|r", #row.people) or "")
 					r.right:SetText(string.format("|cffffd700%s|r", tostring(row.total)))
@@ -1987,7 +2028,8 @@ local function build(frame)
 						local name = currency.name
 							or string.format(L["Currency #%s"], tostring(currency.id))
 						r.icon:SetTexture(currency.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-						r.left:SetText(string.rep("  ", line.level) .. name)
+						r.left:SetText(string.rep("  ", line.level) .. UI:CurrencyStar(currency.key) .. name)
+						r.currencyKey = currency.key
 						r.middle:SetText(string.format("|cffffd700%s|r",
 							tostring(currency.quantity or 0)))
 						if currency.max then
@@ -2008,7 +2050,8 @@ local function build(frame)
 				status:SetText(string.format(#held == 1
 					and L["|cffffd700%d|r currency   |cff888888|||r   seen %s"]
 					or L["|cffffd700%d|r currencies   |cff888888|||r   seen %s"],
-					#held, UI:Ago(member.meta.currenciesSeen)))
+					#held, UI:Ago(member.meta.currenciesSeen))
+					.. L["   |cff888888|||r   |cff888888right-click one to star it for the Summary|r"])
 				return finish()
 			end
 
@@ -2030,7 +2073,8 @@ local function build(frame)
 					local r = nextRow()
 					r.icon:SetTexture(currency.icon
 						or "Interface\\Icons\\INV_Misc_QuestionMark")
-					r.left:SetText(name)
+					r.left:SetText(UI:CurrencyStar(currency.key) .. name)
+					r.currencyKey = currency.key
 					r.middle:SetText(string.format("|cffffd700%s|r",
 						tostring(currency.quantity or 0)))
 

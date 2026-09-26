@@ -1,0 +1,7 @@
+name: the stars are one set for the account, not the character being played
+file: addons/Family_UI/Character.lua
+--- old
+	local who = Family:CurrentMember()
+	if not who then return {} end
+--- new
+	local who = "account"

@@ -1,0 +1,6 @@
+name: the Summary ignores the currencies starred for it
+file: addons/Family_UI/Summary.lua
+--- old
+	if next(stars) then
+--- new
+	if false then

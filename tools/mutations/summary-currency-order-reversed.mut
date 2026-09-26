@@ -1,0 +1,6 @@
+name: the Summary's currencies are drawn against the game's order
+file: addons/Family_UI/Summary.lua
+--- old
+		if (a.order or 1e9) ~= (b.order or 1e9) then return (a.order or 1e9) < (b.order or 1e9) end
+--- new
+		if (a.order or 1e9) ~= (b.order or 1e9) then return (a.order or 1e9) > (b.order or 1e9) end
