@@ -4430,6 +4430,31 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 	check("and a scan at the master, where Wolfie is no longer stabled, lets him go",
 		table.concat(names, ",") == "Cat", table.concat(names, ","))
 
+	-- **A warlock's Imp** (§124): `11 DEMON`, family 23, and a `Creature-` GUID naming 416.
+	local heldBook = BOOK
+	BOOK = {
+		{ nil, "Assist", "Pet Stance" }, { nil, "Attack", "Pet Command" },
+		{ 32233, "Avoidance", "Passive" }, { nil, "Defensive", "Pet Stance" },
+		{ 3110, "Firebolt", "Basic Attack" }, { 89792, "Flee", "Special Ability" },
+		{ nil, "Follow", "Pet Command" }, { nil, "Move To", "Pet Command" },
+		{ nil, "Passive", "Pet Stance" }, { 89808, "Singe Magic", "Command Demon Ability" },
+		{ nil, "Stay", "Pet Command" },
+	}
+	_G.C_SpellBook.HasPetSpells = function() return #BOOK, "DEMON" end
+	_G.UnitCreatureFamily = function() return "Imp", 23 end
+	guid = "Creature-0-5769-0-44-416-0000381F2E"
+	active = {}
+	local imp = Pets:ReadOut()
+	local impIds = {}
+	for _, ability in ipairs(imp and imp.abilities or {}) do impIds[#impIds + 1] = tostring(ability.id) end
+	check("a warlock's demon is keyed by its family alone, from the kind the book answers",
+		imp and imp.key == "d:23" and imp.kind == "DEMON", imp and tostring(imp.key))
+	check("with the demon its Creature- GUID names, not a pet's generic one",
+		imp and imp.creature == 416, imp and tostring(imp.creature))
+	check("and its abilities by id, commands left out",
+		table.concat(impIds, ",") == "3110,32233,89792,89808", table.concat(impIds, ","))
+	BOOK = heldBook
+
 	-- **The old walk first**: a client whose old stable answers is not asked Midnight's lists.
 	set("GetStablePetInfo", function(slot)
 		if slot == 1 then return nil, "Broken Tooth", 60, "Cat" end

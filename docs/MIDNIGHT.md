@@ -4196,3 +4196,14 @@ where the new capability `petGuidGeneric` (Midnight) says the GUID's own creatur
 taken where it comes; a demon on Midnight is not read yet, and a warlock would say whether it keys
 right. `IsAtStableMaster` is listed and has never been asked. Thirteen checks, eleven mutations.
 **Not yet seen in the game.**
+
+**A warlock, read the same evening on the PTR**, a new level-80 with the Imp *Paguri* out:
+`C_SpellBook.HasPetSpells()` answered **11 DEMON** - the kind second, as the old call did;
+`UnitCreatureFamily` **Imp 23**; `UnitGUID` `Creature-0-5769-0-44-416-0000381F2E`, `UnitLevel` 79;
+`GetActivePetList()` an empty list. The book: Avoidance 32233, Firebolt 3110, Flee 89792 and Singe
+Magic 89808 with spell ids, Assist, Attack, Defensive, Follow, Move To, Passive and Stay without.
+
+So a demon keys as `d:23` as on Classic, and **its GUID names the demon**: a `Creature-` GUID with
+416 in it, the Imp's number on Era. As first built, the capability sent every GUID to the list, and
+a demon, never on it, would have been recorded with no creature. Only a `Pet-` GUID is generic now.
+Three checks and two mutations, and one mutation re-anchored.

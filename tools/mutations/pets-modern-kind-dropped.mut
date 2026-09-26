@@ -1,0 +1,6 @@
+name: the kind Midnight's book answers is dropped
+file: addons/Family/Scanners/Pets.lua
+--- old
+	return found, type(kind) == "string" and kind or nil
+--- new
+	return found, nil

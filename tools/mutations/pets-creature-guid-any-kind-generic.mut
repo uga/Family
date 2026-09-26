@@ -1,7 +1,7 @@
-name: the creature out is read from a GUID that names a generic creature
+name: a demon's Creature- GUID is taken as generic like a hunter's pet's
 file: addons/Family/Scanners/Pets.lua
 --- old
 	if not Family.Capabilities:Has("petGuidGeneric")
 		or not (type(guid) == "string" and guid:match("^Pet%-")) then
 --- new
-	if true then
+	if not Family.Capabilities:Has("petGuidGeneric") then

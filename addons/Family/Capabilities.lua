@@ -176,10 +176,11 @@ local EXPECTED = {
 	-- there and is not asked.
 	lockoutBosses = { [MIDNIGHT] = true },
 
-	-- **A pet's GUID that names a generic creature.** On Midnight a cat whose active-list row says
-	-- `creatureID=42718` had `Pet-0-5769-0-2041-165189-...` for a GUID (`docs/MIDNIGHT.md` §124),
-	-- where Era and Burning Crusade put the tamed creature in that field. The GUID answers and is
-	-- wrong there, so which reader names the creature is the game's and lives here.
+	-- **A hunter's pet's GUID that names a generic creature.** On Midnight a cat whose active-list
+	-- row says `creatureID=42718` had `Pet-0-5769-0-2041-165189-...` for a GUID (`docs/MIDNIGHT.md`
+	-- §124), where Era and Burning Crusade put the tamed creature in that field. A warlock's Imp
+	-- still answered a `Creature-` GUID naming 416. The GUID answers and is wrong for a pet there,
+	-- so which reader names the creature is the game's and lives here.
 	petGuidGeneric = { [MIDNIGHT] = true },
 }
 

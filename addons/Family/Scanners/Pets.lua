@@ -48,9 +48,11 @@
 --     command - Claw 16827 beside Attack with none - so the Classic filter holds unchanged.
 --     `subName` is the book's second word, *Basic Attack* or *Ferocity Passive*, kept where
 --     Classic keeps *Rank 2*.
---   - A pet's GUID carries a **generic** creature there, 165189 for a cat whose list row says
---     42718, and the capability `petGuidGeneric` says so; its last field's low half is the
---     list's `petNumber`, which is how the creature that is out finds its row.
+--   - A hunter's pet's GUID carries a **generic** creature there, 165189 for a cat whose list
+--     row says 42718, and the capability `petGuidGeneric` says so; its last field's low half is
+--     the list's `petNumber`, which is how the creature that is out finds its row. A demon's
+--     GUID is a `Creature-` one and names the demon, 416 for the Imp, as on Classic.
+--   - `HasPetSpells()` answers the kind second, `DEMON` for a warlock's Imp, as the old call did.
 --
 -- What is deliberately not stored is the number `GetSpellBookItemInfo(i, "pet")` hands back
 -- second. It is a `PETACTION`, it moves with the rank, and it differs between builds for the
@@ -202,8 +204,8 @@ function Pets:ReadStable()
 end
 
 -- Midnight's book of the creature that is out: its slots by `C_SpellBook`, each a table.
--- `HasPetSpells` answers the count first; what it answers second is not read yet, so the kind is
--- taken where it comes and is nil otherwise, which keys a creature as a hunter's pet.
+-- `HasPetSpells` answers the count and then the kind, `11 DEMON` for a warlock's Imp (§124); a
+-- kind that does not come keys the creature as a hunter's pet.
 local function readModernBook()
 	local book = _G.C_SpellBook
 	local banks = _G.Enum and _G.Enum.SpellBookSpellBank
@@ -305,12 +307,16 @@ function Pets:ReadAbilities()
 end
 
 -- Which creature is out, by id. From its GUID, as measured on Era and Burning Crusade; where
--- the GUID names a generic creature, which is Midnight's (§124), from the active list's row
--- whose `petNumber` the GUID ends on, or nothing where no row does - a generic number would
--- file every pet under one creature.
+-- the GUID names a generic creature, which is a hunter's pet on Midnight (§124), from the
+-- active list's row whose `petNumber` the GUID ends on, or nothing where no row does - a generic
+-- number would file every pet under one creature. Only a `Pet-` GUID is generic there: a
+-- warlock's Imp answered `Creature-0-5769-0-44-416-...`, 416 being the Imp as on Era.
 function Pets:CreatureOut()
 	local guid = Family:TryCall(UnitGUID, "pet")
-	if not Family.Capabilities:Has("petGuidGeneric") then return creatureFrom(guid) end
+	if not Family.Capabilities:Has("petGuidGeneric")
+		or not (type(guid) == "string" and guid:match("^Pet%-")) then
+		return creatureFrom(guid)
+	end
 
 	local number = petNumberFrom(guid)
 	local api = _G.C_StableInfo
