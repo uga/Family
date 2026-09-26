@@ -4249,3 +4249,18 @@ Alberto's screenshots of Gulliver, a level-80 warlock on the PTR:
 - **The Summary's currencies footer** (§120): with nothing starred on the PTR, whose saved variables
   are its own, it reads *The game's current currencies, Legacy left out. Right-click up to four in
   Character > Currencies to choose your own.* and *39 more not shown*.
+
+**War Mode on, not said - and why** (Gulliver, the PTR, the same evening). Alberto switched War
+Mode on well after logging in, a few seconds before the screenshot, and the talents line said
+nothing. `C_PvP.IsWarModeDesired()` answered true in Stormwind; Family's stored `warMode` was nil,
+from a scan four minutes earlier. After `/family rescan` the line read *War Mode on*. So the reading
+is right and the moment is wrong: the talent scan runs at login and on talent events, and nothing
+reads War Mode again when the switch alone is flipped. Which event the game sends on that switch is
+asked of the client next rather than guessed.
+
+**The event, read.** A line printing every event for fifteen seconds while Alberto switched War
+Mode off and on: `PLAYER_FLAGS_CHANGED` came just before *You have opted out of War Mode.* and again
+just before *You have opted into War Mode.*, with `PVP_TIMER_UPDATE` beside it each time. So the
+talents scanner now listens to `PLAYER_FLAGS_CHANGED` and re-reads the switch alone - the event is
+AFK and the rest too, and not only the player's - writing only when the answer moved, without
+reading the trees again. Four checks, three mutations, one re-anchored. **Not yet seen in the game.**

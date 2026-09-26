@@ -1,0 +1,7 @@
+name: a flag change writes the talents whether War Mode moved or not
+file: addons/Family/Scanners/Talents.lua
+--- old
+	if talents.warMode == now then return end
+	talents.warMode = now
+--- new
+	talents.warMode = now

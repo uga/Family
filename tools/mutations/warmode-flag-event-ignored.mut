@@ -1,0 +1,6 @@
+name: War Mode switched mid-session is not read again
+file: addons/Family/Scanners/Talents.lua
+--- old
+		Family:After(1, "talents.warMode", function() Talents:ReadWarMode() end)
+--- new
+		Family:After(1, "talents.warMode", function() end)

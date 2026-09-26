@@ -46663,6 +46663,31 @@ print("Midnight's talents: one tree of nodes, drawn as a list")
 		drawnText("PvP talents") and drawnText("Wild Kingdom") and drawnText("Mending Bandage"))
 	check("and War Mode on the status line", visibleText("War Mode on"))
 
+	-- **Switched mid-session** (`docs/MIDNIGHT.md` §124): `PLAYER_FLAGS_CHANGED` re-reads the
+	-- switch alone, without reading the trees again.
+	local desired = false
+	_G.C_PvP.IsWarModeDesired = function() return desired end
+	configAsked = 0
+	fire("PLAYER_FLAGS_CHANGED", "player")
+	advance(2)
+	check("switching War Mode off is read when the game says a flag changed",
+		Family.Database:Payload(key).talents.warMode == nil,
+		tostring(Family.Database:Payload(key).talents.warMode))
+	check("and without reading the talents again", configAsked == 0, tostring(configAsked))
+	desired = true
+	fire("PLAYER_FLAGS_CHANGED", "player")
+	advance(2)
+	check("and switching it back on the same way",
+		Family.Database:Payload(key).talents.warMode == true)
+	local writes = 0
+	local realSet = Family.Database.SetPayload
+	Family.Database.SetPayload = function(...) writes = writes + 1 return realSet(...) end
+	fire("PLAYER_FLAGS_CHANGED", "player")
+	advance(2)
+	Family.Database.SetPayload = realSet
+	check("a flag that changed without War Mode moving writes nothing", writes == 0,
+		tostring(writes))
+
 	-- And no client whose game has no node trees asks for them.
 	set("GetBuildInfo", function() return "5.5.4", "69585", "Sep 1 2026", 50504 end)
 	Family.Capabilities:Detect()

@@ -629,6 +629,12 @@ local function readPvp()
 	return spells
 end
 
+local function warModeNow()
+	local api = _G.C_PvP
+	local on = Family:TryCall(api and api.IsWarModeDesired)
+	return type(on) == "boolean" and on or nil
+end
+
 local function scanNodes(key, previous)
 	local index = specIndex() or 1
 	local data = readNodes() or { system = "nodes", talents = {}, points = {}, heroes = {} }
@@ -636,8 +642,6 @@ local function scanNodes(key, previous)
 	data.visited = true
 	data.specID = specIDFor(activeGroup())
 	data.pvp = readPvp()
-	local pvpApi = _G.C_PvP
-	local warMode = Family:TryCall(pvpApi and pvpApi.IsWarModeDesired)
 
 	-- The other specialisations, as they were when they were last played.
 	local groups = {}
@@ -653,12 +657,31 @@ local function scanNodes(key, previous)
 		activeGroup = index,
 		groupCount = specCount(index),
 		groups = groups,
-		warMode = type(warMode) == "boolean" and warMode or nil,
+		warMode = warModeNow(),
 	}
 	Family.Database:SetPayload(key, payload, "talents")
 	Family.Database:SetMeta(key, { specID = data.specID, talentPoints = nil })
 
 	Family:Debug("scanned talents: specialisation %d, %d talent(s)", index, #data.talents)
+end
+
+-- **War Mode alone, when the switch is flipped.** Gulliver, 2026-09-26: switched on well after
+-- login, and the talents line said nothing until `/family rescan`, because nothing read it again
+-- (`docs/MIDNIGHT.md` §124). The game sends `PLAYER_FLAGS_CHANGED` just before *You have opted
+-- into War Mode* and again before *opted out*, read with every event printed. That event is also
+-- AFK and the rest, and not only the player's, so it re-reads the one switch rather than the
+-- trees, and writes only when the answer moved.
+function Talents:ReadWarMode()
+	local key = Family:CurrentMember()
+	local payload = key and Family.Database:Payload(key)
+	local talents = payload and payload.talents
+	if not talents or talents.system ~= "nodes" then return end
+
+	local now = warModeNow()
+	if talents.warMode == now then return end
+	talents.warMode = now
+	Family.Database:SetPayload(key, payload, "talents")
+	Family:Debug("War Mode %s", now and "on" or "off")
 end
 
 --------------------------------------------------------------------------------------------
@@ -809,4 +832,9 @@ Family:OnDatabaseReady("talents", function()
 	} do
 		Family:RegisterEvent(event, "talents", function() scanSoon(event) end)
 	end
+
+	Family:RegisterEvent("PLAYER_FLAGS_CHANGED", "talents", function()
+		if not Family.Capabilities:Has("talentNodes") then return end
+		Family:After(1, "talents.warMode", function() Talents:ReadWarMode() end)
+	end)
 end)
