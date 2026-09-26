@@ -1,0 +1,6 @@
+name: a one-line tooltip in the world is scored against the ores as if it were a blip
+file: addons/Family_UI/Tooltip.lua
+--- old
+	local heldOnly = skill == nil and where == "world"
+--- new
+	local heldOnly = false

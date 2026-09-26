@@ -1,0 +1,6 @@
+name: a one-line tooltip that only contains a held item's name is taken for its node
+file: addons/Family_UI/Tooltip.lua
+--- old
+			and row.name:lower() == wanted then
+--- new
+			then

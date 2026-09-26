@@ -1664,9 +1664,14 @@ local function gatheringNode(tooltip)
 	-- cannot be trusted to decide on its own there: 647 of 43,356 ordinary item names score as
 	-- an ore under the rules a vein passes, and no threshold separates the two. Where it was
 	-- drawn is the only signal left, so it is required.
+	-- **Or in the world, where it can only be a node named after what it gives** (§103): *Ironwood
+	-- Lumber* is a one-line tooltip on the tree itself. So a one-line tooltip off the maps is
+	-- let through and told apart by where it was, and `itemsForNode` asks it only whether it is
+	-- exactly the name of something the family holds.
 	local skill, said
+	local where = "world"
 	if lines == 1 then
-		if not onAMap() then return nil end
+		if onAMap() then where = "minimap" end
 	else
 		skill, said = professionNamed(frameName, lines)
 		if not skill then
@@ -1701,7 +1706,7 @@ local function gatheringNode(tooltip)
 	end
 
 	if said then Family:Debug("node: line naming the profession is %s", said) end
-	return first, skill, lines == 1 and "minimap" or "world"
+	return first, skill, where
 end
 
 -- **What the client calls each id this build can gather**, and whether it answered about all
@@ -1859,7 +1864,26 @@ local resolvedNames = {}
 -- tried, herbs first and exactly, ores second and scored. That order is safe and measured: of
 -- the 752 vein names read for the three builds in five languages, **none** is also the name of
 -- a herb, so the exact step cannot take a vein for a plant.
-local function itemsForNode(said, skill)
+-- **Exactly the name of something the family holds**, by the name the client gives it. Side
+-- content since Draenor has players pick things off the world whose node is named after what it
+-- gives - *Ironwood Lumber*, *Krasari Iron*, *Alterac Granite* (`docs/MIDNIGHT.md` §103) - and
+-- no list of them is shipped: what is matched is what the family already holds, so a node for
+-- something nobody has picked yet says nothing, where a herb or a vein says *none*. Whole and
+-- exact, never the search box's substring, and plain ids only: a node gives no suffix.
+local function heldNamed(name)
+	local wanted = name:lower()
+	local found = {}
+	for _, row in ipairs(Family.Index:Search(name)) do
+		if type(row.id) == "number" and type(row.name) == "string"
+			and row.name:lower() == wanted then
+			found[#found + 1] = row.id
+		end
+	end
+	table.sort(found)
+	return found
+end
+
+local function itemsForNode(said, skill, where)
 	-- **A zone label is not a node.** Checked before anything is scored, and by name against the
 	-- ids the build ships: of 929 vein names read across three builds and five languages, not
 	-- one is also the name of a refused place, so this cannot silence a real node.
@@ -1869,7 +1893,10 @@ local function itemsForNode(said, skill)
 		return nil
 	end
 
-	local key = tostring(skill or 0) .. ":" .. said
+	-- A one-line tooltip in the world is asked only about what is held: it has no profession
+	-- line, and a herb or a vein in the world always has one.
+	local heldOnly = skill == nil and where == "world"
+	local key = (heldOnly and "held" or tostring(skill or 0)) .. ":" .. said
 	local held = resolvedNames[key]
 	if held ~= nil then return held or nil end
 
@@ -1882,8 +1909,10 @@ local function itemsForNode(said, skill)
 	-- take a vein for a plant.
 	local herbs, herbsWhole, herbsSilent = nil, true, 0
 	local ores, oresWhole, oresSilent = nil, true, 0
-	if skill ~= MINING then herbs, herbsWhole, herbsSilent = namesFor("herbs") end
-	if skill ~= HERBALISM then ores, oresWhole, oresSilent = namesFor("ores") end
+	if not heldOnly then
+		if skill ~= MINING then herbs, herbsWhole, herbsSilent = namesFor("herbs") end
+		if skill ~= HERBALISM then ores, oresWhole, oresSilent = namesFor("ores") end
+	end
 
 	local function notYet(which, silent)
 		Family:Debug("node: \"%s\" is left alone: the client has not named %d of the "
@@ -1931,6 +1960,17 @@ local function itemsForNode(said, skill)
 		if one and not seen[one] then
 			seen[one] = true
 			ids[#ids + 1] = one
+		end
+
+		-- Last, and only where the tooltip named no profession: a herb or a vein keeps its
+		-- list and its *none*, and a name those lists placed is not asked again.
+		if not one and skill == nil then
+			for _, held in ipairs(heldNamed(name)) do
+				if not seen[held] then
+					seen[held] = true
+					ids[#ids + 1] = held
+				end
+			end
 		end
 	end
 
@@ -2015,7 +2055,7 @@ local function onNode(tooltip)
 	if lastDescribed[tooltip] == describing then return end
 	lastDescribed[tooltip] = describing
 
-	local ids = itemsForNode(said, skill)
+	local ids = itemsForNode(said, skill, where)
 
 	if not ids then
 		-- A vein the score cannot place, or a herb that is not in the list this build ships.

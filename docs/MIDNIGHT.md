@@ -3646,3 +3646,29 @@ Crystal*, *Draenethyst Mine Crystal*, *Strange Ore*, *Chunk of Saronite*, *Encha
 *Krasari Iron*, *Sapphire of Aku'Mai*, *The Light of Souls*, *Azure Ore*, and *Aqirite* and
 *Bismuth*. wago cannot measure more: Midnight's `GameObjects` has 31,736 rows and no vein among
 them, because gathering nodes and what they give are the server's.
+
+## 104. Nodes named after what they give (2026-09-26)
+
+Built on Alberto's choice of §103: **a one-line tooltip whose text is exactly the name of an item the
+family holds gets that item's possessions block**, in the world and on the maps. *Ironwood Lumber*
+on the tree is the case that asked for it.
+
+- **In the world** a one-line tooltip was refused outright, because a herb or a vein there always
+  carries its profession line. It is now let through, told apart as *world*, and asked **only**
+  about what the family holds - never scored against the ores, where a sign or a door naming a
+  metal would draw an ore's block.
+- **On the minimap and the world map** the herb list and the ore scoring are asked first, as
+  before, and what the family holds only where they placed nothing. A herb or a vein keeps its
+  *none*.
+- **Whole and exact**, by the name the client gives the item, through `Index:Search` and then a
+  comparison of the whole name: *Silverleaf Pendant* and *Silver* do not draw Silverleaf's block.
+  Plain ids only, since a node gives no suffix. Where several held items share the name - the
+  qualities of one reagent - each gets a block, as several pins under one cursor already do.
+- A node for something **nobody holds says nothing**, where a herb or a vein would say *none*. That
+  is the price of shipping no list, and it was chosen.
+
+Three of the older checks said a one-line tooltip off the maps is never a node, and are now the
+opposite; they were rewritten to the rule, with a name nobody holds, *Mailbox*, for the silent
+half. The mutation that guarded the old rule was pointed at the new line rather than removed, and
+the world-map check gained a vein, which only a pin is scored for. Five checks, four mutations.
+Not yet seen in the game.

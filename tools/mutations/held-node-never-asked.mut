@@ -1,0 +1,6 @@
+name: a node named after what it gives is never matched against what the family holds
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if not one and skill == nil then
+--- new
+		if false then

@@ -7763,8 +7763,10 @@ do
 	-- not a node, whoever drew it.
 	check("a second line that is not a gathering profession is not a node",
 		nodeSays("Silverleaf", CLOTH) == "")
-	check("and neither is a tooltip with no second line at all",
-		nodeSays("Silverleaf", nil) == "")
+	-- One line in the world is asked only about what the family holds (§103), and nobody here
+	-- holds a mailbox.
+	check("and neither is a tooltip with no second line that names nothing held",
+		nodeSays("Mailbox", nil) == "")
 
 	-- **A character who cannot gather the node still sees it**, and still wants the answer.
 	-- Alberto, 2026-09-22: without the profession the line says *requires* it, and a miner whose
@@ -8054,15 +8056,29 @@ do
 	pointerOn(CreateFrame("Frame", "GatherMateWorldPin", WorldMapFrame))
 	check("a pin on the world map is served too",
 		drewBlock(nodeSays("Silverleaf", nil)))
+	-- By a vein, which only a pin is scored for: Silverleaf is held, and one line naming a held
+	-- item draws anywhere since §103, so it cannot tell a pin from the world.
+	check("a vein pin on the world map included",
+		drewBlock(nodeSays("Copper Vein", nil)))
 
-	-- Anywhere else, one line is one line and says nothing about being a node.
+	-- **Anywhere else, one line is a node only where it is exactly the name of something the
+	-- family holds** (`docs/MIDNIGHT.md` §103): side content since Draenor names its nodes after
+	-- what they give, *Ironwood Lumber* on the tree itself. Silverleaf is held here.
 	pointerOn(CreateFrame("Frame", "SomeOtherFrame"))
-	check("a one-line tooltip that is not on the minimap is not a node",
-		nodeSays("Silverleaf", nil) == "")
+	check("a one-line tooltip off the maps that names nothing held is not a node",
+		nodeSays("Mailbox", nil) == "")
+	check("one that is exactly the name of something held draws its block",
+		drewBlock(nodeSays("Silverleaf", nil)))
+	check("but one that only contains that name does not",
+		nodeSays("Silverleaf Pendant", nil) == "" and nodeSays("Silver", nil) == "")
+	-- Nor is it scored as a vein, which is where a door or a sign naming a metal would go wrong:
+	-- a vein in the world always has its profession line, so one line off the maps is not one.
+	check("and one line off the maps is never scored as a vein",
+		nodeSays("Copper Vein", nil) == "")
 	_G.GetMouseFocus = function() return nil end
 	_G.GetMouseFoci = function() return {} end
-	check("and neither is one with no frame under the pointer at all",
-		nodeSays("Silverleaf", nil) == "")
+	check("and with no frame under the pointer at all, it is asked the same way",
+		nodeSays("Mailbox", nil) == "" and drewBlock(nodeSays("Silverleaf", nil)))
 
 	_G.GetMouseFocus, _G.GetMouseFoci = realFocus, realFoci
 

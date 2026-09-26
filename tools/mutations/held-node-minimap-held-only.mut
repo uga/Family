@@ -1,6 +1,6 @@
-name: any one-line tooltip anywhere is taken for a pin on a map
+name: a minimap blip is asked only about what is held, so a vein nobody holds says nothing
 file: addons/Family_UI/Tooltip.lua
 --- old
 		if onAMap() then where = "minimap" end
 --- new
-		where = "minimap"
+
