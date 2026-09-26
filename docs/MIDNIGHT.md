@@ -3761,3 +3761,18 @@ the pattern of step 3:
 **`Mounts.lua` is left as it is.** Its fallback, `C_SpellBook.IsSpellKnown`, agreed with
 `IsSpellKnown` on a spell known and on one replaced, which are the two cases the riding table asks
 about. Three checks, four mutations; `Surface.lua` regenerated with five new names.
+
+## 109. The Omnium Folio: a hint to ask about (2026-09-26)
+
+A second note from the research session (§107), Alberto's: Midnight's summary page, the **Omnium
+Folio** (*Foglio dell'Omnium* in Italian), opened from the expansion button on the minimap, holds
+a tree of points - a keystone rune chosen first, then points spent on nodes. The note reads it as a
+`C_Traits` tree with no namespace of its own, and names the calls it expects: a config found by
+system id, `GetTreeCurrencyInfo` for the points unspent, `GetTreeNodes` and `GetNodeInfo` for the
+nodes, an unlock asked through `C_PlayerInfo.IsExpansionLandingPageUnlockedForPlayer`, and an
+event, `TRAIT_TREE_CURRENCY_INFO_UPDATED`, when the points change.
+
+Nothing of it is measured, and none of it is in scope yet: whether Family records it is Alberto's.
+If it is, the node reader of §95 is most of the work - one more tree read the same way - and the
+first questions for the probe are the config's id on a character who has unlocked the page, its
+tree's node count, and one taken node's entry, definition and spell, as §94 asked of the talents.
