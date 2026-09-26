@@ -3681,3 +3681,8 @@ with the arrow Midnight puts beside it drew *Family possessions 37 / Deiana 37 (
 there: so the block written after `SetMinimapMouseover` survives the refills, and the arrow's
 markup does not stand between the name and the match. **In the world**, the one-line tooltip on the
 tree drew the same block. Both reach the item by what the family holds, since lumber is on no list.
+
+The Copper Vein blip on the minimap followed, the same day: *Family possessions: Copper Ore 70 /
+Deiana 70 (70 bags)*. The vein is placed by Midnight's ore list (§101), counted from the reagent
+bag (§102), and kept on a tooltip the minimap refills (§103) - the three fixes of the afternoon,
+seen together on one blip.
