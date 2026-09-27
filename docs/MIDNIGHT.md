@@ -4776,3 +4776,11 @@ source 94947, `GetAppearanceInfoBySource` answering `appearanceIsCollected` **fa
 `sourceIsCollected` false, `PlayerHasTransmogItemModifiedAppearance` false - though the tooltip says
 the appearance is collected. Read again once the item is loaded, beside how many of the appearance's
 other sources the account has.
+
+**Seen with it** (Alberto's screenshot, 2026-09-27, *Eventide Coif of the Harmonious*, mail, Mara's): the
+game's *You've collected this appearance, but not from this item*, and Family's *Look can be learnt by
+- nobody yet*, with a *log in once* list - so `LookOf` read the look as *need*, the reverse of what
+Alberto asked (*no need to learn it*). And a second fault on the same tooltip: Family's *Sell Price
+(each)* **4s 06c** beside the game's *Sell Price: 4g 97s 29c** - Family prices by the item id, and a
+Midnight item's price moves with its level, so the id answers the base item. To be read and fixed after
+the look.
