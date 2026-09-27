@@ -4823,3 +4823,11 @@ the average, falling back to the price per id where no copy carries one - so the
 never keep `sell`, are valued as before. Mail and auctions are not changed: what sits there is not bound,
 and goes by the auction price. Five checks, six mutations. **Not yet seen**: every bag, bank and worn
 piece has to be scanned once on this build before its price is right.
+
+## 135. Profession accessories (2026-09-27)
+
+Alberto: *build also profession accessories* - the profession tool and accessory slots Midnight shows
+in each profession's window (his screenshot of *Classic Herbalism*, *Profession Accessory*). Family
+reads worn gear from slot 1 to 19 (`Scanners/Character.lua`, `INVSLOT_LAST_EQUIPPED`) and nothing past it.
+Which slots the game uses, and what they hold, is read first: every `INVSLOT_` constant from 20 up,
+with what the character wears there.
