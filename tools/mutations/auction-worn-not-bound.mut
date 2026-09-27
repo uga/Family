@@ -1,0 +1,6 @@
+name: a worn copy is not taken as bound
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if tonumber(worn) == itemID then return true end
+--- new
+		if tonumber(worn) == itemID then return nil end

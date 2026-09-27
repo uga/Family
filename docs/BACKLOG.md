@@ -7404,7 +7404,9 @@ also answers 0 and how their nesting looks.
 
 ---
 
-## 106. The Auction line on a bound copy's tooltip says it is the unbound price
+## 106. The Auction line on a bound copy's tooltip says it is the unbound price — DONE 2026-09-27, not yet seen in game
+
+**Built 2026-09-27** as below: `copyIsBound` in `Tooltip.lua`, a bag or bank slot checked to hold the item and asked `Family:BoundIn`, or a `Character…Slot` button whose worn item is this one. The label reads *Auction (unbound)*, the mark in grey.
 
 **Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word.
 All builds, so `main`'s; the Midnight branch takes it at the merge.
