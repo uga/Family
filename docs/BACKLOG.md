@@ -7415,10 +7415,11 @@ the game's own Reputation window, on Era, Burning Crusade and Mists.
 headers, all collapsed, no `C_Reputation` list. In order: *Alliance* 469, *Alliance Forces* 891,
 *Steamwheedle Cartel* 169, *Other* **0**. None a child. *Alliance* answers a standing (6, 11549 in
 9000-21000) with `hasRep` false; *Other* answers 14 values, not 16, with 7, 8, 11, 12 and 13 nil.
-**So on Era the heading with id 0 is *Other*, not *Inactive*:** Midnight's rule that *Inactive* is the
-id-0 heading does not carry over, and this character has no *Inactive* heading at all. Still wanted:
-an Era character with a faction set inactive (to see what *Inactive* answers, and whether it is
-also 0), then Burning Crusade and Mists.
+**On Era the heading with id 0 is *Other*** - and, Alberto the same hour, *Other* **is** Era's name for
+the inactive heading, so the id-0 rule holds there too; the first reading of this said it did not,
+and was wrong. What the heading cannot say is whether everything under it was set inactive by the
+player: the probe now asks `IsFactionInactive(index)` per row. Still wanted: Era with *Other*
+expanded, then Burning Crusade and Mists with every heading shut.
 
 ---
 

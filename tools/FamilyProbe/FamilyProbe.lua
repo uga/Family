@@ -574,11 +574,20 @@ local PROBES = {
         local out = {}
         local count = there("GetNumFactions")
         local info = there("GetFactionInfo")
+        -- Whether a row is inactive, asked of the row rather than read off its heading: on Era the
+        -- heading that holds inactive factions is called *Other* (Alberto, 2026-09-27), and a
+        -- heading's name cannot say whether everything under it was put there by the player.
+        local inactive = there("IsFactionInactive")
         if count and info then
             local rows = tonumber((try(count))) or 0
             out[#out + 1] = "GetNumFactions " .. rows
+                .. (inactive and "" or " (IsFactionInactive absent)")
             for index = 1, math.min(rows, 80) do
-                out[#out + 1] = "row " .. index .. ": " .. shape(callPacked(info, index))
+                local line = "row " .. index .. ": " .. shape(callPacked(info, index))
+                if inactive then
+                    line = line .. " || inactive " .. shape(callPacked(inactive, index))
+                end
+                out[#out + 1] = line
             end
         else
             out[#out + 1] = "GetNumFactions/GetFactionInfo absent"

@@ -5605,3 +5605,11 @@ answers 14 values where the others answer 16, with `atWarWith`, `canToggleAtWar`
 and `isChild` nil. **The id-0 heading here is *Other*.** Midnight's *Inactive* is the id-0 heading
 (the Midnight branch's reading); on Era that cannot be how *Inactive* is recognised, and this
 character had nothing inactive to show what *Inactive* answers.
+
+**Corrected the same hour, by Alberto:** *on Era there is a Move to inactive option as on other clients,
+but the name of the Inactive category is "Other".* So the id-0 heading **is** the inactive heading on
+Era too, under another name - the rule holds, and the sentence above that says it does not is wrong.
+Expanded, Verysolid's *Other* lists Argent Dawn, Bloodsail Buccaneers, Cenarion Circle, Darkmoon Faire,
+Gelkis Clan Centaur, Hydraxian Waterlords, Magram Clan Centaur, Shen'dralar, Thorium Brotherhood,
+Timbermaw Hold and Wildhammer Clan. Whether each of those was set inactive by the player or is filed
+there by the game is what `IsFactionInactive(index)` answers per row, now asked by the probe.
