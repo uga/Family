@@ -4301,7 +4301,7 @@ the tree and this file rather than remembered:
 3. Nodes named after what they give, beyond Ironwood Lumber (§104).
 
 **The fourth column, which the merge to `main` waits on.** Thirteen of `Capabilities.lua`'s rows
-have no Midnight entry and so answer false there (§13's seven checks said this would be so). Four of
+have no Midnight entry and so answer false there (§18's seven checks said this would be so). Four of
 them switch something off today: `achievements` (the achievements scan and its page), `guildBank`
 (the bank scanner's guild tabs), `flying` (the Summary's riding answer) and `addonCasts` (the
 Professions panel's cast buttons). The rest - `dailyQuests`, `currencies`, `dualSpec`,
