@@ -4733,3 +4733,9 @@ mail. `transmogrify` is true for Midnight (§133), so all of it runs here. Read 
 To be read before either is changed: on Midnight, whether the class answer is already exact for armour
 - a cloth look answering for the cloth classes only - and whether a plate character wearing an
 uncollected cloth item learns it.
+
+**The class answer for a cloth look** (Alberto, 2026-09-27, live): *Master's Leggings*, 10252,
+appearance 782; `GetValidAppearanceSourcesForClass(782, c)` for classes 1 to 13 answered **4 sources
+for 5, 8 and 9** - Priest, Mage, Warlock - and 0 for every other class. Exact for cloth. Mail is the
+type Mists answered loosely (Paladins), so a mail look is asked next, with whether wearing the cloth
+item on a plate character collects it.
