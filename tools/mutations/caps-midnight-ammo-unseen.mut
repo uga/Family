@@ -1,0 +1,6 @@
+name: Midnight's ammunition bags are left unseen
+file: addons/Family/Capabilities.lua
+--- old
+	ammoBags     = { [MIDNIGHT] = true },
+--- new
+	ammoBags     = { },

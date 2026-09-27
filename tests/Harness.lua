@@ -2553,8 +2553,8 @@ end)()
 	check("and the guild bank and achievements, answered, no longer disagree",
 		reported.guildBank.disagrees == nil and reported.achievements.disagrees == nil,
 		tostring(reported.guildBank.disagrees) .. " / " .. tostring(reported.achievements.disagrees))
-	check("and the one row not yet seen in the game is the ammunition bags",
-		table.concat(unseen, ", ") == "ammoBags", table.concat(unseen, ", "))
+	check("and every row has been seen in the game, which the merge asks for",
+		#unseen == 0, table.concat(unseen, ", "))
 
 	-- **And a client after this one**, which no row has a column for: the diagnostics still name a
 	-- row whose symbol is there, as they named Midnight's before its column existed. Midnight's

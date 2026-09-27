@@ -90,8 +90,8 @@ local EXPECTED = {
 	-- §133): daily quests and transmog are in the game, Alberto's word, with `C_Transmog` and
 	-- `C_TransmogCollection` answering tables; currencies answer 49 through `C_CurrencyInfo`; one
 	-- specialisation group, `GetNumSpecGroups` 1; the Classic tree calls, the three glyph calls and
-	-- `KEYRING_CONTAINER` are all absent; no ammunition, expected - the client still defines an
-	-- *AmmoSlot*, which says nothing about ammunition.
+	-- `KEYRING_CONTAINER` are all absent; no ammunition - the client still defines an *AmmoSlot*,
+	-- which says nothing, and Alberto: *there is no ammo slot anymore on hunters*.
 	dailyQuests  = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
 	-- Burning Crusade is the one people correct us on, and the table is right: Blizzard
 	-- builds all of these from one codebase, so Anniversary ships the whole achievement API
@@ -261,6 +261,7 @@ local CONFIRMED = {
 	transmogrify = { [MIDNIGHT] = true },
 	talentTrees  = { [MIDNIGHT] = true },
 	chronoboon   = { [MIDNIGHT] = true },
+	ammoBags     = { [MIDNIGHT] = true },
 	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
 	-- Midnight 2026-09-27, on live: Drust, 153 of 200 fragments, its project and seven artifacts.
 	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },

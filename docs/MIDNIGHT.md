@@ -4708,3 +4708,8 @@ The fourth-client checks that stood on rows with no answer now say what is true:
 no row disagrees with the client, and the one row not yet seen is `ammoBags` - a live list, which the
 merge wants empty. The diagnostics' behaviour on a client with no column, which Midnight can no
 longer show, is held on a pretend interface 13. Seven mutations, and step 2's own re-proved.
+
+**`ammoBags` seen** (Alberto, 2026-09-27): *there is no ammo slot anymore on hunters*. Every row of the
+fourth column is now seen in the game, and the check that named the unseen rows asks for none. Alberto
+adds that Mists has no ammunition slot either: `main`'s table says so for Mists as an expectation only,
+with no confirmation - `main`'s to mark.
