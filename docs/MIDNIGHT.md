@@ -4713,3 +4713,23 @@ longer show, is held on a pretend interface 13. Seven mutations, and step 2's ow
 fourth column is now seen in the game, and the check that named the unseen rows asks for none. Alberto
 adds that Mists has no ammunition slot either: `main`'s table says so for Mists as an expectation only,
 with no confirmation - `main`'s to mark.
+
+## 134. Transmog on Midnight: what `main`'s backlog 108 needs here (2026-09-27)
+
+`main`'s backlog 108, merged as `49d342e`: `Family:LookOf` marks each slot *need* or *have* from
+`C_TransmogCollection`, the Possessions page gains *Looks to learn* and *Looks known*, and an item's
+tooltip says who in the family *can learn* its look - by the class answer
+(`GetValidAppearanceSourcesForClass`), by level, and for cloth, leather, mail and plate by the member's
+own armour, `meta.armour`, the best *Armor Proficiencies* line on its skill list, because on Mists a
+plate Paladin learns nothing from wearing mail or cloth though the class answer counts Paladins for
+mail. `transmogrify` is true for Midnight (§133), so all of it runs here. Read against this branch:
+
+- **`meta.armour` cannot be read on Midnight**: the skill list is gone, `GetNumSkillLines` absent since
+  the first surface run (§5). As written, every member of the right class is *unread* for any armour
+  item, for ever.
+- **The Warband bank records no look**: `Bank:ReadWarband` predates backlog 108, so the account's own
+  tabs never answer *Looks to learn*.
+
+To be read before either is changed: on Midnight, whether the class answer is already exact for armour
+- a cloth look answering for the cloth classes only - and whether a plate character wearing an
+uncollected cloth item learns it.
