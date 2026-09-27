@@ -1661,6 +1661,13 @@ end
 -- guild's name may contain one, and nothing here says a realm may not, so the only safe cut is
 -- against the realm being played. A guild anywhere else keeps its whole key - which is the same
 -- answer `NameOf` gives a character, and for the same reason.
+-- **The Warband bank's name, in the game's own words**: `ACCOUNT_BANK_PANEL_TITLE`, *Warband Bank*
+-- on an English Midnight client, read 2026-09-27 (`docs/MIDNIGHT.md` §128). Only Midnight draws a
+-- Warband bank, and it carries the word; the English is for a client that somehow does not.
+function UI:WarbandWord()
+	return Family:GameWord("ACCOUNT_BANK_PANEL_TITLE", L["Warband Bank"])
+end
+
 function UI:GuildLabel(key)
 	if type(key) ~= "string" then return key end
 

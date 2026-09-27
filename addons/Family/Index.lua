@@ -176,21 +176,32 @@ local function addMember(key)
 	end
 end
 
+-- The key the Warband bank is held under among the guild banks. A guild's key is its name and
+-- realm joined by a hyphen, so a key with none cannot be a guild's.
+Index.WARBAND = "warband"
+
+local function addTabs(holder, tabs)
+	for _, tab in pairs(tabs or {}) do
+		for _, item in pairs(tab.slots or {}) do
+			if item.id then
+				local variant = headingFor(item)
+				guildEntries[variant] = guildEntries[variant] or {}
+				guildEntries[variant][holder] =
+					(guildEntries[variant][holder] or 0) + (item.count or 1)
+			end
+		end
+	end
+end
+
+-- The guild banks, and the Warband bank beside them (`docs/MIDNIGHT.md` §128): each is one place
+-- no member owns, counted once whoever looked at it last.
 local function addGuilds()
 	guildEntries = {}
 
 	for guildKey, guild in pairs((FamilyDB and FamilyDB.guilds) or {}) do
-		for _, tab in pairs(guild.tabs or {}) do
-			for _, item in pairs(tab.slots or {}) do
-				if item.id then
-					local variant = headingFor(item)
-					guildEntries[variant] = guildEntries[variant] or {}
-					guildEntries[variant][guildKey] =
-						(guildEntries[variant][guildKey] or 0) + (item.count or 1)
-				end
-			end
-		end
+		addTabs(guildKey, guild.tabs)
 	end
+	addTabs(Index.WARBAND, FamilyDB and FamilyDB.warband and FamilyDB.warband.tabs)
 end
 
 --------------------------------------------------------------------------------------------
@@ -380,7 +391,8 @@ function Index:Owners(variant)
 
 	local guilds = {}
 	for guildKey, count in pairs((guildEntries or {})[variant] or {}) do
-		guilds[#guilds + 1] = { key = guildKey, count = count }
+		guilds[#guilds + 1] = { key = guildKey, count = count,
+			warband = guildKey == Index.WARBAND or nil }
 	end
 	table.sort(guilds, function(a, b) return a.count > b.count end)
 

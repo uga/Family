@@ -1,0 +1,6 @@
+name: a linked family's member is drawn with this account's Warband bank
+file: addons/Family_UI/Contents.lua
+--- old
+	if warband and not borrowed then
+--- new
+	if warband then

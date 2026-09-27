@@ -41,6 +41,14 @@ local LAST_BANK_BAG = FIRST_BANK_BAG + (_G.NUM_BANKBAGSLOTS or 7) - 1
 -- this a reagent bag was filed as the bank as well whenever the bank was open (§102).
 local REAGENT_BAG = 5
 
+-- **The Warband bank** (`docs/MIDNIGHT.md` §128): the account's own tabs, containers 12 to 16 on
+-- Midnight by the client's own `Enum.BagIndex` - `AccountBankTab_1` to `_5` - read at a bank with
+-- the Warband tab open, 98 slots to a bought tab, and answering nothing away from it, as the
+-- character's tabs do. Named from the client rather than written as numbers, and only where the
+-- game has the thing at all, which is the capability `warbandBank`.
+local bagIndex = (_G.Enum and _G.Enum.BagIndex) or {}
+local WARBAND_FIRST, WARBAND_LAST = bagIndex.AccountBankTab_1, bagIndex.AccountBankTab_5
+
 -- The third return is the item string, and only for the items whose id does not describe them
 -- - a random-enchantment suffix, an enchant, a gem. See Family:ItemString in Core.lua.
 local function slotContents(bag, slot)
@@ -61,6 +69,36 @@ local function slotContents(bag, slot)
 	local itemID = select(10, GetItemInfo(bag, slot))
 	if itemID then return itemID, count or 1, worth end
 	return nil
+end
+
+--------------------------------------------------------------------------------------------
+-- The Warband bank
+--------------------------------------------------------------------------------------------
+
+-- Every bought tab of it, by its place among the five, or nothing where no tab answered. Filed
+-- under the account rather than any member, as the guild bank is filed under the guild: every
+-- character of the account reaches the same tabs, and each would otherwise keep its own copy.
+function Bank:ReadWarband()
+	if not Family.Capabilities:Has("warbandBank") then return nil end
+	if not (WARBAND_FIRST and WARBAND_LAST) then return nil end
+
+	local tabs = {}
+	for bag = WARBAND_FIRST, WARBAND_LAST do
+		local size = tonumber((Family:TryCall(GetNumSlots, bag))) or 0
+		if size > 0 then
+			local entry, used = { size = size, slots = {} }, 0
+			for slot = 1, size do
+				local itemID, count, worth = slotContents(bag, slot)
+				if itemID then
+					entry.slots[slot] = { id = itemID, count = count, item = worth }
+					used = used + 1
+				end
+			end
+			entry.free = size - used
+			tabs[bag - WARBAND_FIRST + 1] = entry
+		end
+	end
+	return next(tabs) and tabs or nil
 end
 
 --------------------------------------------------------------------------------------------
@@ -215,6 +253,13 @@ function Bank:Scan()
 	if not next(containers) then
 		Family:Debug("bank scan found nothing - is the window actually open?")
 		return
+	end
+
+	-- The Warband bank in the same visit, written before the member's bank so that the index,
+	-- told of that write, finds both.
+	local warband = self:ReadWarband()
+	if warband then
+		FamilyDB.warband = { tabs = warband, seen = time(), seenBy = key }
 	end
 
 	local payload = Family.Database:Payload(key) or {}

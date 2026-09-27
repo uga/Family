@@ -4375,3 +4375,74 @@ shown | seen just now*, filed by category - *Alchemy (1)*, *Alterac Valley (4)* 
 Valley* at *2 of 10*, *Appearances (35)* - beside the game's own window reading *Warband Achievement
 Points 19,790* and *Achievements Earned 2,207/6,232*. So the page counts the character's own, as
 chosen, and the walk finished. Whether the frames it took were felt is not yet said.
+
+**A Soulbound piece priced at auction?** Alberto, 2026-09-27: Eccebombo's *Contender's Revenant
+Shoulders*, Soulbound, with Family's tooltip reading *Auction (yesterday) 12311g*. Read in the game:
+item 82944 in bag 3 slot 15, `isBound` true; `BindTypeOf` **2** (on equip), `BoundIn` **true**, and
+`Index:WorthOfItem` worth **1500** copper, **0** at market and **1** at vendor. So the copy is held as
+bound and valued at the vendor's 15s, as the rule of 2026-09-11 says; what read as a valuation is
+the *Auction* line, which is the item's market price and is drawn whatever the copy. Beside it, an
+item on equip not yet bound (154804) read `equip` and `isBound` false: Family's tooltip reading of a
+bag slot and the client's own flag agree on Midnight, both ways. Whether that line should change on
+a bound copy is Alberto's to choose.
+
+## 129. The Reputations panel, to be redesigned (2026-09-27)
+
+Alberto, off Eccebombo's Reputations page beside the game's own window: the headings should start
+**shut**; the order should be the game's - the newest expansion first, as the game lists them -
+rather than Family's alphabetical one; and **Inactive** is per character, so the whole-family view
+must not show one faction twice because it is active for one member and inactive for another. His
+two ideas: (1) every faction under its own category everywhere, *inactive* as a tag beside the
+progress and a switch at the top to hide inactive ones; (2) one member's page keeps *Inactive* as a
+heading, as the game does, and the whole-family view drops it for the tag, listing each faction once
+with its members and *inactive* before the progress of those who set it so.
+
+What the reader records today (`Scanners/Character.lua`, `ReadReputations`): the nearest heading
+without a standing of its own, carried down the list, and nothing else - not the expansion above it,
+not the game's order. So an inactive faction's category is *Inactive*, and its own is lost. Asked of
+the game first: what `C_Reputation` holds, and the heading rows with their nesting.
+
+**Read on live, Eccebombo, 2026-09-27.** `C_Reputation` holds `AreLegacyReputationsShown`,
+`CollapseAllFactionHeaders`, `CollapseFactionHeader`, `ExpandAllFactionHeaders`,
+`ExpandFactionHeader`, `GetFactionDataByID`, `GetFactionDataByIndex`, `GetFactionParagonInfo`,
+`GetGuildFactionData`, `GetGuildRepExpirationTime`, `GetNumFactions`, `GetReputationSortType`,
+`GetSelectedFaction`, `GetWatchedFactionData`, `IsAccountWideReputation`, `IsFactionActive`,
+`IsFactionParagon`, `IsFactionParagonForCurrentPlayer`, `IsMajorFaction`,
+`RequestFactionParagonPreloadRewardData`, `SetFactionActive`, `SetLegacyReputationsShown`,
+`SetReputationSortType`, `SetSelectedFaction`, `SetWatchedFactionByID`, `SetWatchedFactionByIndex`,
+`ToggleFactionAtWar`. With every heading shut the list is twelve headings in the game's order - *The
+War Within* 2569, *Dragonflight* 2506, *Battle for Azeroth* 2104, *Legion* 1834, *Warlords of
+Draenor* 1444, *Mists of Pandaria* 1245, *Cataclysm* 1162, *Wrath of the Lich King* 1097, *The
+Burning Crusade* 980, *Classic* 1118, *Guild* 1169, *Inactive* **0** - none a child, all shut, none
+with a standing. So the order is the list's own, newest first; the *Inactive* heading is the one
+with no faction id; and nothing in the namespace names an inactive faction's own heading.
+`IsFactionActive` asks by index, and `SetFactionActive` changes the player's list, which Family
+never does.
+
+## 128. The Warband bank (2026-09-27)
+
+Read in Midnight's first release by Alberto's exception to §111. Measured on Ahia, live:
+`Enum.BagIndex` names `AccountBankTab_1` to `_5` as containers **12 to 16**, `CharacterBankTab_1` to
+`_6` as 6 to 11, `ReagentBag` 5 and `Accountbanktab` -3. At a bank with the Warband tab open,
+containers 0 to 4 (the bags), 6 to 11 (the character's six tabs, 98 each) and **12** (one bought
+Warband tab, 98 slots, 65 free) answered; walked away, only 0 to 4 did. So the Warband bank is read
+as the bank is: at the bank, and nowhere else. The game's word for it, on an English client, is
+`ACCOUNT_BANK_PANEL_TITLE` *Warband Bank* (`ACCOUNT_QUEST_LABEL` and `REPUTATION_SORT_TYPE_ACCOUNT` say
+*Warband*).
+
+**Built.** `Bank:ReadWarband` reads every tab of 12 to 16 that answers, by the client's own
+`Enum.BagIndex` rather than by numbers written here, behind the capability `warbandBank`
+(Midnight). The bank scan, which runs only while the bank is open, stores it once for the account in
+`FamilyDB.warband` with who saw it - as the guild bank is stored under its guild - before the
+member's own bank, so the index, told of that write, finds both. The index holds it beside the guild
+banks under a key no guild can have, counted once. A tooltip's possessions block names it by the
+game's own word with a bare count; the whole-family list does the same; and **every member's page of
+ours** draws its tabs after the member's own blocks, with the bank's picture - Alberto's choice over
+the whole-family view alone - while a linked family's member, from another account, does not. What
+is not recorded: the tabs' own names, and whether a Warband item is bound, since the Warband bank is
+not counted in any member's worth. Fourteen checks, fourteen mutations. `Enum.BagIndex` and
+`ACCOUNT_BANK_PANEL_TITLE` join the surface list. **Not yet seen in the game.**
+
+**Sent to `main` the same afternoon**, at Alberto's word: Archaeology's contents (§126's aside), the
+Reputations redesign of §129, which is every client's and not Midnight's, and the *(unbound)* mark
+on a bound copy's Auction line, which Alberto chose (option 1) and then saw is every client's too.

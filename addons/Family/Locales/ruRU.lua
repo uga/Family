@@ -1041,6 +1041,7 @@ Family.locales.ruRU = {
 	["Resets in"] = "Сброс через",
 	["extended"] = "продлено",
 	["defeated"] = "повержен",
+	["Warband Bank"] = "Банк отряда",
 	["|cff888888Nobody is saved to an instance right now.|r"] = "|cff888888Сейчас ни у кого нет привязки к подземелью.|r",
 	["|cffffd700Collapsed recipe records|r, across the family:"] = "|cffffd700Сжавшиеся списки рецептов|r, по всей семье:",
 	["|cffffd700Collapsed recipe records|r, across the family: none."] = "|cffffd700Сжавшиеся списки рецептов|r, по всей семье: нет.",

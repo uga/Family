@@ -4465,6 +4465,100 @@ print("a hunter's pets on the fourth pretend client, through C_StableInfo and C_
 end)()
 
 print()
+print("the Warband bank on the fourth pretend client")
+
+-- `docs/MIDNIGHT.md` §128, read on Ahia 2026-09-27 at a bank: the account's tabs are containers 12
+-- to 16 by `Enum.BagIndex`, one bought, 98 slots; the character's are 6 to 11.
+;(function()
+	local was = {}
+	local function set(name, value)
+		was[name] = { _G[name] }
+		_G[name] = value
+	end
+
+	local SIZES = { [6] = 98, [12] = 98 }
+	local ITEMS = { [6] = { [1] = { 2589, 20 } }, [12] = { [1] = { 2589, 5 }, [3] = { 2592, 7 } } }
+	local asked = {}
+	set("C_Container", {
+		GetContainerNumSlots = function(bag) asked[bag] = true return SIZES[bag] or 0 end,
+		GetContainerNumFreeSlots = function() return 0, 0 end,
+		GetContainerItemInfo = function(bag, slot)
+			local row = (ITEMS[bag] or {})[slot]
+			if not row then return nil end
+			return { itemID = row[1], stackCount = row[2] }
+		end,
+		GetContainerItemLink = function() return nil end,
+	})
+	set("Enum", setmetatable({ BagIndex = { ReagentBag = 5, CharacterBankTab_1 = 6,
+		CharacterBankTab_6 = 11, AccountBankTab_1 = 12, AccountBankTab_5 = 16 } },
+		{ __index = _G.Enum or {} }))
+	set("BANK_CONTAINER", nil)
+	set("NUM_BAG_SLOTS", 4)
+	set("NUM_BANKBAGSLOTS", 7)
+	local heldWarband = FamilyDB.warband
+
+	local caps = { warbandBank = true, reagentBag = true }
+	local handlers, stored = {}, { meta = {}, payload = {} }
+	local midnight = setmetatable({}, { __index = FamilyPrivate })
+	midnight.Capabilities = { Has = function(_, feature) return caps[feature] == true end }
+	midnight.CurrentMember = function() return "Mirror-Midnight" end
+	midnight.RegisterEvent = function(_, event, _, fn) handlers[event] = fn end
+	midnight.OnDatabaseReady = function(_, _, fn) fn() end
+	midnight.After = function() end
+	midnight.Debug = function() end
+	midnight.BoundIn = function() return false end
+	midnight.Database = {
+		Payload = function(_, k) return stored.payload[k] end,
+		SetPayload = function(_, k, p) stored.payload[k] = p end,
+		SetMeta = function(_, k, fields) stored.meta[k] = fields end,
+	}
+	load("addons/Family/Scanners/Bank.lua", "Family", midnight)
+
+	local tabs = midnight.Bank:ReadWarband()
+	check("the Warband bank is read from the account's tabs the client names",
+		tabs and tabs[1] and tabs[1].size == 98 and tabs[1].free == 96
+			and tabs[1].slots[3] and tabs[1].slots[3].id == 2592 and tabs[1].slots[3].count == 7,
+		tabs and tabs[1] and tostring(tabs[1].free))
+	check("and only the tabs bought, which are the ones that answer",
+		tabs and tabs[2] == nil and asked[16] == true)
+
+	FamilyDB.warband = nil
+	handlers.BANKFRAME_OPENED()
+	midnight.Bank:Scan()
+	check("a visit to the bank stores it once, for the account, with who saw it",
+		FamilyDB.warband and FamilyDB.warband.tabs[1] and FamilyDB.warband.seenBy == "Mirror-Midnight",
+		FamilyDB.warband and tostring(FamilyDB.warband.seenBy))
+	local bank = stored.payload["Mirror-Midnight"] and stored.payload["Mirror-Midnight"].bank
+	check("and the character's own tabs stay the character's, without the account's in them",
+		bank and bank.containers[6] and bank.containers[12] == nil)
+
+	-- Away from the bank, nothing is written, the account's tabs as little as the character's.
+	FamilyDB.warband = { tabs = { [1] = { size = 98, slots = {} } }, seen = 1 }
+	handlers.BANKFRAME_CLOSED()
+	midnight.Bank:Scan()
+	check("and away from the bank the Warband bank is left as it was", FamilyDB.warband.seen == 1)
+
+	caps.warbandBank = false
+	check("a client without a Warband bank is not asked for one", midnight.Bank:ReadWarband() == nil)
+	caps.warbandBank = true
+
+	-- **In the index beside the guild banks**, one holder for the account.
+	FamilyDB.warband = { tabs = { [1] = { size = 98, slots = {
+		[1] = { id = 2589, count = 5 }, [2] = { id = 2589, count = 3 } } } }, seen = time() }
+	Family.Index:Invalidate()
+	local _, holders = Family.Index:Owners(2589)
+	local warband
+	for _, holder in ipairs(holders) do if holder.warband then warband = holder end end
+	check("the index holds the Warband bank beside the guild banks, counted once",
+		warband and warband.key == Family.Index.WARBAND and warband.count == 8,
+		warband and tostring(warband.count))
+
+	FamilyDB.warband = heldWarband
+	Family.Index:Invalidate()
+	for name, saved in pairs(was) do _G[name] = saved[1] end
+end)()
+
+print()
 print("the auction house on the fourth pretend client")
 
 -- The one domain of the six that needs nothing, and the reason is worth a check rather than a
@@ -7638,6 +7732,35 @@ local function tooltipFor(itemID, viaData)
 end
 
 check("an item somebody owns gets a possessions block", tooltipFor(2589) == true)
+
+-- **The Warband bank in the block, and on a member's page** (`docs/MIDNIGHT.md` §128), by the game's
+-- own name for it where the client has one.
+;(function()
+	local held, heldWord = FamilyDB.warband, _G.ACCOUNT_BANK_PANEL_TITLE
+	FamilyDB.warband = { tabs = { [1] = { size = 98, free = 97,
+		slots = { [1] = { id = 2589, count = 6 } } } }, seen = time() }
+	Family.Index:Invalidate()
+
+	local function warbandLine()
+		for _, line in ipairs(GameTooltip.__lines) do
+			if type(line[1]) == "string" and line[1]:find(Family.UI:WarbandWord(), 1, true) then
+				return line
+			end
+		end
+	end
+	tooltipFor(2589)
+	local line = warbandLine()
+	check("the possessions block names the Warband bank, with its count beside it",
+		line ~= nil and tostring(line[2]) == "6", line and tostring(line[2]) or "no line")
+	_G.ACCOUNT_BANK_PANEL_TITLE = "Kriegsmeutenbank"
+	tooltipFor(2589)
+	check("in the client's own word for it where the client has one",
+		Family.UI:WarbandWord() == "Kriegsmeutenbank" and warbandLine() ~= nil)
+	_G.ACCOUNT_BANK_PANEL_TITLE = heldWord
+
+	FamilyDB.warband = held
+	Family.Index:Invalidate()
+end)()
 
 -- **A gathering node in the world**, which reaches none of the routes above.
 --
@@ -15979,6 +16102,29 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 	Family.UI:ShowContentsFor(me)
 	check("switched on, the carried bags are one block, the keyring its own, and the bank one",
 		kinds():find("^bags,bags,bank") ~= nil and kinds():find("^bags,bags,bank,bank") == nil, kinds())
+
+	-- **The Warband bank on a member's page of ours** (`docs/MIDNIGHT.md` §128), after everything
+	-- that is the member's own.
+	do
+		local heldWarband = FamilyDB.warband
+		FamilyDB.warband = { tabs = { [1] = { size = 98, free = 97,
+			slots = { [1] = { id = 2589, count = 6 } } } }, seen = time() }
+		Family.UI:ShowContentsFor(me)
+		check("a member's page of ours draws the Warband bank's tab as a block, last",
+			kinds():find(",warband$") ~= nil, kinds())
+		-- A linked family's member belongs to another account, whose Warband bank this is not.
+		local heldBorrowed = Family.Wide.Borrowed
+		Family.Wide.Borrowed = function(_, key)
+			if key == me then return { meta = {} }, "link" end
+			return heldBorrowed(Family.Wide, key)
+		end
+		Family.UI:ShowContentsFor(me)
+		Family.Wide.Borrowed = heldBorrowed
+		check("and a linked family's member's page does not",
+			kinds() ~= "" and kinds():find("warband", 1, true) == nil, kinds())
+		FamilyDB.warband = heldWarband
+		Family.UI:ShowContentsFor(me)
+	end
 
 	local merged, bank
 	for block in pairs(blocksDrawn()) do

@@ -1,0 +1,8 @@
+name: the Warband bank is drawn on a tooltip as a guild called warband
+file: addons/Family_UI/Tooltip.lua
+--- old
+		if guild.warband then
+			lines[#lines + 1] = { "|cff88bbff" .. UI:WarbandWord() .. "|r",
+--- new
+		if false then
+			lines[#lines + 1] = { "|cff88bbff" .. UI:WarbandWord() .. "|r",

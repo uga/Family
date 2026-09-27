@@ -323,9 +323,16 @@ local function possessionLines(tooltip, itemID, variant, node)
 
 	for index = 1, guildsShown do
 		local guild = guilds[index]
-		lines[#lines + 1] = { "|cff40c040" .. UI:GuildLabel(guild.key) .. "|r",
-			string.format(L["%d guild bank"], guild.count),
-			nil, nil, nil, 0.8, 0.8, 0.8 }
+		-- The Warband bank among them, by the game's own name for it and with a bare count: the
+		-- name already says where (`docs/MIDNIGHT.md` §128).
+		if guild.warband then
+			lines[#lines + 1] = { "|cff88bbff" .. UI:WarbandWord() .. "|r",
+				tostring(guild.count), nil, nil, nil, 0.8, 0.8, 0.8 }
+		else
+			lines[#lines + 1] = { "|cff40c040" .. UI:GuildLabel(guild.key) .. "|r",
+				string.format(L["%d guild bank"], guild.count),
+				nil, nil, nil, 0.8, 0.8, 0.8 }
+		end
 	end
 
 	if guildsShown < #guilds then

@@ -76,6 +76,9 @@ local CONTAINER_ICON = {
 	-- was written here, because a texture path is the one thing in Family that cannot be
 	-- probed (tools/FamilyIconSheet).
 	bank     = "Interface\\MINIMAP\\TRACKING\\Banker",
+	-- The Warband bank is a bank as well, drawn with the one bank picture already confirmed
+	-- rather than a path nobody has seen render.
+	warband  = "Interface\\MINIMAP\\TRACKING\\Banker",
 	fallback = "Interface\\Buttons\\Button-Backpack-Up",
 }
 
@@ -278,6 +281,23 @@ local function containersOf(payload, meta)
 
 			blocks[#blocks + 1] = { where = "guild", bag = tab, size = size,
 				free = 0, slots = contents.slots or {}, name = contents.name }
+		end
+	end
+
+	-- **The Warband bank, on every page of ours** (`docs/MIDNIGHT.md` §128): every character of
+	-- the account reaches the same tabs, as a guild's members reach its bank - Alberto chose this
+	-- over the whole-family view alone, 2026-09-27. Not on a linked family's member, whose account
+	-- is not this one.
+	local warband = FamilyDB and FamilyDB.warband
+	local borrowed = meta and meta.key and Family.Wide and Family.Wide:Borrowed(meta.key)
+	if warband and not borrowed then
+		local tabs = {}
+		for tab in pairs(warband.tabs or {}) do tabs[#tabs + 1] = tab end
+		table.sort(tabs)
+		for _, tab in ipairs(tabs) do
+			local contents = warband.tabs[tab]
+			blocks[#blocks + 1] = { where = "warband", bag = tab, size = contents.size or 0,
+				free = contents.free or 0, slots = contents.slots or {} }
 		end
 	end
 
@@ -1011,8 +1031,9 @@ local function build(frame)
 					-- A guild's key is its name and its realm joined with a hyphen, and
 					-- the realm comes off where it is the one being played. Sorted on the
 					-- same label without its colour, so a guild lands among the names
-					-- rather than among the pipe characters.
-					local label = UI:GuildLabel(guild.key)
+					-- rather than among the pipe characters. The Warband bank sits among
+					-- them by the game's own name for it.
+					local label = guild.warband and UI:WarbandWord() or UI:GuildLabel(guild.key)
 
 					lines[#lines + 1] = {
 						item = item,
@@ -1026,8 +1047,9 @@ local function build(frame)
 						-- A guild bank has no breakdown to give - it is one place -
 						-- so the count leads and the place follows it, rather than
 						-- the place going in brackets after a total it repeats.
-						where = string.format("|cffffd700%d|r %s", guild.count,
-							L["|cff888888guild bank|r"]),
+						where = guild.warband and string.format("|cffffd700%d|r", guild.count)
+							or string.format("|cffffd700%d|r %s", guild.count,
+								L["|cff888888guild bank|r"]),
 					}
 				end
 			end
@@ -1207,7 +1229,7 @@ local function build(frame)
 
 		local payload = UI:Payload(member.key)
 		local meta = member.meta
-		local drawn = containersOf(payload, meta)
+		local drawn = containersOf(payload, setmetatable({ key = member.key }, { __index = meta }))
 
 		-- How current each part of this is, said before it rather than after: the bank is
 		-- a photograph and the bags are not, and a panel that draws them identically has
@@ -1322,6 +1344,9 @@ local function build(frame)
 				title = LABEL.auctions
 			elseif container.where == "equipped" then
 				title = LABEL.equipped
+			elseif container.where == "warband" then
+				title = string.format(L["%s |cff888888tab %d|r"], UI:WarbandWord(),
+					container.bag or 0)
 			elseif container.where == "guild" then
 				-- By the tab's own name where the guild bank gave one (backlog 86), and by its
 				-- number where it did not.

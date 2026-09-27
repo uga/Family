@@ -1,0 +1,6 @@
+name: a client without a Warband bank is asked for one
+file: addons/Family/Scanners/Bank.lua
+--- old
+	if not Family.Capabilities:Has("warbandBank") then return nil end
+--- new
+	if false then return nil end

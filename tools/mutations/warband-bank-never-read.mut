@@ -1,0 +1,6 @@
+name: the Warband bank is never read at the bank
+file: addons/Family/Scanners/Bank.lua
+--- old
+	local warband = self:ReadWarband()
+--- new
+	local warband = nil

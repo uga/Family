@@ -1,0 +1,6 @@
+name: the Warband bank is named in English whatever the client calls it
+file: addons/Family_UI/Window.lua
+--- old
+	return Family:GameWord("ACCOUNT_BANK_PANEL_TITLE", L["Warband Bank"])
+--- new
+	return L["Warband Bank"]

@@ -194,6 +194,11 @@ local EXPECTED = {
 	-- character, for 1,145 (`docs/MIDNIGHT.md` §127). The fourth answers and is not this
 	-- character's, so which value a member's achievements are read from lives here.
 	achievementsWarband = { [MIDNIGHT] = true },
+
+	-- **A Warband bank**: tabs every character of the account shares, containers 12 to 16 by the
+	-- client's `Enum.BagIndex`, read on Ahia at a bank 2026-09-27 (`docs/MIDNIGHT.md` §128). Read in
+	-- Midnight's first release by Alberto's exception to §111.
+	warbandBank = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -218,6 +223,7 @@ local CONFIRMED = {
 	lockoutBosses = { [MIDNIGHT] = true },
 	petGuidGeneric = { [MIDNIGHT] = true },
 	achievementsWarband = { [MIDNIGHT] = true },
+	warbandBank = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

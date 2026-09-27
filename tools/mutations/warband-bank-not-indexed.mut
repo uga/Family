@@ -1,0 +1,5 @@
+name: the Warband bank is left out of the index
+file: addons/Family/Index.lua
+--- old
+	addTabs(Index.WARBAND, FamilyDB and FamilyDB.warband and FamilyDB.warband.tabs)
+--- new

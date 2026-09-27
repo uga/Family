@@ -1,0 +1,8 @@
+name: a Warband tab's free slots are its size
+file: addons/Family/Scanners/Bank.lua
+--- old
+			entry.free = size - used
+			tabs[bag - WARBAND_FIRST + 1] = entry
+--- new
+			entry.free = size
+			tabs[bag - WARBAND_FIRST + 1] = entry
