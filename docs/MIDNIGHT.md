@@ -4739,3 +4739,11 @@ appearance 782; `GetValidAppearanceSourcesForClass(782, c)` for classes 1 to 13 
 for 5, 8 and 9** - Priest, Mage, Warlock - and 0 for every other class. Exact for cloth. Mail is the
 type Mists answered loosely (Paladins), so a mail look is asked next, with whether wearing the cloth
 item on a plate character collects it.
+
+**Wearing a lower armour type collects it on Midnight** (Alberto, 2026-09-27, live): a plate character
+equipped the uncollected *Master's Leggings* and took them off, and the tooltip's *you haven't
+collected this appearance* was gone. On Mists a plate Paladin learns nothing from cloth or mail (`main`,
+backlog 108). So on Midnight the class answer - 5, 8 and 9 for these leggings - says who may **use** the
+look, and who can **learn** it is whoever can **wear** the item: an armour type at or above the item's,
+and its level. `main`'s rule, *the member's own type exactly*, does not hold here, and neither does
+reading the type off the skill list, which Midnight has not got.
