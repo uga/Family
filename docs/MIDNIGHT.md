@@ -4770,3 +4770,9 @@ widened line. **Not yet seen in the game.**
 What is not settled: whether a class-restricted piece (a tier set's *Classes:* line) can be worn by
 another class on Midnight - the class answer is set aside for armour here, so such a piece could name a
 member who cannot put it on.
+
+**An item *collected, but not from this item*** (Alberto, 2026-09-27): 159212, name not yet loaded;
+source 94947, `GetAppearanceInfoBySource` answering `appearanceIsCollected` **false** and
+`sourceIsCollected` false, `PlayerHasTransmogItemModifiedAppearance` false - though the tooltip says
+the appearance is collected. Read again once the item is loaded, beside how many of the appearance's
+other sources the account has.
