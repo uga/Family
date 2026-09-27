@@ -4634,3 +4634,11 @@ drew Midnight without the column or the slot.
 
 **Reputations** next: `main`'s backlog 105 records a faction `inactive` from `IsFactionInactive`, which
 Midnight lacks; `C_Reputation.IsFactionActive` is listed there (§129) and has not been read.
+
+**Seen** (Alberto's screenshots, 2026-09-27, Ahia): `main`'s backlog 105 through this branch's reader
+on Midnight - Character > Reputations, *121 of 121 factions*, the headings shut with their counts in
+the game's order, *The War Within (2)* down to *Classic (22)* and *Guild (1)*, then *Inactive (19)*
+open with the factions the game's own window lists under its *Inactive* (*Argent Crusade*, *Argent
+Dawn*, *Darnassus* ... *Frenzyheart Tribe* Hated 28873 / 36000 ...). One member's page is right. Not
+yet read: `IsFactionActive`, which the whole-family view needs to put *inactive* before a member's
+standing and to file a faction under the heading of whoever has it active.
