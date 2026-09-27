@@ -4285,3 +4285,6 @@ reload and no rescan; switched off, it said nothing, the same way. `PLAYER_FLAGS
 surface list here, which that commit should have regenerated and did not: `surface.py --check` was
 not run before it. A local renamed `api` in the same function made the generator pair `C_PvP` with
 the specialisation calls for a moment; named `pvpApi`, as it was, the list is right.
+
+**Seen on the PTR** (2026-09-27): Deiana's Pets page lists the Cat with its eight abilities and the
+Wolf, stabled and never read, with nothing under him - Alberto: *yes it does*.
