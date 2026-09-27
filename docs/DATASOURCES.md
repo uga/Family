@@ -5594,3 +5594,14 @@ name of a refused place. Herbs and ores came out byte-identical on all three bui
 **What was wrong with the paragraph above** is the word *superset*, reasoned rather than run. A
 rule change that moves the runner-up moves collisions in both directions, and *safe because too
 long* was only half of what the list was.
+
+### The reputation list on Era, every heading shut — read 2026-09-27
+
+Verysolid, `1.15.9`, `/familyprobe apis`, *reputation headings*, for backlog 105. `GetNumFactions` 4 and
+no `C_Reputation` list. `GetFactionInfo` rows, in order: *Alliance* id 469, *Alliance Forces* 891,
+*Steamwheedle Cartel* 169, *Other* 0 - all `isHeader` true and `isCollapsed` true, `isChild` false on the
+first three. *Alliance* carries a standing (6; 11549 of 9000-21000) with `hasRep` false. *Other*
+answers 14 values where the others answer 16, with `atWarWith`, `canToggleAtWar`, `hasRep`, `isWatched`
+and `isChild` nil. **The id-0 heading here is *Other*.** Midnight's *Inactive* is the id-0 heading
+(the Midnight branch's reading); on Era that cannot be how *Inactive* is recognised, and this
+character had nothing inactive to show what *Inactive* answers.

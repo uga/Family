@@ -7411,6 +7411,15 @@ also answers 0 and how their nesting looks.
 reputation list as it stands, and `C_Reputation`'s where present. Run with every heading shut in
 the game's own Reputation window, on Era, Burning Crusade and Mists.
 
+**Era read 2026-09-27** (Verysolid, level 60, `1.15.9`, every heading shut): `GetNumFactions` 4, all
+headers, all collapsed, no `C_Reputation` list. In order: *Alliance* 469, *Alliance Forces* 891,
+*Steamwheedle Cartel* 169, *Other* **0**. None a child. *Alliance* answers a standing (6, 11549 in
+9000-21000) with `hasRep` false; *Other* answers 14 values, not 16, with 7, 8, 11, 12 and 13 nil.
+**So on Era the heading with id 0 is *Other*, not *Inactive*:** Midnight's rule that *Inactive* is the
+id-0 heading does not carry over, and this character has no *Inactive* heading at all. Still wanted:
+an Era character with a faction set inactive (to see what *Inactive* answers, and whether it is
+also 0), then Burning Crusade and Mists.
+
 ---
 
 ## 106. The Auction line on a bound copy's tooltip says it is the unbound price — DONE 2026-09-27, not yet seen in game
