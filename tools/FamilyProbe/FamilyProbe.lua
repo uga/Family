@@ -1215,6 +1215,47 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog skill list whole", a
     return table.concat(out, " | ")
 end }
 
+-- **Backlog 109: where a quest says it is a daily.** The game's log writes *(Daily)* and *(Daily
+-- Heroic)* beside a quest and Family's Quests page says nothing, because the scanner never kept
+-- the flag. `GetQuestLogTitle` answers a different list on each client (Quests.lua), so each
+-- quest row is printed whole, beside the tag calls and, where the client has it, the modern
+-- per-index table. Read-only: nothing is selected or expanded.
+PROBES[#PROBES + 1] = { area = "quests", name = "which quests are daily", ask = function()
+    local out = {}
+    local count = tonumber((try(GetNumQuestLogEntries))) or 0
+    local api = _G.C_QuestLog
+    local info = api and type(api.GetInfo) == "function" and api.GetInfo or nil
+    local idFor = api and type(api.GetQuestIDForLogIndex) == "function"
+        and api.GetQuestIDForLogIndex or nil
+    local tag = there("GetQuestTagInfo") or (api and api.GetQuestTagInfo)
+    local frequency = api and type(api.GetQuestFrequency) == "function"
+        and api.GetQuestFrequency or nil
+    out[#out + 1] = "calls: GetInfo " .. (info and "yes" or "absent")
+        .. ", GetQuestTagInfo " .. (tag and "yes" or "absent")
+        .. ", GetQuestFrequency " .. (frequency and "yes" or "absent")
+        .. ", QuestIsDaily " .. (there("QuestIsDaily") and "yes" or "absent")
+    local shown = 0
+    for index = 1, count do
+        local row = callPacked(GetQuestLogTitle, index)
+        if row and row[1] and shown < 12 then
+            shown = shown + 1
+            local line = "row " .. index .. ": " .. shape(row)
+            local id = idFor and tonumber((try(idFor, index))) or nil
+            if id then
+                line = line .. " || id " .. id
+                if tag then line = line .. " || tag " .. shape(callPacked(tag, id)) end
+                if frequency then line = line .. " || frequency " .. describe(try(frequency, id)) end
+            end
+            if info then
+                local answer = try(info, index)
+                if type(answer) == "table" then line = line .. " || info " .. fields(answer) end
+            end
+            out[#out + 1] = line
+        end
+    end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end

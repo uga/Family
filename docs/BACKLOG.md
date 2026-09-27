@@ -7613,3 +7613,23 @@ so nothing about the design can be assumed before the probe says which.
 **To run on Mists**, on a character wearing at least one transmogrified item: once away from a
 Transmogrifier, and once with its window open, since the original calls may answer only there. Then
 log out to write the file. Nothing in the probes applies a look, buys anything or asks the server.
+
+## 109. A daily quest is not marked as one on the Quests page — OPEN 2026-09-27, probe written
+
+**Reported by Alberto 2026-09-27** with two screenshots of Luga on Mists: the game's quest log writes
+*(Daily)* beside *The Humanoid Cannonball* and *(Daily Heroic)* beside *Wanted: Aeonus's Hourglass*,
+and Family's Quests page shows both as plain rows, *normal* and *trivial*. Those two words are the
+quest's level against the character's (`Family_UI/Quests.lua`), not its kind.
+
+**Cause:** the scanner never records whether a quest is a daily. `Scanners/Quests.lua` keeps title,
+level, id, heading and progress; the specification (§3) says a daily is followed like any other quest
+while it is in the log, and it is - it is just not called one. Marking it is within that decision.
+
+**Probe first**, because `GetQuestLogTitle` answers a different list on each client: *which quests are
+daily* (area `quests`) prints each log row whole, beside `GetQuestTagInfo`, `C_QuestLog.GetQuestFrequency`
+and `C_QuestLog.GetInfo` where the client has them. To be run on Mists with a daily in the log, and on
+Burning Crusade with one if convenient; Era has none.
+
+**Also seen in the same screenshots, not this entry:** *Test Your Strength* reads *0 of 1* on the page and
+*Grisly Trophy: 0/250* in the game. The page counts objectives finished, not the count inside one; the
+objective's own text is on the row's tooltip. Left as it is unless Alberto asks otherwise.
