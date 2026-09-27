@@ -36088,18 +36088,32 @@ print("reputations in the game's order, headings shut, inactive per character")
 		-- The inactive copy first, whichever order the roster is read in: named so, and put
 		-- first here, so that taking the first copy's heading would file it under Inactive.
 		{ key = "Abshelver-Fire Maw", name = "Abshelver", inactive = true,
-			category = "Inactive" },
+			category = "Inactive", other = "Inactive" },
 		{ key = "Zactor-Fire Maw", name = "Zactor", inactive = nil, category = "Classic",
-			categoryID = 1118 },
+			categoryID = 1118, other = "Other" },
+		-- Saved before the flag was recorded (seen on Midnight 2026-09-27): the game's
+		-- *Inactive* as the heading, no id and no flag, and first in the roster, so neither
+		-- faction may take its heading from it. Silver Harbour has a copy whose heading has
+		-- an id; Grey Lantern only copies with none, as *Other* on Era: two agreeing, one
+		-- saved before the flag and one set inactive, which counted would tie the vote.
+		{ key = "Aabacus-Fire Maw", name = "Aabacus", category = "Inactive",
+			other = "Inactive" },
+		{ key = "Zeb-Fire Maw", name = "Zeb", other = "Other" },
 	}
 	for _, member in ipairs(roster) do
 		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
 			level = 60, classFile = "MAGE", faction = "Alliance" })
-		Family.Database:SetPayload(member.key, { reputations = {
-			{ id = 2701, name = "Silver Harbour", category = member.category,
+		local reps = {}
+		if member.category then
+			reps[#reps + 1] = { id = 2701, name = "Silver Harbour", category = member.category,
 				categoryID = member.categoryID, inactive = member.inactive, standing = 5,
-				value = 100, maximum = 1000 },
-		} })
+				value = 100, maximum = 1000 }
+		end
+		if member.other then
+			reps[#reps + 1] = { id = 2702, name = "Grey Lantern", category = member.other,
+				inactive = member.inactive, standing = 5, value = 100, maximum = 1000 }
+		end
+		Family.Database:SetPayload(member.key, { reputations = reps })
 	end
 	Family.UI.REPUTATIONS_START_OPEN = true
 	clickButton("Whole family")
@@ -36125,6 +36139,8 @@ print("reputations in the game's order, headings shut, inactive per character")
 	end
 	check("the whole family files an inactive faction where another member has it active",
 		shelverRow ~= nil and heading == nil and visibleText("Silver Harbour"))
+	check("and a copy saved before the flag files neither faction under Inactive",
+		heading == nil and visibleText("Grey Lantern") and visibleText("Other"))
 	check("and writes inactive before the progress of whoever set it so",
 		shelverRow and tostring(shelverRow.right.__text):find(Family.L["inactive"], 1, true) ~= nil,
 		shelverRow and shelverRow.right.__text)

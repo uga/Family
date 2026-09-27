@@ -1,0 +1,6 @@
+name: a heading the game gave an id counts no more than one it did not
+file: addons/Family_UI/Character.lua
+--- old
+					local score = (faction.categoryID and 100000 or 0)
+--- new
+					local score = 0

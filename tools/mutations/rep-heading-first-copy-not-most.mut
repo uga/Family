@@ -1,0 +1,6 @@
+name: the first copy not set inactive files the faction, not the heading most copies are under
+file: addons/Family_UI/Character.lua
+--- old
+						+ votes[repHeadingKey(faction.categoryID, faction.category)]
+--- new
+						+ 0

@@ -1246,8 +1246,9 @@ local function build(frame)
 							-- the heading it came from, so one character's inactive copy says
 							-- nothing about where the faction belongs. Their heading is kept
 							-- only while nobody has it active.
-							if not faction.inactive and not row.activePlace then
-								row.activePlace = faction
+							if not faction.inactive then
+								row.active = row.active or {}
+								row.active[#row.active + 1] = faction
 							end
 							row.inactivePlace = row.inactivePlace or faction
 							row.name = row.name or faction.name
@@ -1259,7 +1260,24 @@ local function build(frame)
 			-- Each row's heading, and whether the filter keeps it.
 			local shown = 0
 			for _, row in ipairs(order) do
-				local place = row.activePlace or row.inactivePlace or {}
+				-- **Among the copies not set inactive, the heading the game gave an id, then
+				-- the heading most of them are under.** A copy saved before the flag was
+				-- recorded carries *Inactive* as its heading and no flag, and taking the first
+				-- in roster order let one such copy file the faction for everybody (seen on
+				-- Midnight 2026-09-27: Argent Dawn under Inactive, thirteen members holding it
+				-- under Wrath of the Lich King). *Inactive* has no id on any client, and the
+				-- count does not depend on the client's language.
+				local votes, place, best = {}, nil, nil
+				for _, faction in ipairs(row.active or {}) do
+					local key = repHeadingKey(faction.categoryID, faction.category)
+					votes[key] = (votes[key] or 0) + 1
+				end
+				for _, faction in ipairs(row.active or {}) do
+					local score = (faction.categoryID and 100000 or 0)
+						+ votes[repHeadingKey(faction.categoryID, faction.category)]
+					if not best or score > best then place, best = faction, score end
+				end
+				place = place or row.inactivePlace or {}
 				row.category, row.categoryID = place.category, place.categoryID
 				row.group, row.groupID = place.group, place.groupID
 				row.topKey = repHeadingKey(row.categoryID, row.category)
