@@ -1,0 +1,6 @@
+name: a cloak is judged as cloth armour rather than by class
+file: addons/Family/Core.lua
+--- old
+		and equipLoc ~= CLOAK and subclass or nil
+--- new
+		and subclass or nil

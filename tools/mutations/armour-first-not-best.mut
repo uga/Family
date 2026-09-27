@@ -1,0 +1,6 @@
+name: the lowest armour listed is kept rather than the best
+file: addons/Family/Scanners/Professions.lua
+--- old
+		if line and line.armour and line.armour > (armour or 0) then armour = line.armour end
+--- new
+		if line and line.armour and line.armour < (armour or 99) then armour = line.armour end

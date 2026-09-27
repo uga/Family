@@ -591,6 +591,76 @@ function Family:LookOf(item, itemID)
 	return nil
 end
 
+-- The game's class ids by class file, asked of the client once: `GetClassInfo` answers name,
+-- file and id for each, so no class number is written here.
+local classIDs
+local function classIDOf(classFile)
+	if not classIDs then
+		classIDs = {}
+		local info = _G.C_CreatureInfo and _G.C_CreatureInfo.GetClassInfo or _G.GetClassInfo
+		for index = 1, 20 do
+			local answer = { Family:TryCall(info, index) }
+			local file, id = answer[2], answer[3]
+			if type(answer[1]) == "table" then file, id = answer[1].classFile, answer[1].classID end
+			if file and id then classIDs[file] = id end
+		end
+	end
+	return classIDs[classFile]
+end
+
+-- **Which of the family could learn an item's look** (backlog 108): a list of member keys, or
+-- nil where there is nothing to say - the account has the look, the item has none, it binds on
+-- pickup and so reaches nobody else, or the client cannot say yet.
+--
+-- A member counts when all of these hold, each asked of the client or of the member's own record:
+-- - its class is one the game says the look is valid for (`GetValidAppearanceSourcesForClass`,
+--   which answers for any class from any character and carries class restrictions);
+-- - for cloth, leather, mail and plate, the type is the member's own - the best line under
+--   *Armor Proficiencies* on its skill list, recorded as `meta.armour` - because a plate wearer
+--   learns nothing from wearing mail or cloth (Alberto, measured on Eccebombo 2026-09-27). A
+--   member not scanned since that was recorded is left out rather than guessed at. Cloaks are
+--   cloth that everybody wears, and go by the class answer alone;
+-- - its level reaches the item's.
+--
+-- Only this family's own members: a linked family's collection is their account's.
+function Family:WhoCanLearn(item, itemID)
+	if self:LookOf(item, itemID) ~= "need" then return nil end
+	local collection = _G.C_TransmogCollection
+	local forClass = collection and collection.GetValidAppearanceSourcesForClass
+	if type(forClass) ~= "function" then return nil end
+
+	local info = { self:TryCall(GetItemInfo, item or itemID) }
+	local minLevel, equipLoc, itemClass, subclass, bind =
+		tonumber(info[5]) or 0, info[9], tonumber(info[12]), tonumber(info[13]), tonumber(info[14])
+	if bind == 1 then return nil end
+
+	local appearance = self:TryCall(collection.GetItemInfo, item or itemID)
+	if not tonumber(appearance) and item then
+		appearance = self:TryCall(collection.GetItemInfo, itemID)
+	end
+	appearance = tonumber(appearance)
+	if not appearance then return nil end
+
+	local ARMOUR, CLOAK = 4, "INVTYPE_CLOAK"
+	local armourType = itemClass == ARMOUR and subclass and subclass >= 1 and subclass <= 4
+		and equipLoc ~= CLOAK and subclass or nil
+
+	local valid, who = {}, {}
+	for key in pairs(self.Database:Members()) do
+		local meta = self.Database:Meta(key) or {}
+		local classID = meta.classFile and classIDOf(meta.classFile)
+		if classID and valid[classID] == nil then
+			local sources = self:TryCall(forClass, appearance, classID)
+			valid[classID] = type(sources) == "table" and #sources > 0
+		end
+		if classID and valid[classID] and (tonumber(meta.level) or 0) >= minLevel
+			and (not armourType or meta.armour == armourType) then
+			who[#who + 1] = key
+		end
+	end
+	return who
+end
+
 -- A slot in one of this character's own containers.
 function Family:BindingIn(bag, slot)
 	return bindingShown(function(tip)

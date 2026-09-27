@@ -1,0 +1,6 @@
+name: a member learns a look in any armour its class can wear, not only its own
+file: addons/Family/Core.lua
+--- old
+			and (not armourType or meta.armour == armourType) then
+--- new
+			then

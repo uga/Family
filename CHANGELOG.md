@@ -64,6 +64,10 @@ is a decision rather than an afternoon of archaeology.
   not opened yet is shown as *not opened yet*, and one you opened empty says *empty*. A tab read
   on an earlier visit keeps what it held until you open it again. Before, only the tabs holding
   something were recorded, and a visit that did not load a tab forgot what it had held.
+- **Who in the family can learn a look, on Mists.** An item whose look your account has not
+  collected now says on its tooltip which of your characters could learn it - the right class,
+  wearing that armour type as their own, and high enough level - or that none of them can.
+  Items that bind on pickup are left out, since nobody else can receive them.
 - **Looks to learn and looks known, on Mists.** Two switches beside the Possessions search pick out
   the items whose look your account has not collected yet, and those whose look it already has and
   can be sold without losing it. On one character they dim everything else; with *Whole family* they

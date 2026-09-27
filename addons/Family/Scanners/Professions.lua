@@ -995,6 +995,18 @@ function Professions:ScanNow(includeRecipes)
 		return
 	end
 
+	-- **The armour this member wears as its own** (backlog 108): the best of the types its skill
+	-- list names under *Armor Proficiencies*, by skill line id so any language resolves. A Paladin
+	-- of 49 lists all four and wears plate; a look is collected only in a class's own type, which
+	-- is what *can be learnt by* compares an item against. Left as it was where the list names
+	-- none, which is a list not read rather than a member who wears nothing.
+	local armour
+	for name in pairs(everything) do
+		local line = Family.SkillLines[Family:SkillLineFor(name) or 0]
+		if line and line.armour and line.armour > (armour or 0) then armour = line.armour end
+	end
+	if armour then Family.Database:SetMeta(key, { armour = armour }) end
+
 	local payload = Family.Database:Payload(key) or {}
 	local stored = payload.professions or {}
 

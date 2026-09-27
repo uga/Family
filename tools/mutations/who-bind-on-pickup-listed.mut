@@ -1,0 +1,5 @@
+name: an item that binds on pickup still names who could learn it
+file: addons/Family/Core.lua
+--- old
+	if bind == 1 then return nil end
+--- new

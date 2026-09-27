@@ -7516,7 +7516,17 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, the Possessions filters built; *can be learnt by* waits on the skill list
+## 108. Transmogrification on Mists — BUILT 2026-09-27, the filters seen in game, *can be learnt by* not yet
+
+**Built 2026-09-27: *can be learnt by*.** `Family:WhoCanLearn` (`Core.lua`) names this family's members
+who could learn an uncollected look: the class the game says it is for (`GetValidAppearanceSourcesForClass`,
+class ids from `GetClassInfo`), the member's own armour type for cloth to plate (`meta.armour`, the best
+*Armor Proficiencies* line on its skill list, recorded by the professions scan by skill line id; the four
+lines added to `SkillLines.lua` by `tools/skill-lines.py`), cloaks by class alone, and the item's level;
+nothing for an item that binds on pickup. Shown as a block on the item tooltip. A member is counted only
+once its armour has been read, so each needs one login with this version. Weapons go by the class answer,
+which is not yet tried against the game the way armour was. Not yet seen in the game.
+
 
 **Built 2026-09-27: the two Possessions filters (Alberto's 1, 2 and 3).** `Family:LookOf` in `Core.lua`
 answers *need* or *have* for an item on the account being played; the bag, bank, guild bank and mail

@@ -3359,7 +3359,11 @@ if skills then
 		for id, entry in pairs(Family.SkillLines) do
 			-- Nothing is allowed to have none any more. Lockpicking was the last, and it
 			-- got a key on 2026-09-06 when it moved onto this set.
-			if not entry.icon then
+			--
+			-- The armour lines excepted: they are 1 of 1 on every sheet, which the skill
+			-- reader never files as a profession, so this panel cannot draw one. They are
+			-- in the table to be told apart by id (backlog 108), not to be shown.
+			if not entry.icon and not entry.armour then
 				missing[#missing + 1] = tostring(id) .. " " .. tostring(entry.key)
 			end
 		end
@@ -36419,6 +36423,101 @@ print("looks to learn and looks known")
 	Family.UI:Refresh()
 	check("and a client with no collection shows neither switch",
 		buttons[1] and buttons[1].__shown == false)
+
+	-- **Who could learn it** (backlog 108). The tunic is mail, level 10, bind on equip; the game
+	-- counts Paladins valid for it and Mages not. A plate-wearing Paladin learns nothing from
+	-- mail (Eccebombo, 2026-09-27), so only a Paladin whose own armour is mail counts, and only
+	-- at the tunic's level. A cloak is cloth everybody wears, and goes by class alone.
+	caps.transmogrify = true
+	LOOKS[21004] = { 504, 9004, false }
+	LOOKS[21005] = { 505, 9005, false }
+	ITEM_NAMES[21004], ITEM_NAMES[21005] = "Grey Cloak", "Bound Helm"
+	local SHAPE = {
+		[21001] = { 10, "INVTYPE_CHEST", 4, 3, 2 },
+		[21004] = { 1, "INVTYPE_CLOAK", 4, 1, 2 },
+		[21005] = { 1, "INVTYPE_HEAD", 4, 3, 1 },
+	}
+	local plainInfo = GetItemInfo
+	GetItemInfo = function(key)
+		local id = idOf(key)
+		local shape = SHAPE[id]
+		if shape then
+			return ITEM_NAMES[id], "|Hitem:" .. id .. "|h", 2, 20, shape[1], nil, nil, nil,
+				shape[2], nil, nil, shape[3], shape[4], shape[5]
+		end
+		return plainInfo(key)
+	end
+	_G.C_TransmogCollection.GetValidAppearanceSourcesForClass = function(appearance, classID)
+		if appearance == 504 or classID == 2 then return { {} } end
+		return {}
+	end
+	local heldCreature = _G.C_CreatureInfo
+	_G.C_CreatureInfo = { GetClassInfo = function(index)
+		local files = { [2] = "PALADIN", [8] = "MAGE" }
+		if files[index] then return { classFile = files[index], classID = index } end
+	end }
+	local cast = {
+		{ "Plated-Fire Maw", "Plated", "PALADIN", 49, 4 },
+		{ "Mailed-Fire Maw", "Mailed", "PALADIN", 30, 3 },
+		{ "Lowmail-Fire Maw", "Lowmail", "PALADIN", 5, 3 },
+		{ "Clothy-Fire Maw", "Clothy", "MAGE", 60, 1 },
+		{ "Unread-Fire Maw", "Unread", "PALADIN", 30, nil },
+		-- Mail by its record and a class the look is not for: the class answer decides.
+		{ "Oddmage-Fire Maw", "Oddmage", "MAGE", 60, 3 },
+	}
+	for _, member in ipairs(cast) do
+		Family.Database:SetMeta(member[1], { name = member[2], realm = "Fire Maw",
+			classFile = member[3], level = member[4], armour = member[5], faction = "Alliance" })
+	end
+	local function set(list)
+		local out = {}
+		for _, key in ipairs(list or {}) do out[key] = true end
+		return out
+	end
+	local tunicBy = set(Family:WhoCanLearn(nil, 21001))
+	check("a mail look is learnt by a Paladin who wears mail, at its level",
+		tunicBy["Mailed-Fire Maw"] and not tunicBy["Lowmail-Fire Maw"])
+	check("and not by one who wears plate, nor by a class it is not for",
+		not tunicBy["Plated-Fire Maw"] and not tunicBy["Clothy-Fire Maw"])
+	check("nor by a member whose armour has not been read yet", not tunicBy["Unread-Fire Maw"])
+	check("nor by a class the game says the look is not for, whatever its armour",
+		not tunicBy["Oddmage-Fire Maw"])
+	local cloakBy = set(Family:WhoCanLearn(nil, 21004))
+	check("a cloak's look goes by class alone", cloakBy["Plated-Fire Maw"] and cloakBy["Clothy-Fire Maw"])
+	check("an item that binds on pickup reaches nobody else, so names nobody",
+		Family:WhoCanLearn(nil, 21005) == nil)
+	check("and a look already collected names nobody", Family:WhoCanLearn(nil, 21002) == nil)
+
+	-- On the item's own tooltip.
+	tooltipFor(21001)
+	local said = {}
+	for _, line in ipairs(GameTooltip.__lines) do said[#said + 1] = tostring(line[1]) end
+	said = table.concat(said, " / ")
+	check("the tooltip names who can learn the look",
+		said:find(Family.L["|cff66bbffLook can be learnt by|r"], 1, true) ~= nil
+			and said:find("Mailed", 1, true) ~= nil and said:find("Plated", 1, true) == nil, said)
+
+	-- The armour a member wears as its own, off its skill list.
+	local heldSkills = SKILL_LINES
+	SKILL_LINES = {}
+	for _, line in ipairs(heldSkills) do SKILL_LINES[#SKILL_LINES + 1] = line end
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Armor Proficiencies", header = true, expanded = true }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Cloth", rank = 1, maxRank = 1 }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Mail", rank = 1, maxRank = 1 }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Plate Mail", rank = 1, maxRank = 1 }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Leather", rank = 1, maxRank = 1 }
+	Family.Professions:Scan()
+	check("the skill scan records the best armour listed as the member's own",
+		(Family.Database:Meta(who) or {}).armour == 4,
+		tostring((Family.Database:Meta(who) or {}).armour))
+	local professions = (Family.Database:Payload(who) or {}).professions or {}
+	check("and files none of the armour lines as a profession",
+		professions[415] == nil and professions[293] == nil and professions["Mail"] == nil)
+	SKILL_LINES = heldSkills
+
+	for _, member in ipairs(cast) do Family.Database:Forget(member[1]) end
+	_G.C_CreatureInfo = heldCreature
+	GetItemInfo = plainInfo
 
 	BAGS[3] = nil
 	Family.Bags:Scan()
