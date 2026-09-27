@@ -89,13 +89,17 @@ function Mail:Scan()
 
 			itemID = tonumber(itemID) or (link and tonumber(link:match("item:(%d+)")))
 			if itemID then
+				local item = Family:ItemString(link)
 				letter.attachments[#letter.attachments + 1] = {
 					id = itemID,
 					count = tonumber(quantity) or 1,
 					-- Only where the id does not describe it: a posted "of the Eagle"
 					-- is one id and a suffix, and the suffix is the whole point of it
 					-- (Core.lua).
-					item = Family:ItemString(link),
+					item = item,
+					-- Whether this account has its look (backlog 108), asked by the
+					-- one reading the mailbox, whose account the collection is.
+					look = Family:LookOf(item, itemID) or nil,
 				}
 			end
 		end

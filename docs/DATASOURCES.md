@@ -5807,6 +5807,9 @@ bind on equip), whose look the account has not collected: appearance 49402, sour
   evening: *Disciple's Robe of the Owl* (cloth) bought, worn by Eccebombo (Paladin, 49), taken off - its
   tooltip still reads *You haven't collected this appearance*. So for armour the per-class call's *valid*
   is looser than the game's rule for collecting, which is each class's own armour type. Weapons not tried.
+- **Nor a mail look**, the same evening: *Sunblaze Coif* (mail, soulbound) on Eccebombo still reads *You
+  haven't collected this appearance* (Alberto's screenshot). So a plate wearer learns plate looks only,
+  though the per-class call counted Paladins valid for mail.
 
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 

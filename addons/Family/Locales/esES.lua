@@ -1040,5 +1040,11 @@ Family.locales.esES = {
 	["%d races, %d artifacts solved"] = "%d razas, %d artefactos resueltos",
 	["first solved %s"] = "resuelto por primera vez %s",
 	["|cff888888not opened yet|r"] = "|cff888888aún no abierta|r",
+	["Looks to learn"] = "Apariencias por aprender",
+	["Looks known"] = "Apariencias conocidas",
+	["Items whose look this account has not collected yet"] = "Objetos cuya apariencia esta cuenta aún no ha coleccionado",
+	["Items whose look this account already has: safe to sell for the look"] = "Objetos cuya apariencia esta cuenta ya tiene: se pueden vender sin perderla",
+	["|cff9d9d9dNothing held under \"%s\".|r"] = "|cff9d9d9dNada en posesión bajo «%s».|r",
+	["|cffffd700%d|r lines under \"%s\"   |cff888888|||r   |cff888888as each holder's account read it|r"] = "|cffffd700%d|r líneas bajo «%s»   |cff888888|||r   |cff888888según la cuenta de cada poseedor|r",
 	["|cff888888empty|r"] = "|cff888888vacía|r",
 }

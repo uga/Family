@@ -1,0 +1,7 @@
+name: across the family every holder is listed under a look switch
+file: addons/Family_UI/Contents.lua
+--- old
+							and (not lookFilter
+								or (owner.look == lookFilter and not owner.familyName)) then
+--- new
+							then

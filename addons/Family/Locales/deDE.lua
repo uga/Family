@@ -1040,5 +1040,11 @@ Family.locales.deDE = {
 	["%d races, %d artifacts solved"] = "%d Völker, %d Artefakte gelöst",
 	["first solved %s"] = "zuerst gelöst %s",
 	["|cff888888not opened yet|r"] = "|cff888888noch nicht geöffnet|r",
+	["Looks to learn"] = "Zu lernende Optiken",
+	["Looks known"] = "Bekannte Optiken",
+	["Items whose look this account has not collected yet"] = "Gegenstände, deren Optik dieser Account noch nicht gesammelt hat",
+	["Items whose look this account already has: safe to sell for the look"] = "Gegenstände, deren Optik dieser Account schon hat: für die Optik gefahrlos zu verkaufen",
+	["|cff9d9d9dNothing held under \"%s\".|r"] = "|cff9d9d9dNichts unter „%s“ im Besitz.|r",
+	["|cffffd700%d|r lines under \"%s\"   |cff888888|||r   |cff888888as each holder's account read it|r"] = "|cffffd700%d|r Zeilen unter „%s“   |cff888888|||r   |cff888888wie der Account des Besitzers es las|r",
 	["|cff888888empty|r"] = "|cff888888leer|r",
 }

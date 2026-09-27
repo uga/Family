@@ -1,0 +1,6 @@
+name: the family's search answers every item whatever the look asked
+file: addons/Family/Index.lua
+--- old
+			and (not look or heldWithLook(variant, look)) then
+--- new
+			then

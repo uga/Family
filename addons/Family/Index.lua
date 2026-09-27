@@ -38,6 +38,7 @@ Family.Index = Index
 -- thing is counted under and what is shown when somebody points at it are different questions.
 local entries       -- variantKey -> memberKey -> { bags =, bank =, mail =, auctions = }
 local guildEntries  -- variantKey -> guildKey -> count
+local guildLooks    -- variantKey -> guildKey -> "need" or "have", as the visitor read it
 local stale = {}    -- members whose part of the index is known to be wrong
 
 -- **One item string per suffixed heading**, so that a search result can be named, drawn and
@@ -107,6 +108,10 @@ local function addContainers(key, containers, field)
 				if item.bound then
 					record.bound = record.bound + (item.count or 1)
 				end
+
+				-- Whether the holder's account has its look (backlog 108), as the holder
+				-- read it. One answer per member and item, since one account asked.
+				if item.look then record.look = item.look end
 			end
 		end
 	end
@@ -160,6 +165,7 @@ local function addMember(key)
 			for _, item in ipairs(letter.attachments or {}) do
 				local record = bucket(headingFor(item), key)
 				record.mail = record.mail + (item.count or 1)
+				if item.look then record.look = item.look end
 			end
 		end
 	end
@@ -178,6 +184,7 @@ end
 
 local function addGuilds()
 	guildEntries = {}
+	guildLooks = {}
 
 	for guildKey, guild in pairs((FamilyDB and FamilyDB.guilds) or {}) do
 		for _, tab in pairs(guild.tabs or {}) do
@@ -187,6 +194,10 @@ local function addGuilds()
 					guildEntries[variant] = guildEntries[variant] or {}
 					guildEntries[variant][guildKey] =
 						(guildEntries[variant][guildKey] or 0) + (item.count or 1)
+					if item.look then
+						guildLooks[variant] = guildLooks[variant] or {}
+						guildLooks[variant][guildKey] = item.look
+					end
 				end
 			end
 		end
@@ -311,17 +322,41 @@ function Index:VariantString(variant)
 	return variantStrings and variantStrings[variant] or nil
 end
 
-function Index:Search(needle, limit)
-	if type(needle) ~= "string" or needle == "" then return {} end
+-- **Narrowed to a look as well, where one is asked for** (backlog 108): `"need"` or `"have"`, as the
+-- holders read it. With a look the name may be empty, and every item held with that look answers -
+-- our own members' and the guild banks', not a linked family's, whose looks are their account's.
+local function heldWithLook(variant, look)
+	for key, record in pairs(entries[variant] or {}) do
+		if record.look == look and not (Family.Wide and Family.Wide:Borrowed(key)) then
+			return true
+		end
+	end
+	for _, held in pairs((guildLooks or {})[variant] or {}) do
+		if held == look then return true end
+	end
+	return false
+end
+
+function Index:Search(needle, limit, look)
+	if type(needle) ~= "string" then needle = "" end
+	if needle == "" and not look then return {} end
 	refresh()
 
 	needle = needle:lower()
 	limit = limit or 200
 
 	local found = {}
-	for variant in pairs(entries or {}) do
+	-- The guild banks' items too, which only a look can ask for: a name search has always
+	-- answered from members' records, and the guild rows come with an owner's.
+	local variants = {}
+	for variant in pairs(entries or {}) do variants[variant] = true end
+	if look then
+		for variant in pairs(guildLooks or {}) do variants[variant] = true end
+	end
+	for variant in pairs(variants) do
 		local name = nameOf(variant)
-		if name and name:lower():find(needle, 1, true) then
+		if name and (needle == "" or name:lower():find(needle, 1, true))
+			and (not look or heldWithLook(variant, look)) then
 			found[#found + 1] = { id = variant, name = name,
 				item = variantStrings[variant] }
 		end
@@ -368,6 +403,7 @@ function Index:Owners(variant)
 				auctions = record.auctions,
 				worn = record.worn,
 				bound = record.bound,
+				look = record.look,
 				total = total,
 			}
 		end
@@ -380,7 +416,8 @@ function Index:Owners(variant)
 
 	local guilds = {}
 	for guildKey, count in pairs((guildEntries or {})[variant] or {}) do
-		guilds[#guilds + 1] = { key = guildKey, count = count }
+		guilds[#guilds + 1] = { key = guildKey, count = count,
+			look = ((guildLooks or {})[variant] or {})[guildKey] }
 	end
 	table.sort(guilds, function(a, b) return a.count > b.count end)
 

@@ -1,0 +1,13 @@
+name: the index drops the look a holder recorded
+file: addons/Family/Index.lua
+--- old
+				if item.look then record.look = item.look end
+			end
+		end
+	end
+end
+--- new
+			end
+		end
+	end
+end

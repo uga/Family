@@ -7516,7 +7516,14 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, reshaped: who in the family can learn a look
+## 108. Transmogrification on Mists — OPEN 2026-09-27, the Possessions filters built; *can be learnt by* waits on the skill list
+
+**Built 2026-09-27: the two Possessions filters (Alberto's 1, 2 and 3).** `Family:LookOf` in `Core.lua`
+answers *need* or *have* for an item on the account being played; the bag, bank, guild bank and mail
+scans record it per slot; `Index` keeps it per holder and per guild and `Index:Search` narrows to it with
+nothing typed; the Possessions panel has *Looks to learn* and *Looks known* beside its search, on clients
+with the `transmogrify` capability. Not yet seen in the game. The guild bank and mail recording is not
+covered by a harness check. Still to build: *can be learnt by*, which needs each member's own armour type.
 
 **Reshaped by Alberto the same evening** (DECISIONS): the game's own tooltip already says *You haven't
 collected this appearance* whoever looks. What it cannot say is which of the family could learn it. So
@@ -7543,6 +7550,9 @@ own armour type only, and that needs the skill list or a rule, not this call.
 **Answered for armour the same evening:** Eccebombo wore a cloth robe and did not learn its look. So
 the list counts each member's own armour type at its level, from the skill list if it says so; the
 per-class call stays for weapons and class restrictions until a weapon is tried the same way.
+**And Death Knights** (Alberto): plate from the start, so the level-40 change of armour type that
+Warriors, Paladins, Hunters and Shamans go through does not apply to them - which the skill list should
+show on its own if it names each member's armour.
 
 **Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
 whose look the account has not collected, marked on the Possessions panel, with who can learn them.

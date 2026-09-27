@@ -1,0 +1,6 @@
+name: the look switches show on a client with no collection
+file: addons/Family_UI/Contents.lua
+--- old
+		for _, button in ipairs(lookButtons) do button:SetShown(looks) end
+--- new
+		for _, button in ipairs(lookButtons) do button:SetShown(true) end

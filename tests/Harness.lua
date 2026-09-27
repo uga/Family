@@ -328,6 +328,8 @@ function frameMethods:CreateTexture()
 		texture.__fill = { r = r, g = g, b = b, a = a }
 	end
 	fs.SetAllPoints = function(texture) texture.__allPoints = true end
+	-- Kept, so a check can ask whether a picture was dimmed (the Possessions filters).
+	fs.SetAlpha = function(texture, alpha) texture.__alpha = alpha end
 
 	-- **An atlas is not a path**, and the difference is the whole reason Family can check one:
 	-- a path is echoed back whatever it was handed, while an atlas is a name the client either
@@ -36287,6 +36289,137 @@ print("archaeology: fragments, the project and the artifacts solved")
 	Family.Database:SetPayload(who, payload, { "archaeologySolved" })
 	for name, fn in pairs(held) do _G[name] = fn end
 	caps.archaeology = heldCan
+end)()
+
+print()
+print("looks to learn and looks known")
+
+-- Backlog 108, from the readings of 2026-09-27: the collection is the account's, so each holder
+-- asks about its own things when it is scanned, and the Possessions panel narrows to a look.
+-- A tunic whose look is not collected, boots whose look is, and a ring with no look at all.
+;(function()
+	local caps = Family.Capabilities.can
+	local heldCan, heldCollection, heldInfo = caps.transmogrify, _G.C_TransmogCollection, GetItemInfo
+	local heldNames = { ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] }
+	caps.transmogrify = true
+
+	local LOOKS = { [21001] = { 501, 9001, false }, [21002] = { 502, 9002, true } }
+	local function idOf(item)
+		return tonumber(item) or tonumber(tostring(item):match("item:(%d+)"))
+	end
+	_G.C_TransmogCollection = {
+		GetItemInfo = function(item)
+			local look = LOOKS[idOf(item)]
+			if look then return look[1], look[2] end
+		end,
+		GetAppearanceInfoBySource = function(source)
+			for _, look in pairs(LOOKS) do
+				if look[2] == source then return { appearanceIsCollected = look[3] } end
+			end
+		end,
+	}
+	ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] = "Mossy Tunic", "Dusty Boots",
+		"Plain Ring"
+	-- The bind kind at fourteen, which is what says the client has the item cached.
+	GetItemInfo = function(key)
+		local id = idOf(key)
+		if ITEM_NAMES[id] and id >= 21001 and id <= 21003 then
+			return ITEM_NAMES[id], "|Hitem:" .. id .. "|h", 2, 20, 10, nil, nil, nil, nil,
+				nil, nil, nil, nil, 2
+		end
+		return heldInfo(key)
+	end
+
+	check("a look the account lacks is one to learn", Family:LookOf(nil, 21001) == "need",
+		tostring(Family:LookOf(nil, 21001)))
+	check("a look it has is known", Family:LookOf(nil, 21002) == "have")
+	check("an item with no look has none", Family:LookOf(nil, 21003) == false)
+	check("and an item the client has not cached answers nothing, not a look",
+		Family:LookOf(nil, 21999) == nil)
+	caps.transmogrify = false
+	check("a client with no collection is never asked", Family:LookOf(nil, 21001) == false)
+	caps.transmogrify = true
+
+	-- Recorded by the bag scan, slot by slot.
+	BAGS[3] = { size = 16, free = 13, bagType = 0,
+		items = { [1] = { 21001, 1 }, [2] = { 21002, 1 }, [3] = { 21003, 1 } } }
+	Family.Bags:Scan()
+	local who = Family:CurrentMember()
+	local bag = ((Family.Database:Payload(who) or {}).bags or {})[3]
+	local slots = bag and bag.slots or {}
+	check("the bag scan records each slot's look as its holder read it",
+		slots[1] and slots[1].look == "need" and slots[2] and slots[2].look == "have"
+			and slots[3] and slots[3].look == nil,
+		tostring(slots[1] and slots[1].look) .. " / " .. tostring(slots[2] and slots[2].look))
+
+	-- Asked of the index with nothing typed.
+	Family.Index:Invalidate()
+	local function ids(found)
+		local out = {}
+		for _, item in ipairs(found) do out[Family:BaseItem(item.id)] = true end
+		return out
+	end
+	local need = ids(Family.Index:Search("", nil, "need"))
+	local have = ids(Family.Index:Search("", nil, "have"))
+	check("the family's search answers every item to learn, with nothing typed",
+		need[21001] and not need[21002] and not need[21003])
+	check("and every item whose look is known",
+		have[21002] and not have[21001] and not have[21003])
+
+	-- On the panel: one member dims what does not match, the family lists what does.
+	Family.UI:ShowTab("contents")
+	Family.UI:ShowContentsFor(who)
+	local buttons = Family.UI.__contentsLooks or {}
+	check("the two look switches are there on a client with a collection",
+		#buttons == 2 and buttons[1].__shown ~= false and buttons[2].__shown ~= false)
+	if buttons[1] then buttons[1].__scripts.OnClick(buttons[1]) end
+	local tunic, boots
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.icon and f.itemID == 21001 then tunic = f end
+		if f.__shown ~= false and f.icon and f.itemID == 21002 then boots = f end
+	end
+	check("looks to learn leaves the tunic lit and dims the boots on one member",
+		tunic and boots and tunic.icon.__alpha == 1 and boots.icon.__alpha == 0.15,
+		tostring(tunic and tunic.icon.__alpha) .. " / " .. tostring(boots and boots.icon.__alpha))
+
+	-- A second member holding the same tunic and reading its look as known - another account.
+	local other = "Otherlooks-Fire Maw"
+	Family.Database:SetMeta(other, { name = "Otherlooks", realm = "Fire Maw", level = 60,
+		classFile = "MAGE", faction = "Alliance" })
+	Family.Database:SetPayload(other, { bags = { [0] = { size = 16, free = 15, slots = {
+		[1] = { id = 21001, count = 1, look = "have" } } } } }, { "bags" })
+	Family.Index:Invalidate()
+
+	if contentsEveryone then
+		contentsEveryone.__scripts.OnClick(contentsEveryone)
+		Family.UI:Refresh()
+		local listed, holders = {}, {}
+		for _, line in ipairs(Family.UI.__contentsLines or {}) do
+			listed[line.itemName] = true
+			if line.itemName == "Mossy Tunic" then holders[#holders + 1] = tostring(line.who) end
+		end
+		check("across the family, looks to learn lists the tunic and not the boots, nothing typed",
+			listed["Mossy Tunic"] and not listed["Dusty Boots"] and not listed["Plain Ring"])
+		check("and only under the holders whose account lacks it",
+			#holders == 1 and not holders[1]:find("Otherlooks", 1, true), table.concat(holders, ", "))
+		contentsEveryone.__scripts.OnClick(contentsEveryone)
+	end
+	Family.Database:Forget(other)
+	if buttons[1] then buttons[1].__scripts.OnClick(buttons[1]) end
+
+	caps.transmogrify = false
+	Family.UI:Refresh()
+	check("and a client with no collection shows neither switch",
+		buttons[1] and buttons[1].__shown == false)
+
+	BAGS[3] = nil
+	Family.Bags:Scan()
+	_G.C_TransmogCollection, GetItemInfo = heldCollection, heldInfo
+	ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] = heldNames[1], heldNames[2],
+		heldNames[3]
+	caps.transmogrify = heldCan
+	Family.Index:Invalidate()
+	Family.UI:Refresh()
 end)()
 
 print()

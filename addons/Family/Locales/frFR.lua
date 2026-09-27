@@ -1040,5 +1040,11 @@ Family.locales.frFR = {
 	["%d races, %d artifacts solved"] = "%d races, %d objets résolus",
 	["first solved %s"] = "résolu la première fois %s",
 	["|cff888888not opened yet|r"] = "|cff888888pas encore ouvert|r",
+	["Looks to learn"] = "Apparences à apprendre",
+	["Looks known"] = "Apparences connues",
+	["Items whose look this account has not collected yet"] = "Objets dont ce compte n'a pas encore collecté l'apparence",
+	["Items whose look this account already has: safe to sell for the look"] = "Objets dont ce compte a déjà l'apparence : vendables sans perdre l'apparence",
+	["|cff9d9d9dNothing held under \"%s\".|r"] = "|cff9d9d9dRien de détenu sous « %s ».|r",
+	["|cffffd700%d|r lines under \"%s\"   |cff888888|||r   |cff888888as each holder's account read it|r"] = "|cffffd700%d|r lignes sous « %s »   |cff888888|||r   |cff888888selon le compte de chaque détenteur|r",
 	["|cff888888empty|r"] = "|cff888888vide|r",
 }

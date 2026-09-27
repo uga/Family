@@ -164,6 +164,11 @@ function Bank:Scan()
 							entry.slots[slot].bound = true
 						end
 
+						-- **Whether the account has its look** (backlog 108), asked by the holder because
+						-- the collection is the holder's account's. An uncached item answers nothing here,
+						-- and the binding above has already asked for the scan to run again.
+						entry.slots[slot].look = Family:LookOf(worth, itemID) or nil
+
 						-- The same gate as the bags, and the same reason. The guild bank
 						-- below is deliberately left out: its tabs load a page at a time,
 						-- and a charge read off a tab that has not arrived would be wrong
@@ -316,6 +321,10 @@ function Bank:ScanGuildBank()
 				if itemID then
 					slots[slot] = { id = itemID, count = tonumber(count) or 1,
 						item = Family:ItemString(link) }
+					-- Whether the account of whoever opened the tab has its look
+					-- (backlog 108): the guild's things are judged by the visitor's
+					-- collection, the only one this client can ask.
+					slots[slot].look = Family:LookOf(slots[slot].item, itemID) or nil
 
 					-- The same gate as the bags and the bank, and the same wait: a
 					-- tooltip is empty until the client has the item.

@@ -552,6 +552,45 @@ function Family:BoundWorn(slot, itemID)
 	return binding == "soulbound" or binding == "account" or binding == "quest"
 end
 
+-- **Whether this game account has an item's look** (backlog 108): `"have"` or `"need"`; false where
+-- the item has no look or the client has no collection; nothing at all where the item is not
+-- cached yet, so a scan leaves the slot unmarked rather than calling a look collected.
+--
+-- Asked of the account being played, which is why each holder asks about its own things when it
+-- is scanned: the collection is the account's (measured 2026-09-27, a Paladin and a Druid of one
+-- account each answering *collected* to the other's worn looks), and Family does not know which
+-- account another member is on.
+--
+-- By the look rather than by this one item: a look learnt from a different item is not a look to
+-- learn. `GetAppearanceInfoBySource` answered `appearanceIsCollected` on 5.5.4 (DATASOURCES, *Who
+-- can learn a look*); the per-item answer stands in where it says nothing.
+function Family:LookOf(item, itemID)
+	if not self.Capabilities:Has("transmogrify") then return false end
+	local collection = _G.C_TransmogCollection
+	if type(collection) ~= "table" then return false end
+	if self:BindTypeOf(itemID) == nil then return nil end
+
+	-- By the item string where there is one, since a variant can carry its own look, and by the
+	-- id where that answers nothing: the probe asked by full link, and a stored string is not one.
+	local _, source = self:TryCall(collection.GetItemInfo, item or itemID)
+	if not tonumber(source) and item then
+		_, source = self:TryCall(collection.GetItemInfo, itemID)
+	end
+	source = tonumber(source)
+	if not source then return false end
+
+	local collected
+	local info = self:TryCall(collection.GetAppearanceInfoBySource, source)
+	if type(info) == "table" and type(info.appearanceIsCollected) == "boolean" then
+		collected = info.appearanceIsCollected
+	else
+		collected = self:TryCall(collection.PlayerHasTransmogItemModifiedAppearance, source)
+	end
+	if collected == true then return "have" end
+	if collected == false then return "need" end
+	return nil
+end
+
 -- A slot in one of this character's own containers.
 function Family:BindingIn(bag, slot)
 	return bindingShown(function(tip)

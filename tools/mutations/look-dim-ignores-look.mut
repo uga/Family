@@ -1,0 +1,5 @@
+name: one member's slots are not dimmed by the look switch
+file: addons/Family_UI/Contents.lua
+--- old
+						and (not lookFilter or item.look == lookFilter)
+--- new
