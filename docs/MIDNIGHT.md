@@ -4513,3 +4513,9 @@ only. So nothing breaks, and a view that ever lines races up across the family h
 
 **`archaeology` is true for Midnight**, expected and confirmed; the fourth client's §18 check says so.
 One mutation. Not yet seen in the game as a recorded page.
+
+**Seen** (Alberto's screenshot, 2026-09-27): Deiana's Archaeology page on Midnight - *Archaeology
+854/950 | 20 races, 172 artifacts solved*, each race with its fragments and cap (*Drust 153 / 200*,
+*Ogre 32 / 250*), its project under it with the fragments it needs (*Fetish of the Tormented Mind
+153 / 200*, *Urn of Passage 29 / 45*), and a race with solved artifacts marked to open (*+ Drust*),
+one without none (*Zandalari*).
