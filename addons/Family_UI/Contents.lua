@@ -279,16 +279,19 @@ local function containersOf(payload, meta)
 
 		for _, tab in ipairs(tabs) do
 			local contents = guild.tabs[tab]
-			local size = 0
-			for slot in pairs(contents.slots or {}) do
-				if slot > size then size = slot end
-			end
+			local held = 0
+			for _ in pairs(contents.slots or {}) do held = held + 1 end
+
+			-- A tab with anything in it is drawn at the whole of the tab, as a bag is: sized by
+			-- its highest filled slot it stopped at the last thing in it, and looked like a
+			-- tab of five (seen on Midnight 2026-09-27).
+			local size = held > 0 and (_G.MAX_GUILDBANK_SLOTS_PER_TAB or 98) or 0
 
 			-- A tab never read is kept, with its name, so the guild's bank is drawn whole;
 			-- one read and empty is kept too, and they say which on the heading.
 			blocks[#blocks + 1] = { where = "guild", bag = tab, size = size,
-				free = 0, slots = contents.slots or {}, name = contents.name,
-				unseen = not contents.seen or nil, empty = contents.seen and size == 0 or nil }
+				free = size - held, slots = contents.slots or {}, name = contents.name,
+				unseen = not contents.seen or nil, empty = contents.seen and held == 0 or nil }
 		end
 	end
 
@@ -1409,10 +1412,11 @@ local function build(frame)
 						.. "here|r"] }
 				end
 			elseif not (container.unseen or container.empty) then
-				-- Not under a guild tab that says *not opened yet* or *empty*: its size is its
-				-- highest filled slot, so the count there is a bare 0 under the word that
-				-- already said it (seen on Midnight 2026-09-27, Alberto: leave it out).
-				lines[#lines + 1] = { string.format("|cff888888%d|r", container.size or 0) }
+				-- Not under a guild tab that says *not opened yet* or *empty*: a count there
+				-- is a bare 0 under the word that already said it (seen on Midnight
+				-- 2026-09-27, Alberto: leave it out). A tab with things in it counts as a bag.
+				lines[#lines + 1] = { string.format(L["|cff888888%d of %d free|r"],
+					container.free or 0, container.size or 0) }
 			end
 
 			block.icon.lines = lines

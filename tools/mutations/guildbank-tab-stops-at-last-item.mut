@@ -1,0 +1,9 @@
+name: a guild tab with things in it is drawn only up to its last filled slot
+file: addons/Family_UI/Contents.lua
+--- old
+			local size = held > 0 and (_G.MAX_GUILDBANK_SLOTS_PER_TAB or 98) or 0
+--- new
+			local size = 0
+			for slot in pairs(contents.slots or {}) do
+				if slot > size then size = slot end
+			end

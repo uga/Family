@@ -16340,16 +16340,26 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 			end
 		end
 		titles = table.concat(titles, " | ")
-		-- And no bare count under either: a size of 0 is what those two words already say.
-		local zeroUnder = false
+		-- And no count under either: a size of 0 is what those two words already say.
+		local zeroUnder, matsCount = false, nil
 		for _, f in ipairs(frames) do
-			if f.__shown ~= false and type(f.lines) == "table" and f.lines[1]
-				and tostring(f.lines[1][1]):find("Spare", 1, true) and f.lines[2]
-				and tostring(f.lines[2][1]) == "|cff8888880|r" then
-				zeroUnder = true
+			if f.__shown ~= false and type(f.lines) == "table" and f.lines[1] then
+				local heading = tostring(f.lines[1][1])
+				if (heading:find("Spare", 1, true) or heading:find("Raid", 1, true))
+					and f.lines[2] then
+					zeroUnder = true
+				end
+				if heading:find("Mats", 1, true) and f.lines[2] then
+					matsCount = tostring(f.lines[2][1])
+				end
 			end
 		end
-		check("an empty tab's heading has no bare 0 under it", not zeroUnder)
+		check("an empty or unread tab's heading has no count under it", not zeroUnder)
+		-- **A tab with one thing in it is drawn at the whole tab's size**, not stopped at its
+		-- last filled slot (seen on Midnight 2026-09-27).
+		check("a guild tab with one thing in it is drawn at the whole tab, 97 of 98 free",
+			matsCount == string.format(Family.L["|cff888888%d of %d free|r"], 97, 98),
+			tostring(matsCount))
 		check("a guild bank tab is titled by its own name, and one with none by its number",
 			titles:find("|cff888888Mats|r", 1, true) ~= nil and titles:find("tab 2", 1, true) ~= nil,
 			titles)
