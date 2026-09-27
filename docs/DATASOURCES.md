@@ -5739,8 +5739,25 @@ Eccebombo, `5.5.4`, the two *transmog* probes of backlog 108, away from a Transm
   `1=5/1392 2=3/1324 3=24/499 ...`, 28 and 29 `0/0`. Which category is which is not read yet
   (`GetCategoryInfo`), nor whether the count is this character's or the account's.
 
-Not read yet, and asked by the probe *transmog outfits and looks*: the outfits and which is active, the
-look each slot shows now, and the source count on a second character of the same account.
+**Second reading, the same hour: Eccebombo and Luga, both Mirage Raceway, away from a Transmogrifier.**
+
+- **The collection counts differ between the two**: category 1 is 5/1392 on Eccebombo and 2/1392 on
+  Luga, category 13 5/247 and 0/247, category 23 0/414 and 7/414. The totals are the same. So the
+  collection this client answers about is **per character** - if the two are on one game account,
+  which is Alberto's to say; a Battle.net login can hold several. Custom sets differ too: two on
+  Eccebombo, none on Luga.
+- **Outfits**: both answer `IsTransmogEnabled` true, two outfits (*Outfit 1* id 2, *Outfit 2* id 3), the
+  active one id 2, 50 usable, situations on. `GetOutfitsInfo()` gives name, icon, outfitID,
+  isDisabled, isEventOutfit, playerFacingOutfitIndex.
+- **Each slot's look**: `GetViewedOutfitSlotInfo(outfitSlot, 0, 0)` answers a table - canTransmogrify,
+  isTransmogrified, **transmogID** (a source id), texture, error, warning and their texts, hasPending.
+- **`GetTransmogOutfitSlotFromInventorySlot` counts inventory slots from 0.** Handed 3 it answered about
+  Eccebombo's shirt (transmogID 119496, the shirt's own source) and Luga's empty shirt slot (*There is no
+  equipped item in this slot*); handed 5 about the waist (122502 and 275313, the belts' sources); handed
+  1, the neck, nil. The probe's first draft had `slot - 1`, "corrected" to `slot` before it ran; the
+  reading says the draft was right.
+- `GetNumTransmogSources()` answers 6 on both - a count of source kinds, not of anything collected.
+- `C_Transmog.GetSlotVisualInfo(location)` answers a table of 9, not yet printed.
 
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 

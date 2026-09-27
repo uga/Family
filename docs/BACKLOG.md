@@ -7516,7 +7516,13 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, first reading taken, second probe written
+## 108. Transmogrification on Mists — OPEN 2026-09-27, two readings taken, the design waits on Alberto
+
+**Second reading, Eccebombo and Luga 2026-09-27**: the collection counts differ between the two, so
+the collection is per character if they share a game account (Alberto's to say). Outfits, the active
+one and each slot's applied look all answer away from a Transmogrifier. A fourth probe, *transmog
+collection by category*, reads what one category's list looks like and what it costs, which is what
+storing each member's collected looks would take.
 
 **First reading, Eccebombo 2026-09-27** (DATASOURCES, *Transmogrification on Mists Classic is the modern
 system*): none of original Mists' calls is there; the wardrobe collection, sets and the outfit system

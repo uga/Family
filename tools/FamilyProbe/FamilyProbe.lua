@@ -1002,13 +1002,17 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog outfits and looks", 
     -- What each worn slot shows. The outfit system names its own slots, so the inventory slot
     -- is turned into one first; the older call takes a location table where the client
     -- carries the helper that builds one.
+    --
+    -- **The conversion counts inventory slots from 0**, read 2026-09-27: handed 3 it answered
+    -- about the shirt (inventory 4) and handed 5 about the waist (inventory 6), by the source
+    -- ids those items answer, and handed 1 - the neck, which has no look - it answered nil.
     local toOutfit = inside("C_TransmogOutfitInfo", "GetTransmogOutfitSlotFromInventorySlot")
     local visual = inside("C_Transmog", "GetSlotVisualInfo")
     local util = type(_G.TransmogUtil) == "table" and _G.TransmogUtil or nil
     out[#out + 1] = "TransmogUtil " .. membersOf(util)
     for _, slot in ipairs({ 1, 3, 5, 16 }) do
         local line = "slot " .. slot
-        local outfitSlot = toOutfit and try(toOutfit, slot) or nil
+        local outfitSlot = toOutfit and try(toOutfit, slot - 1) or nil
         line = line .. " || outfit slot " .. describe(outfitSlot)
         if outfitSlot ~= nil then
             local viewed = inside("C_TransmogOutfitInfo", "GetViewedOutfitSlotInfo")
@@ -1020,7 +1024,44 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog outfits and looks", 
         end
         if visual and util and type(util.CreateTransmogLocation) == "function" then
             local where = try(util.CreateTransmogLocation, slot, 0, 0)
-            if where then line = line .. " || visual " .. shape(callPacked(visual, where)) end
+            if where then
+                local answer = callPacked(visual, where)
+                line = line .. " || visual " .. ((answer and type(answer[1]) == "table")
+                    and fields(answer[1]) or shape(answer))
+            end
+        end
+        out[#out + 1] = line
+    end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 108, third reading: what one category of the collection looks like, and what it
+-- costs.** Knowing which member has collected a look means storing each member's collected
+-- appearances, and the call that lists them answers a whole category at once - over a
+-- thousand entries for a head slot on 5.5.4. So: how many it answers, how long it takes, how
+-- many say they are collected, and one collected entry whole.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog collection by category", ask = function()
+    local list = inside("C_TransmogCollection", "GetCategoryAppearances")
+    if not list then return "GetCategoryAppearances absent" end
+    local info = inside("C_TransmogCollection", "GetCategoryInfo")
+    local out = {}
+    for _, category in ipairs({ 1, 3, 13 }) do
+        local answer, took = elapsed(function() return try(list, category) end)
+        local line = "category " .. category
+        if info then line = line .. " " .. shape(callPacked(info, category)) end
+        if type(answer) ~= "table" then
+            line = line .. " || " .. describe(answer)
+        else
+            local collected, sample = 0, nil
+            for _, entry in ipairs(answer) do
+                if type(entry) == "table" and entry.isCollected then
+                    collected = collected + 1
+                    sample = sample or entry
+                end
+            end
+            line = line .. " || " .. #answer .. " entries, " .. collected .. " collected"
+                .. (took and string.format(", %.1f ms", took) or "")
+            if sample then line = line .. " || collected one: " .. fields(sample) end
         end
         out[#out + 1] = line
     end
