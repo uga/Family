@@ -4747,3 +4747,9 @@ backlog 108). So on Midnight the class answer - 5, 8 and 9 for these leggings - 
 look, and who can **learn** it is whoever can **wear** the item: an armour type at or above the item's,
 and its level. `main`'s rule, *the member's own type exactly*, does not hold here, and neither does
 reading the type off the skill list, which Midnight has not got.
+
+**A member's armour, without the skill list** (Alberto, 2026-09-27, live, a Warrior): for the armour
+spells 9078 *Cloth*, 9077 *Leather*, 8737 *Mail* and 750 *Plate Mail*, `IsSpellKnown` answered **false
+for all four** and `IsPlayerSpell` **true for Cloth, Leather and Plate Mail, false for Mail** - so 8737
+is not the mail spell a Warrior carries, if it carries one. The best of the four `IsPlayerSpell` knows
+names the type, Plate here; whether that holds for the other types is read next, on a cloth wearer.
