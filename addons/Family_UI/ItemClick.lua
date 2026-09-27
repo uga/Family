@@ -161,21 +161,29 @@ local function nameFor(link)
 	return link:match("%[(.-)%]")
 end
 
+-- **The whole family's copies of this item, in one gesture**, when CTRL and ALT are held and SHIFT
+-- is not. The tooltip already says who has one and stops at ten of them, because a family can be
+-- bigger than a tooltip - this is where the rest of that list lives, and getting to it used to mean
+-- opening the window, finding the panel, pressing Whole family and typing the name back in.
+--
+-- A function of its own since 2026-09-27, because two things answer the gesture: the game's
+-- item clicks, heard below, and Family's own slots, which never reach `HandleModifiedItemClick`.
+-- Those offered it in their tooltip and did nothing - found on the Midnight branch, every block.
+-- Answers whether it acted.
+function UI:FamilyListFromClick(link)
+	local control, alt, shift = wanted()
+	if not (control and alt and not shift and type(link) == "string") then return false end
+	local name = nameFor(link)
+	if not (name and name ~= "" and UI.SearchPossessions) then return false end
+	UI:SearchPossessions(name)
+	return true
+end
+
 local function heard(link, ...)
 	seen = seen + 1
 
 	local control, alt, shift = wanted()
-
-	-- **The whole family's copies of this item, in one gesture.** The tooltip already says who
-	-- has one and stops at ten of them, because a family can be bigger than a tooltip - this is
-	-- where the rest of that list lives, and getting to it used to mean opening the window,
-	-- finding the panel, pressing Whole family and typing the name back in.
-	if control and alt and not shift and type(link) == "string" then
-		local name = nameFor(link)
-		if name and name ~= "" and UI.SearchPossessions then
-			UI:SearchPossessions(name)
-		end
-	end
+	UI:FamilyListFromClick(link)
 
 	if not tellNextClick then return end
 
