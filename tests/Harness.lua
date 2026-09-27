@@ -2515,23 +2515,25 @@ end)()
 
 	check("Midnight is not mistaken for one of the three Classic clients",
 		Family.Capabilities.name == "interface 12", Family.Capabilities.name)
-	check("and a client the table has no column for claims nothing",
+	check("and a row with no Midnight answer claims nothing there",
 		Family.Capabilities:Has("achievements") == false
-			and Family.Capabilities:Has("guildBank") == false
 			and Family.Capabilities:Has("currencies") == false
 			and Family.Capabilities:Has("dualSpec") == false)
+	-- The guild bank's fourth column landed 2026-09-27 (`docs/MIDNIGHT.md` §127).
+	check("while one that has its answer - the guild bank - is on",
+		Family.Capabilities:Has("guildBank") == true)
 
-	-- The three the table is wrong about, and the diagnostics say so by name. This is step 3's
-	-- list of work, written as checks rather than as a paragraph: when the fourth column lands,
-	-- these stop disagreeing, and this check is what will say so.
+	-- The ones the table is wrong about, and the diagnostics say so by name. This is step 3's
+	-- list of work, written as checks rather than as a paragraph: as the fourth column lands,
+	-- these stop disagreeing, and this check is what says so - the guild bank has.
 	local reported = {}
 	for _, entry in ipairs(Family.Capabilities:Report()) do reported[entry.feature] = entry end
-	check("while the diagnostics name the three whose symbols are on the client",
-		reported.achievements.disagrees ~= nil and reported.guildBank.disagrees ~= nil
-			and reported.currencies.disagrees ~= nil,
+	check("while the diagnostics name the two whose symbols are on the client and have no answer",
+		reported.achievements.disagrees ~= nil and reported.currencies.disagrees ~= nil,
 		tostring(reported.achievements.disagrees) .. " / "
-			.. tostring(reported.guildBank.disagrees) .. " / "
 			.. tostring(reported.currencies.disagrees))
+	check("and the guild bank, answered, no longer disagrees",
+		reported.guildBank.disagrees == nil, tostring(reported.guildBank.disagrees))
 	check("and say the symbol is there, not that the feature is",
 		reported.currencies.disagrees == "client has the symbol",
 		tostring(reported.currencies.disagrees))

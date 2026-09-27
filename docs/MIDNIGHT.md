@@ -4318,3 +4318,35 @@ whether the per-frame budget of §122 goes to the Classic clients before 5.0.0.
 
 **Waiting for Forever** (§111, §114, §124): crafting orders, delves, the keystone a character holds,
 the Omnium Folio, the Skyriding tree, housing, profession specialisations.
+
+## 127. The fourth column begins: the guild bank, and what achievements cost (2026-09-27)
+
+§126's second item, started with the two gated rows players use most. Read on live.
+
+**The guild bank**, with its window open: `IsInGuild()` true, `GetNumGuildBankTabs()` 7,
+`MAX_GUILDBANK_SLOTS_PER_TAB` **nil** (the scanner already falls back to 98), `GetCurrentGuildBankTab()`
+1, `GetGuildBankTabInfo(1)` *Res mistae*, its icon, viewable, can deposit, 1000 and 1000 withdrawals,
+not filtered; slot 1 a *[Pet Cage]* link with `GetGuildBankItemInfo` answering 132599, 1, false,
+false, 3. Every event while it opened, printed: `PLAYER_INTERACTION_MANAGER_FRAME_SHOW` and then
+`GUILDBANKBAGSLOTS_CHANGED` **eight times** - no `GUILDBANKFRAME_OPENED`. The scanner is asked on both
+and coalesces them, so the second is what reaches it here. **`guildBank` is true for Midnight**, in
+the expected table and as confirmed; §18's checks now say the guild bank has its answer and no
+longer disagrees, and the two rows still without one, achievements and currencies, still do. One
+mutation. Not yet seen in the game as a recorded bank.
+
+A pet cage's link is a battle pet's and not an item's, so the scanner, which files a slot by the
+`item:` in its link, leaves it out - as on Mists, whose guild banks hold the same cages. That is
+`main`'s as much as this branch's, and noted for it.
+
+**Achievements, on Ahia**: 169 categories, **5,087** achievements, 19,575 points; counting them took
+3.4 ms. `GetAchievementInfo` answered fifteen values - 42191 *Safer Deposit*, 10 points, completed
+true, not a guild's, `wasEarnedByMe` true, earned by *Ahia*, not a statistic, one criterion. Over the
+whole list **1,790** answer completed and **1,145** earned by this character: the rest are the
+Warband's, earned by another character and shown to all. And the price: reading each achievement
+once took **8,270 ms**, and the slowest category, 15119 with 194 achievements, took **446 ms** and
+then **385 ms** on its own, before a single criterion is asked. The walk does a category a frame
+(`Scanners/Character.lua`), which here would be a frame of nearly half a second.
+
+So two things before `achievements` gets its Midnight answer: the walk steps by a time budget
+rather than by category, and which completion a member's page counts - this character's or the
+Warband's - is Alberto's to choose.

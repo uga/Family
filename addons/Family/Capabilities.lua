@@ -81,7 +81,11 @@ end
 --------------------------------------------------------------------------------------------
 
 local EXPECTED = {
-	guildBank    = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
+	-- Midnight: seven tabs, a tab's name and rights, and a slot's link and count all answered at a
+	-- guild bank on 2026-09-27, and opening it sends `GUILDBANKBAGSLOTS_CHANGED` eight times, which
+	-- the bank scanner already waits on; `GUILDBANKFRAME_OPENED` was not among what it sent
+	-- (`docs/MIDNIGHT.md` §127).
+	guildBank    = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
 	dailyQuests  = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
 	-- Burning Crusade is the one people correct us on, and the table is right: Blizzard
 	-- builds all of these from one codebase, so Anniversary ships the whole achievement API
@@ -189,7 +193,7 @@ local CONFIRMED = {
 	achievements = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 	currencies   = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 	dualSpec     = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
-	guildBank    = {                   [TBC] = true, [MISTS] = true },
+	guildBank    = {                   [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
 	keyring      = { [VANILLA] = true, [TBC] = true                 },
 	glyphs       = {                                 [MISTS] = true },
 	-- 2026-09-06, from Alberto: the skill sheet photographed on Era and on Burning Crusade

@@ -1,0 +1,6 @@
+name: Midnight's guild bank is left without its answer
+file: addons/Family/Capabilities.lua
+--- old
+	guildBank    = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
+--- new
+	guildBank    = { [VANILLA] = false, [TBC] = true,  [MISTS] = true },
