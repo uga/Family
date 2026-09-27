@@ -1685,6 +1685,53 @@ frame:SetScript("OnEvent", function(_, event)
     end
 end)
 
+-- **Which addon wrote a tooltip line** (Alberto, 2026-09-27: a *Vendors for:* line with coins and
+-- *(item doesn't stack)* above Family's block, from nobody known). A line gets onto a tooltip
+-- through `AddLine`, `AddDoubleLine`, or - for a figure in coins - the game's `SetTooltipMoney`, so
+-- all three are watched, and when the text asked for goes past, the call stack says which file
+-- and line sent it. `hooksecurefunc` runs after the call and changes nothing on the tooltip.
+-- Watched until the next /reload; each writer is printed once.
+local whoseWatch, whoseSeen, whoseHooked = nil, {}, false
+
+local function whoseCheck(text)
+    if not whoseWatch or type(text) ~= "string" then return end
+    if not text:lower():find(whoseWatch, 1, true) then return end
+    local stack = (type(debugstack) == "function" and debugstack(3, 6, 0)) or "no debugstack"
+    -- The first frame outside the game's own code and this probe is the writer.
+    local writer
+    for line in stack:gmatch("[^\n]+") do
+        if line:find("AddOns") and not line:find("FamilyProbe") then writer = line break end
+    end
+    writer = writer or stack:match("[^\n]+") or "?"
+    if whoseSeen[writer] then return end
+    whoseSeen[writer] = true
+    DEFAULT_CHAT_FRAME:AddMessage("|cff66bbffFamily Probe|r: |cffffd700" .. text:gsub("|", "!")
+        .. "|r written by |cffffffff" .. writer .. "|r")
+end
+
+local function watchWhose(text)
+    whoseWatch, whoseSeen = text:lower(), {}
+    if not whoseHooked then
+        whoseHooked = true
+        local tooltips = { GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }
+        for _, tip in ipairs(tooltips) do
+            if tip then
+                hooksecurefunc(tip, "AddLine", function(_, left) whoseCheck(left) end)
+                hooksecurefunc(tip, "AddDoubleLine", function(_, left, right)
+                    whoseCheck(left) whoseCheck(right)
+                end)
+            end
+        end
+        if type(SetTooltipMoney) == "function" then
+            hooksecurefunc("SetTooltipMoney", function(_, _, _, prefix, suffix)
+                whoseCheck(prefix) whoseCheck(suffix)
+            end)
+        end
+    end
+    DEFAULT_CHAT_FRAME:AddMessage("|cff66bbffFamily Probe|r: watching tooltip lines containing |cffffd700"
+        .. text .. "|r - hover an item that shows one.")
+end
+
 SLASH_FAMILYPROBE1 = "/familyprobe"
 SlashCmdList.FAMILYPROBE = function(argument)
     argument = (argument or ""):lower()
@@ -1701,6 +1748,13 @@ SlashCmdList.FAMILYPROBE = function(argument)
     -- a client what a herb node looks like except by pointing at one.
     if argument == "node" or argument == "nodes" then
         watchNodes(false)
+        return
+    end
+
+    -- Backlog-free: which addon writes a tooltip line, by its text.
+    local whose = argument:match("^whose%s+(.+)$")
+    if whose then
+        watchWhose(whose)
         return
     end
 
