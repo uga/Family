@@ -4991,6 +4991,46 @@ do
 		lines and lines[1] and lines[1][1] == "Sell Price",
 		lines and lines[1] and tostring(lines[1][1]) or "no line")
 
+	-- **A price that moves with the item's level** (Midnight, §134): the Eventide Coif at 54 sells
+	-- for 49729 by its link, and its id answers the base item's 406.
+	local COIF, COIF_LINK = 159212, "|cff1eff00|Hitem:159212::::::::54:::1:6654|h[Eventide Coif]|h|r"
+	local crackers = GetItemInfo
+	GetItemInfo = function(item)
+		if item == COIF then return "Eventide Coif", nil, 2, 54, 52, "", "", 1, "", nil, 406 end
+		if item == COIF_LINK then return "Eventide Coif", nil, 2, 54, 52, "", "", 1, "", nil, 49729 end
+		return crackers(item)
+	end
+	local caps = Family.Capabilities.can
+	local heldScaled = caps.scaledPrices
+	caps.scaledPrices = true
+	bare, clear = tooltip("FamilyCoifTip", { "Eventide Coif" })
+	lines = Family.UI.__priceLines(bare, COIF, COIF, COIF_LINK)
+	check("where an item's price moves with its level, it is priced by its link",
+		lines and lines[1] and lines[1][2] == Family.UI:MoneyLine(49729),
+		lines and lines[1] and tostring(lines[1][2]) or "no line")
+	caps.scaledPrices = false
+	lines = Family.UI.__priceLines(bare, COIF, COIF, COIF_LINK)
+	clear()
+	check("and elsewhere by its id, as it always was",
+		lines and lines[1] and lines[1][2] == Family.UI:MoneyLine(406),
+		lines and lines[1] and tostring(lines[1][2]) or "no line")
+
+	-- And through the item's own tooltip, which is what hands the block its link.
+	caps.scaledPrices = true
+	wipe(GameTooltip.__lines)
+	GameTooltip.__itemName, GameTooltip.__itemLink = "Eventide Coif", COIF_LINK
+	if GameTooltip.__scripts.OnTooltipCleared then
+		GameTooltip.__scripts.OnTooltipCleared(GameTooltip)
+	end
+	GameTooltip.__scripts.OnTooltipSetItem(GameTooltip)
+	local drawn = {}
+	for _, line in ipairs(GameTooltip.__lines) do drawn[#drawn + 1] = tostring(line[2]) end
+	check("and the item's tooltip hands the price block the link it is showing",
+		table.concat(drawn, " / "):find(Family.UI:MoneyLine(49729), 1, true) ~= nil,
+		table.concat(drawn, " / "))
+	wipe(GameTooltip.__lines)
+	caps.scaledPrices = heldScaled
+
 	SELL_PRICE, FamilyDB.prices, GetItemInfo = was[1], was[2], was[3]
 end
 

@@ -225,6 +225,12 @@ local EXPECTED = {
 	-- class answer says who may **use** a look, and who can **learn** it is whoever can wear it.
 	transmogWearLower = { [MIDNIGHT] = true },
 
+	-- **An item's price that moves with its level.** On Midnight the *Eventide Coif of the
+	-- Harmonious* at item level 54 sells for 4g 97s 29c, the game's own line: `GetItemInfo` by its
+	-- link answered 49729, and by its id the base item's 406 - which Family showed (`docs/MIDNIGHT.md`
+	-- §134). The id answers and is wrong there, so which one prices an item lives here.
+	scaledPrices = { [MIDNIGHT] = true },
+
 	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
 	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104). Midnight answers 20, and
 	-- each of the four calls the scanner makes in the shape Mists does: a race's six values, the
@@ -262,6 +268,8 @@ local CONFIRMED = {
 	bankTabs     = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-27: the Warrior and the cloth leggings (§134).
 	transmogWearLower = { [MIDNIGHT] = true },
+	-- Midnight 2026-09-27: the Eventide Coif, 406 by its id and 49729 by its link (§134).
+	scaledPrices = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-26: slot 18 answered nil to `GetInventoryItemID` on Ahia (§110).
 	rangedSlot   = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-27 (§133): Alberto's word for dailies and transmog, the item data for the

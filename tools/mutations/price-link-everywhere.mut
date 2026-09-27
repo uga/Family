@@ -1,0 +1,6 @@
+name: the Classic clients price an item by its link
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if link and Family.Capabilities:Has("scaledPrices") then priced = link end
+--- new
+	if link then priced = link end

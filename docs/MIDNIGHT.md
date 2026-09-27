@@ -4799,3 +4799,17 @@ which the previous commit added without regenerating it.
 own source 94947, `GetAllAppearanceSources(36063)` **6** sources, of which
 `PlayerHasTransmogItemModifiedAppearance` answers true for **4**. So the route built above answers
 *have* for it, which is the game's *collected, but not from this item*. Still to see: the tooltip.
+
+**Seen**: the Eventide Coif's tooltip after the redeploy (Alberto's screenshot, 2026-09-27) has no *Look
+can be learnt by* block - the collected-elsewhere route works on live.
+
+**The sell price, read and built.** With the Coif in hand, `C_Item.GetItemInfo(link)` answered **49729**
+as its eleventh value - the game's *4g 97s 29c* - where the id had given the base item's 406. A new
+capability, **`scaledPrices`**, Midnight's and seen: there the tooltip's price block asks by the link it is
+showing, and the Classic clients keep the id. The block now takes the link beside the item and the variant;
+handed to every block at first, it broke the possessions block, whose fourth argument is its node, so the
+prices have a call of their own after the others. Three checks, three mutations. **Not yet seen.**
+
+**Not done: the family's worth.** `Index`'s vendor price is kept per id (`FamilyDB.sellPrices`), so a
+Midnight family's worth still values a levelled item at its base price. Keyed by what each slot holds
+instead, it would be right; that is `main`'s `Index.lua` and a question of its own.

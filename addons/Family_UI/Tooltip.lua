@@ -1084,14 +1084,20 @@ local function copyIsBound(tooltip, itemID)
 	return Family:BoundIn(bag, slot, itemID) == true
 end
 
-local function priceLines(tooltip, itemID, variant)
+local function priceLines(tooltip, itemID, variant, link)
 	if not (FamilyDB and FamilyDB.prices) then return nil end
 
 	local lines = {}
 
 	-- The eleventh return, and asked for without a guard because the tooltip being drawn is
 	-- itself the proof this item is in the client's cache - it is showing its name.
-	local sell = tonumber((select(11, Family:ItemInfo(itemID))))
+	--
+	-- **By the link where an item's price moves with its level** (Midnight, `scaledPrices`): there
+	-- the id answers the base item's price, 406 for a coif that sells for 49729 (`docs/MIDNIGHT.md`
+	-- §134). Elsewhere by the id, as it was measured.
+	local priced = itemID
+	if link and Family.Capabilities:Has("scaledPrices") then priced = link end
+	local sell = tonumber((select(11, Family:ItemInfo(priced))))
 	if sell and sell > 0 then
 		local label = Family:GameWord("SELL_PRICE", L["Sell price"])
 		if clientShowsSellPrice(tooltip) then label = string.format(L["%s (each)"], label) end
@@ -1480,11 +1486,13 @@ local function onItem(tooltip, itemID, data)
 	-- **The item id and the variant both travel**, and each block takes the one its question
 	-- is about: who owns one and what it is worth are the variant's, who can make one and what
 	-- the client will say about it are the item's. Backlog 67 is that table and nothing else.
-	for _, build in ipairs { possessionLines, crafterLines, makerBlock, costLines,
-		priceLines } do
+	for _, build in ipairs { possessionLines, crafterLines, makerBlock, costLines } do
 		local lines = build(tooltip, itemID, variant)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end
+	-- And the prices last, with the link as well, where a price can follow the item's level.
+	local prices = priceLines(tooltip, itemID, variant, link)
+	if prices and #prices > 0 then blocks[#blocks + 1] = prices end
 
 	-- By the link, since a look can follow the variant, and last: it is about the item's
 	-- future rather than what the family holds or what it is worth.
