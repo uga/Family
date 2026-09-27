@@ -4369,3 +4369,9 @@ take: about 5,087 achievements at 5 ms a frame is some thirty seconds of frames 
 
 **The Warband bank: read now**, Alberto's exception to §111 (2026-09-27), after it was pointed out
 that the rule would have it wait. It is next.
+
+**Achievements seen on live** (2026-09-27), Eccebombo: *11525 points from 1187 achievements | 1413
+shown | seen just now*, filed by category - *Alchemy (1)*, *Alterac Valley (4)* with *Master of Alterac
+Valley* at *2 of 10*, *Appearances (35)* - beside the game's own window reading *Warband Achievement
+Points 19,790* and *Achievements Earned 2,207/6,232*. So the page counts the character's own, as
+chosen, and the walk finished. Whether the frames it took were felt is not yet said.
