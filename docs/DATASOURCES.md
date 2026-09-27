@@ -5668,3 +5668,16 @@ under that. So Mists has two levels. What `isChild` says for *Alliance* and its 
 Thirteen races (race 1 named *UNUSED*), every fragment count 0, `GetActiveArtifactByRace` no returns and
 `GetNumArtifactsByRace` 0 for all. The reading backlog 104 needs is on a character with the skill,
 such as Luga.
+
+**Read again with *Classic* and its *Alliance* open** (16 rows). `isChild` (13) carries the nesting:
+*Classic* 1118 is a header with `isChild` false; Argent Dawn 529, Bloodsail Buccaneers 87, Thorium
+Brotherhood 59 and Zandalar Tribe 270 follow with `isChild` **false** - they sit directly under *Classic*;
+then *Alliance* 469, a header with `isChild` **true**, and under it Darnassus 69, Exodar 930, Gilneas 1134,
+Gnomeregan 54, Ironforge 47, Stormwind 72 and Tushui Pandaren 1353, all `isChild` **true**; then
+*Steamwheedle Cartel* 169, a collapsed header with `isChild` **true**; then *Inactive* 0, `isChild` nil.
+
+**The rule this reads as:** a header with `isChild` false opens a top-level heading; a header with `isChild`
+true opens a sub-heading inside the current top-level one; a faction with `isChild` true belongs to the
+current sub-heading, and one with `isChild` false to the top-level heading. A top-level heading's own
+factions come before its sub-headings. Era and Burning Crusade answer `isChild` false everywhere, which
+the same rule reads as one level - so one reader serves all three.

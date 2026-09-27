@@ -7435,8 +7435,10 @@ own beside it: **one level on Burning Crusade, as on Era**.
 
 **Mists read 2026-09-27**: *Guild* 1169, *Classic* 1118, *Inactive* 0, no *Other*. **Two levels**, from
 Alberto's screenshot: *Classic* holds factions and a nested *Alliance* heading. Alberto: *we should
-mimic them inside Family*. Still wanted: Mists with *Classic* open, to read what `isChild` says for the
-nested heading and its factions. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
+mimic them inside Family*. **Read with *Classic* open the same day:** `isChild` true marks a sub-heading
+and the factions inside it; false marks a top-level heading and the factions directly under it
+(DATASOURCES, *The reputation list on Mists*). One rule reads all three builds. **The reading 105
+needs is complete**; what is left is the design of the stored shape and the panel. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
 all-open list on Era came after a relog, and Alberto will retry it there.
 
 ---
