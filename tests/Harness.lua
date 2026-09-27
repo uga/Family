@@ -39812,13 +39812,20 @@ print("looks to learn and looks known")
 				if look[2] == source then return { appearanceIsCollected = look[3] } end
 			end
 		end,
+		-- An appearance with a second source the account has (§134 on the midnight branch).
+		GetAllAppearanceSources = function(appearance)
+			if appearance == 507 then return { 9007, 9017 } end
+		end,
+		PlayerHasTransmogItemModifiedAppearance = function(source) return source == 9017 end,
 	}
+	LOOKS[21007] = { 507, 9007, false }
 	ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] = "Mossy Tunic", "Dusty Boots",
 		"Plain Ring"
+	ITEM_NAMES[21007] = "Eventide Coif"
 	-- The bind kind at fourteen, which is what says the client has the item cached.
 	GetItemInfo = function(key)
 		local id = idOf(key)
-		if ITEM_NAMES[id] and id >= 21001 and id <= 21003 then
+		if ITEM_NAMES[id] and (id >= 21001 and id <= 21003 or id == 21007) then
 			return ITEM_NAMES[id], "|Hitem:" .. id .. "|h", 2, 20, 10, nil, nil, nil, nil,
 				nil, nil, nil, nil, 2
 		end
@@ -39831,6 +39838,8 @@ print("looks to learn and looks known")
 	check("an item with no look has none", Family:LookOf(nil, 21003) == false)
 	check("and an item the client has not cached answers nothing, not a look",
 		Family:LookOf(nil, 21999) == nil)
+	check("a look collected from another item is known, though this item's own answer is no",
+		Family:LookOf(nil, 21007) == "have", tostring(Family:LookOf(nil, 21007)))
 	caps.transmogrify = false
 	check("a client with no collection is never asked", Family:LookOf(nil, 21001) == false)
 	caps.transmogrify = true

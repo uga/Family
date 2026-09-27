@@ -632,9 +632,9 @@ function Family:LookOf(item, itemID)
 
 	-- By the item string where there is one, since a variant can carry its own look, and by the
 	-- id where that answers nothing: the probe asked by full link, and a stored string is not one.
-	local _, source = self:TryCall(collection.GetItemInfo, item or itemID)
+	local appearance, source = self:TryCall(collection.GetItemInfo, item or itemID)
 	if not tonumber(source) and item then
-		_, source = self:TryCall(collection.GetItemInfo, itemID)
+		appearance, source = self:TryCall(collection.GetItemInfo, itemID)
 	end
 	source = tonumber(source)
 	if not source then return false end
@@ -647,6 +647,21 @@ function Family:LookOf(item, itemID)
 		collected = self:TryCall(collection.PlayerHasTransmogItemModifiedAppearance, source)
 	end
 	if collected == true then return "have" end
+
+	-- **Collected from another item.** On Midnight an item whose tooltip says *You've collected this
+	-- appearance, but not from this item* answered `appearanceIsCollected` false, as its own source
+	-- did (`docs/MIDNIGHT.md` §134) - and Alberto asked that such an item need no learning. So where
+	-- this item's answer is no, the appearance's other sources are asked, and any one the account
+	-- has makes the look known.
+	if collected == false and tonumber(appearance) then
+		local others = self:TryCall(collection.GetAllAppearanceSources, tonumber(appearance))
+		for _, other in ipairs(type(others) == "table" and others or {}) do
+			if self:TryCall(collection.PlayerHasTransmogItemModifiedAppearance, other) == true then
+				return "have"
+			end
+		end
+	end
+
 	if collected == false then return "need" end
 	return nil
 end

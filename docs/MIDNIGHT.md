@@ -4784,3 +4784,13 @@ Alberto asked (*no need to learn it*). And a second fault on the same tooltip: F
 (each)* **4s 06c** beside the game's *Sell Price: 4g 97s 29c** - Family prices by the item id, and a
 Midnight item's price moves with its level, so the id answers the base item. To be read and fixed after
 the look.
+
+**Built: a look collected from another item is known.** Where an item's own answer is *not
+collected*, `Family:LookOf` now asks `C_TransmogCollection.GetAllAppearanceSources` for the
+appearance's other sources and `PlayerHasTransmogItemModifiedAppearance` of each; any the account has
+makes the look *have*, so the item leaves *Looks to learn* and its tooltip names nobody to learn it.
+Written without the reading of the other sources that was asked for (Alberto: *proceed*); **the Eventide
+Coif's tooltip is the check in the game**. One check, one mutation. The shared code is `main`'s
+`Core.lua`: on a client where the appearance answer is already right, the new question is never
+reached. The surface list gains `C_TransmogCollection.GetAllAppearanceSources`, and `IsPlayerSpell`,
+which the previous commit added without regenerating it.

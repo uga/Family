@@ -1,0 +1,6 @@
+name: a look collected from another item is still one to learn
+file: addons/Family/Core.lua
+--- old
+	if collected == false and tonumber(appearance) then
+--- new
+	if false and tonumber(appearance) then
