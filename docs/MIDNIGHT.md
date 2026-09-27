@@ -4873,3 +4873,8 @@ a mutation puts the double step back.
 slot and a gap apart, each name level with its slots, the *Durable Pack* at 70 in Skinning's middle
 slot. Profession gear is done on one member's page; the whole-family grid and the *(unbound)* mark on the
 profession window's slots remain.
+
+**Mara's worth** (Alberto's screenshot, 2026-09-27): the Eventide Coif, bind on equip and not bound, is
+valued at its auction price, 414g 77s - right, and the auction lane. The per-copy vendor price of §134
+is the bound lane, so it is seen only on a bound levelled piece: a worn one, whose *family's lot* under
+CTRL should read the game's own sell price.
