@@ -7360,6 +7360,12 @@ currency list (the same entry), so the Currencies set will never show them and t
 **First step: a FamilyProbe entry** asking each of those calls on Luga, with the window closed and
 then open, before any scanner is written.
 
+**Read on Luga, 2026-09-27** (DATASOURCES, *Archaeology on Mists*): fragments, the project's cost, the
+project and the listed artifacts all answer at login with the window never opened; only an
+artifact's flavour text waits for it. `GetArtifactInfoByRace`'s ninth and tenth values read as first
+solved and times solved. Buildable; the one thing still to read, from the scanner's own debug line
+or the probe on a race with more listed, is whether the list holds unsolved artifacts too.
+
 **Settled by Alberto, 2026-09-27:** fragments, the project in progress and the solved artifacts;
 shown on a Summary set **and** on the Character panel; shared over Wide Family **under
 professions**. The probe is `/familyprobe apis`, entry *archaeology projects* - run on a Mists

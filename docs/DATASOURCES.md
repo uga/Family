@@ -5686,3 +5686,23 @@ the same rule reads as one level - so one reader serves all three.
 headers with `isChild` true, and *Classic*'s own four factions `isChild` false - so the flag does not
 depend on whether a heading is open, and the list can be read as the player left it. *Alliance* stayed
 shut through Family's own scan, as the Burning Crusade headings did.
+
+### Archaeology on Mists: projects and solved artifacts answer without the window — read 2026-09-27
+
+Luga, `5.5.4`, *archaeology projects*, read at login before anything was opened and again with the
+Archaeology window open. **The two readings are the same** except that the first artifact's fifth
+value (its flavour text) is `""` before the window and filled after. So nothing the scanner needs waits
+for the window.
+
+- `GetArchaeologyRaceInfo(13)`: `"Dwarf" 461831 52843 11 32 200` - name, two ids, **fragments held 11**,
+  **fragments the current project needs 32**, **cap 200**. The other twelve races answer 0 0 0; race 1 is
+  named *UNUSED* and race 11, *Fossil*, has a 0 in its third place.
+- `GetActiveArtifactByRace(13)`: `"Bone Gaming Dice"`, a description, `0`, icon 237285, flavour text, `0`,
+  461832, 86866 - the project in progress. Races with no project answer **no returns**.
+- `GetNumArtifactsByRace(13)`: **2**; every other race 0.
+- `GetArtifactInfoByRace(13, 1)`: `"Worn Hunting Knife"`, description, `0`, icon 135292, flavour, `0`,
+  461832, 86865, **1790189489**, **1** - the ninth reads as the moment it was first solved and the tenth
+  as how many times, on the one row read. What the second of the two listed is, and whether an
+  unsolved artifact is listed at all, is not read yet.
+
+Eccebombo, with no Archaeology, answered the same thirteen races with 0 everywhere and no project.
