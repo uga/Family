@@ -154,7 +154,8 @@ client; the rest are still expectations.
 | Keyring | yes | yes ✓ | no |
 | Ammunition and soul bags | yes | yes | no |
 | Attunements | yes | yes | vestigial |
-| Transmogrification, void storage | no | no | yes |
+| Transmogrification | no | no | yes |
+| Void storage | no | no | **no ✓** — in original Mists, removed from Mists Classic |
 | Account-wide mounts and pets | no | no | yes |
 
 **Dual specialisation is the row that catches people out, and it is the reason this table

@@ -1,0 +1,5 @@
+name: the item tooltip never says who can learn a look
+file: addons/Family_UI/Tooltip.lua
+--- old
+	if learners then blocks[#blocks + 1] = learners end
+--- new

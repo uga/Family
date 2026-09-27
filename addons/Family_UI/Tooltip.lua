@@ -1377,6 +1377,61 @@ local function writeBlocks(tooltip, blocks)
 	tooltip:Show()
 end
 
+-- **Who in the family could learn this look** (backlog 108), where the account has not
+-- collected it. The game's own line - *You haven't collected this appearance* - says so to
+-- whoever looks and says nothing about who could; this names them, or says nobody can, which is
+-- as worth knowing before an item is sold. Names in their class colour, the most a line holds.
+local LEARNERS_SHOWN = 6
+
+-- The members, class-coloured and sorted, the most a line holds.
+local function learnerNames(keys, plain)
+	local names = {}
+	for _, key in ipairs(keys) do
+		local meta = Family.Database:Meta(key) or {}
+		names[#names + 1] = { name = meta.name or key, classFile = meta.classFile }
+	end
+	table.sort(names, function(a, b) return a.name < b.name end)
+
+	local parts = {}
+	for index = 1, math.min(#names, LEARNERS_SHOWN) do
+		local entry = names[index]
+		parts[#parts + 1] = plain and entry.name
+			or (UI:ClassMarkup(entry.classFile) .. entry.name .. "|r")
+	end
+	if #names > LEARNERS_SHOWN then
+		parts[#parts + 1] = string.format(L["|cff888888and %d more|r"], #names - LEARNERS_SHOWN)
+	end
+	return table.concat(parts, ", ")
+end
+
+local function learnLines(link, itemID)
+	local who, later, unread = Family:WhoCanLearn(link, itemID)
+	if not who then return nil end
+	later, unread = later or {}, unread or {}
+	if #who == 0 and #later == 0 and #unread == 0 then
+		return { { L["|cff66bbffLook: nobody in the family can learn it|r"] } }
+	end
+
+	local lines = { { L["|cff66bbffLook can be learnt by|r"] } }
+	if #who > 0 then
+		lines[#lines + 1] = { learnerNames(who) }
+	else
+		lines[#lines + 1] = { L["|cff888888nobody yet|r"] }
+	end
+
+	-- Grey, and only where there is somebody: each absence that can change, said.
+	if #later > 0 then
+		local level = tonumber((select(5, Family:TryCall(GetItemInfo, link or itemID)))) or 0
+		lines[#lines + 1] = { "|cff888888" .. string.format(L["also, once level %d: %s"], level,
+			learnerNames(later, true)) .. "|r" }
+	end
+	if #unread > 0 then
+		lines[#lines + 1] = { "|cff888888" .. string.format(L["log in once to check: %s"],
+			learnerNames(unread, true)) .. "|r" }
+	end
+	return lines
+end
+
 local function onItem(tooltip, itemID, data)
 	if not tooltip then return end
 	if tooltip.IsForbidden and tooltip:IsForbidden() then return end
@@ -1430,6 +1485,11 @@ local function onItem(tooltip, itemID, data)
 		local lines = build(tooltip, itemID, variant)
 		if lines and #lines > 0 then blocks[#blocks + 1] = lines end
 	end
+
+	-- By the link, since a look can follow the variant, and last: it is about the item's
+	-- future rather than what the family holds or what it is worth.
+	local learners = learnLines(link, itemID)
+	if learners then blocks[#blocks + 1] = learners end
 
 	writeBlocks(tooltip, blocks)
 end

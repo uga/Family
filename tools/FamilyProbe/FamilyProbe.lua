@@ -897,6 +897,365 @@ local function membersOf(value)
     return "(" .. #names .. ") " .. table.concat(names, " ")
 end
 
+-- **Backlog 108: what Mists Classic carries for transmogrification**, before anything is
+-- designed. Original Mists changed an item's look at a vendor and kept no collection; the
+-- modern wardrobe (`C_TransmogCollection`) came later, and a Classic build may carry either
+-- or both. So this names what is there, then asks it about what the character wears. Run it
+-- once away from a Transmogrifier and once with the window open, since the old calls may only
+-- answer there. Nothing here applies, buys or asks the server for anything.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog calls", ask = function()
+    local out = {}
+    for _, name in ipairs({ "GetTransmogrifySlotInfo", "GetTransmogrifyCost",
+        "CanTransmogrifyItemWithItem", "GetItemTransmogrifyInfo", "GetVoidItemInfo",
+        "CanUseVoidStorage", "IsVoidStorageReady" }) do
+        out[#out + 1] = name .. " " .. (there(name) and "yes" or "absent")
+    end
+    for _, namespace in ipairs({ "C_Transmog", "C_TransmogCollection", "C_TransmogSets",
+        "C_TransmogOutfitInfo" }) do
+        out[#out + 1] = namespace .. " " .. membersOf(_G[namespace])
+    end
+    return table.concat(out, " | ")
+end }
+
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog of what is worn", ask = function()
+    local out = {}
+    local link = there("GetInventoryItemLink")
+    local old = there("GetTransmogrifySlotInfo")
+    local itemInfo = inside("C_TransmogCollection", "GetItemInfo")
+    local has = inside("C_TransmogCollection", "PlayerHasTransmog")
+    local known = inside("C_TransmogCollection", "PlayerHasTransmogItemModifiedAppearance")
+    for slot = 1, 19 do
+        local worn = link and try(link, "player", slot) or nil
+        if worn then
+            local itemID = tonumber(tostring(worn):match("item:(%d+)"))
+            local line = "slot " .. slot .. " item " .. tostring(itemID)
+            if old then line = line .. " || old " .. shape(callPacked(old, slot)) end
+            if itemInfo then
+                local answer = callPacked(itemInfo, worn)
+                line = line .. " || GetItemInfo " .. shape(answer)
+                local source = tonumber(answer and answer[2])
+                if known and source then
+                    line = line .. " || has source " .. describe(try(known, source))
+                end
+            end
+            if has and itemID then line = line .. " || has " .. describe(try(has, itemID)) end
+            out[#out + 1] = line
+        end
+    end
+
+    -- How big the collection says it is, where there is one: per category, collected and
+    -- in all. Categories are numbered from 1 and a client that has none answers nil.
+    local collected = inside("C_TransmogCollection", "GetCategoryCollectedCount")
+    local total = inside("C_TransmogCollection", "GetCategoryTotal")
+    if collected then
+        local counts = {}
+        for category = 1, 40 do
+            local got = try(collected, category)
+            if got ~= nil then
+                counts[#counts + 1] = category .. "=" .. tostring(got) .. "/"
+                    .. tostring(total and try(total, category))
+            end
+        end
+        out[#out + 1] = "collected by category " .. table.concat(counts, " ")
+    end
+    if #out == 0 then return "nothing worn answered" end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 108, second reading.** The first (Eccebombo, 5.5.4, 2026-09-27) found none of original
+-- Mists' calls and the modern system whole: the wardrobe collection, sets, and
+-- `C_TransmogOutfitInfo` with outfits and situations. What it did not ask: which outfits the
+-- character has and which is active, what look each slot wears now, and how many appearances the
+-- collection holds - the last to be compared between two characters of one account, which is what
+-- says whether the collection is per character or account-wide. Every call is attempted with the
+-- arguments it is most likely to take, and a refusal is printed as one; run it once away from a
+-- Transmogrifier and once at one.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog outfits and looks", ask = function()
+    local out = {}
+    local function ask(label, namespace, name, ...)
+        local fn = inside(namespace, name)
+        if not fn then out[#out + 1] = label .. " absent" return nil end
+        local answer = callPacked(fn, ...)
+        local said = shape(answer)
+        if answer and answer.n == 1 and type(answer[1]) == "table" then said = fields(answer[1]) end
+        out[#out + 1] = label .. " " .. said
+        return answer
+    end
+
+    ask("at NPC", "C_Transmog", "IsAtTransmogNPC")
+    ask("enabled", "C_TransmogOutfitInfo", "IsTransmogEnabled")
+    ask("active outfit", "C_TransmogOutfitInfo", "GetActiveOutfitID")
+    ask("viewed outfit", "C_TransmogOutfitInfo", "GetCurrentlyViewedOutfitID")
+    ask("usable outfits", "C_TransmogOutfitInfo", "GetMaxNumberOfUsableOutfits")
+    ask("situations on", "C_TransmogOutfitInfo", "GetOutfitSituationsEnabled")
+    ask("equipped gear shown", "C_TransmogOutfitInfo", "IsEquippedGearOutfitDisplayed")
+    local outfits = ask("outfits", "C_TransmogOutfitInfo", "GetOutfitsInfo")
+    if outfits and type(outfits[1]) == "table" then
+        for index, outfit in ipairs(outfits[1]) do
+            if index > 6 then break end
+            out[#out + 1] = "outfit " .. index .. ": " .. fields(outfit)
+        end
+    end
+    ask("sources known", "C_TransmogCollection", "GetNumTransmogSources")
+    ask("custom sets", "C_TransmogCollection", "GetCustomSets")
+
+    -- What each worn slot shows. The outfit system names its own slots, so the inventory slot
+    -- is turned into one first; the older call takes a location table where the client
+    -- carries the helper that builds one.
+    --
+    -- **The conversion counts inventory slots from 0**, read 2026-09-27: handed 3 it answered
+    -- about the shirt (inventory 4) and handed 5 about the waist (inventory 6), by the source
+    -- ids those items answer, and handed 1 - the neck, which has no look - it answered nil.
+    local toOutfit = inside("C_TransmogOutfitInfo", "GetTransmogOutfitSlotFromInventorySlot")
+    local visual = inside("C_Transmog", "GetSlotVisualInfo")
+    local util = type(_G.TransmogUtil) == "table" and _G.TransmogUtil or nil
+    out[#out + 1] = "TransmogUtil " .. membersOf(util)
+    for _, slot in ipairs({ 1, 3, 5, 16 }) do
+        local line = "slot " .. slot
+        local outfitSlot = toOutfit and try(toOutfit, slot - 1) or nil
+        line = line .. " || outfit slot " .. describe(outfitSlot)
+        if outfitSlot ~= nil then
+            local viewed = inside("C_TransmogOutfitInfo", "GetViewedOutfitSlotInfo")
+            if viewed then
+                local answer = callPacked(viewed, outfitSlot, 0, 0)
+                line = line .. " || viewed " .. ((answer and answer.n == 1
+                    and type(answer[1]) == "table") and fields(answer[1]) or shape(answer))
+            end
+        end
+        if visual and util and type(util.CreateTransmogLocation) == "function" then
+            local where = try(util.CreateTransmogLocation, slot, 0, 0)
+            if where then
+                local answer = callPacked(visual, where)
+                line = line .. " || visual " .. ((answer and type(answer[1]) == "table")
+                    and fields(answer[1]) or shape(answer))
+            end
+        end
+        out[#out + 1] = line
+    end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 108, third reading: what one category of the collection looks like, and what it
+-- costs.** Knowing which member has collected a look means storing each member's collected
+-- appearances, and the call that lists them answers a whole category at once - over a
+-- thousand entries for a head slot on 5.5.4. So: how many it answers, how long it takes, how
+-- many say they are collected, and one collected entry whole.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog collection by category", ask = function()
+    local list = inside("C_TransmogCollection", "GetCategoryAppearances")
+    if not list then return "GetCategoryAppearances absent" end
+    local info = inside("C_TransmogCollection", "GetCategoryInfo")
+    local out = {}
+    for _, category in ipairs({ 1, 3, 13 }) do
+        local answer, took = elapsed(function() return try(list, category) end)
+        local line = "category " .. category
+        if info then line = line .. " " .. shape(callPacked(info, category)) end
+        if type(answer) ~= "table" then
+            line = line .. " || " .. describe(answer)
+        else
+            local collected, sample = 0, nil
+            for _, entry in ipairs(answer) do
+                if type(entry) == "table" and entry.isCollected then
+                    collected = collected + 1
+                    sample = sample or entry
+                end
+            end
+            line = line .. " || " .. #answer .. " entries, " .. collected .. " collected"
+                .. (took and string.format(", %.1f ms", took) or "")
+            if sample then line = line .. " || collected one: " .. fields(sample) end
+        end
+        out[#out + 1] = line
+    end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 108: is the collection the account's or the character's?** The second reading found
+-- different collected counts on Eccebombo and Luga, one account, and read it as per character; the
+-- VARIE session's reference (Blizzard's own UI and documentation) says account-wide, with the
+-- counts following a class filter. The counts cannot settle it. This can: each character is asked
+-- about the *other's* worn looks by their source ids, read on 2026-09-27 - an account-wide
+-- collection says yes to both lists on both characters, a per-character one only to its own.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog collection: account or character", ask = function()
+    local out = {}
+    local _, classFile, classID = try(_G.UnitClass, "player")
+    out[#out + 1] = "class " .. tostring(classFile) .. " " .. tostring(classID)
+    local filter = inside("C_TransmogCollection", "GetClassFilter")
+    out[#out + 1] = "class filter " .. (filter and shape(callPacked(filter)) or "absent")
+
+    local has = inside("C_TransmogCollection", "PlayerHasTransmogItemModifiedAppearance")
+    local knows = inside("C_TransmogCollection", "PlayerKnowsSource")
+    local source = inside("C_TransmogCollection", "GetSourceInfo")
+    local sets = {
+        { "Eccebombo's", { 123962, 126931, 123325, 122502 } },
+        { "Luga's", { 275406, 275335, 275492, 275313 } },
+    }
+    for _, set in ipairs(sets) do
+        for _, id in ipairs(set[2]) do
+            local line = set[1] .. " " .. id
+                .. " || has " .. describe(has and try(has, id))
+                .. " || knows " .. describe(knows and try(knows, id))
+            local info = source and try(source, id)
+            if type(info) == "table" then
+                line = line .. " || isCollected " .. describe(info.isCollected)
+                    .. " playerCanCollect " .. describe(info.playerCanCollect)
+                    .. " isValidSourceForPlayer " .. describe(info.isValidSourceForPlayer)
+            end
+            out[#out + 1] = line
+        end
+    end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 108: who in the family could learn a look.** Alberto, 2026-09-27: the game already
+-- says *You haven't collected this appearance* whoever is looking; what nothing says is which of
+-- his characters could learn it. Three questions for that, each asked of the client:
+-- - which armour and weapon skills this character knows, by the proficiency spells, whose ids
+--   here are a guess the answers will confirm or not (a known one answers true for the class);
+-- - whether `GetValidAppearanceSourcesForClass` answers for *other* classes, which would let any
+--   character judge a look for every class, class-restricted items included;
+-- - for the first uncollected look in the bags, what the collectability calls say.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog who can learn", ask = function()
+    local out = {}
+    local known = there("IsSpellKnown") or there("IsPlayerSpell")
+    local name = there("GetSpellInfo")
+    local spells = { { "Cloth", 9078 }, { "Leather", 9077 }, { "Mail", 8737 }, { "Plate", 750 },
+        { "Shield", 9116 }, { "1H Axe", 196 }, { "2H Axe", 197 }, { "1H Mace", 198 },
+        { "2H Mace", 199 }, { "Polearm", 200 }, { "1H Sword", 201 }, { "2H Sword", 202 },
+        { "Staff", 227 }, { "Dagger", 1180 }, { "Fist", 15590 }, { "Bow", 264 }, { "Gun", 266 },
+        { "Crossbow", 5011 }, { "Wand", 5009 }, { "Thrown", 2567 } }
+    local said = {}
+    for _, pair in ipairs(spells) do
+        said[#said + 1] = pair[1] .. " " .. pair[2] .. "=" .. describe(known and try(known, pair[2]))
+            .. "(" .. tostring(name and try(name, pair[2])) .. ")"
+    end
+    out[#out + 1] = "proficiencies " .. table.concat(said, " ")
+
+    local collection = _G.C_TransmogCollection
+    local itemInfo = inside("C_TransmogCollection", "GetItemInfo")
+    local forClass = inside("C_TransmogCollection", "GetValidAppearanceSourcesForClass")
+    local bySource = inside("C_TransmogCollection", "GetAppearanceInfoBySource")
+    local has = inside("C_TransmogCollection", "PlayerHasTransmogItemModifiedAppearance")
+    local slotLink = (_G.C_Container and _G.C_Container.GetContainerItemLink)
+        or there("GetContainerItemLink")
+    local found
+    if itemInfo and has and slotLink then
+        for bag = 0, 4 do
+            for slot = 1, 36 do
+                local link = try(slotLink, bag, slot)
+                if link and not found then
+                    local appearance, source = try(itemInfo, link)
+                    if tonumber(source) and try(has, source) == false then
+                        found = { link = link, appearance = appearance, source = source }
+                    end
+                end
+            end
+        end
+    end
+    if not found then
+        out[#out + 1] = "no uncollected look in the bags - carry one and ask again"
+        return table.concat(out, " | ")
+    end
+    out[#out + 1] = "uncollected " .. tostring(found.link):gsub("|", "!") .. " appearance "
+        .. tostring(found.appearance) .. " source " .. tostring(found.source)
+    -- Packed, not `try`: that hands back eight values and the bind type is the fourteenth.
+    local item = callPacked(there("GetItemInfo"), found.link)
+    out[#out + 1] = "bind type " .. tostring(item and item[14])
+    if bySource then
+        local info = try(bySource, found.source)
+        out[#out + 1] = "by source " .. (type(info) == "table" and fields(info) or describe(info))
+    end
+    for _, name in ipairs({ "PlayerCanCollectSource", "AccountCanCollectSource" }) do
+        local fn = collection and collection[name]
+        out[#out + 1] = name .. " " .. (type(fn) == "function"
+            and shape(callPacked(fn, found.source)) or "absent")
+    end
+    if forClass then
+        local classes = {}
+        for classID = 1, 11 do
+            local sources = try(forClass, found.appearance, classID)
+            local count = type(sources) == "table" and #sources or describe(sources)
+            classes[#classes + 1] = classID .. "=" .. tostring(count)
+        end
+        out[#out + 1] = "valid sources by class " .. table.concat(classes, " ")
+    end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 108: what this character can wear, from its own skill list.** The proficiency
+-- spells all answered false on Luga (a druid, who wears leather and holds a staff), so they
+-- say nothing. The old skill list is on Mists (DATASOURCES, measured 2026-09-06) and on the
+-- older clients carried *Armor Proficiencies* - Cloth, Leather, Mail, Plate Mail - with a
+-- rank of 1 of 1, which Family's own reader skips. Every row here, headers included, so the
+-- armour lines and their heading show whatever they are called; to be read on a character
+-- under 40 whose class moves to mail or plate at 40, which is where the level matters.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog skill list whole", ask = function()
+    if not there("GetNumSkillLines") then return "GetNumSkillLines absent" end
+    local collapsed = {}
+    local count = try(GetNumSkillLines) or 0
+    for index = 1, count do
+        local name, isHeader, isExpanded = try(GetSkillLineInfo, index)
+        if name and isHeader and not isExpanded then collapsed[name] = true end
+    end
+    try(ExpandSkillHeader, 0)
+
+    local out = { "level " .. tostring(try(UnitLevel, "player")) }
+    count = try(GetNumSkillLines) or 0
+    for index = 1, count do
+        local name, isHeader, _, rank, _, _, maxRank = try(GetSkillLineInfo, index)
+        if name then
+            out[#out + 1] = (isHeader and "[" .. name .. "]")
+                or (name .. " " .. tostring(rank) .. "/" .. tostring(maxRank))
+        end
+    end
+
+    count = try(GetNumSkillLines) or 0
+    for index = count, 1, -1 do
+        local name, isHeader = try(GetSkillLineInfo, index)
+        if name and isHeader and collapsed[name] then try(CollapseSkillHeader, index) end
+    end
+    return table.concat(out, " | ")
+end }
+
+-- **Backlog 109: where a quest says it is a daily.** The game's log writes *(Daily)* and *(Daily
+-- Heroic)* beside a quest and Family's Quests page says nothing, because the scanner never kept
+-- the flag. `GetQuestLogTitle` answers a different list on each client (Quests.lua), so each
+-- quest row is printed whole, beside the tag calls and, where the client has it, the modern
+-- per-index table. Read-only: nothing is selected or expanded.
+PROBES[#PROBES + 1] = { area = "quests", name = "which quests are daily", ask = function()
+    local out = {}
+    local count = tonumber((try(GetNumQuestLogEntries))) or 0
+    local api = _G.C_QuestLog
+    local info = api and type(api.GetInfo) == "function" and api.GetInfo or nil
+    local idFor = api and type(api.GetQuestIDForLogIndex) == "function"
+        and api.GetQuestIDForLogIndex or nil
+    local tag = there("GetQuestTagInfo") or (api and api.GetQuestTagInfo)
+    local frequency = api and type(api.GetQuestFrequency) == "function"
+        and api.GetQuestFrequency or nil
+    out[#out + 1] = "calls: GetInfo " .. (info and "yes" or "absent")
+        .. ", GetQuestTagInfo " .. (tag and "yes" or "absent")
+        .. ", GetQuestFrequency " .. (frequency and "yes" or "absent")
+        .. ", QuestIsDaily " .. (there("QuestIsDaily") and "yes" or "absent")
+    local shown = 0
+    for index = 1, count do
+        local row = callPacked(GetQuestLogTitle, index)
+        if row and row[1] and shown < 12 then
+            shown = shown + 1
+            local line = "row " .. index .. ": " .. shape(row)
+            local id = idFor and tonumber((try(idFor, index))) or nil
+            if id then
+                line = line .. " || id " .. id
+                if tag then line = line .. " || tag " .. shape(callPacked(tag, id)) end
+                if frequency then line = line .. " || frequency " .. describe(try(frequency, id)) end
+            end
+            if info then
+                local answer = try(info, index)
+                if type(answer) == "table" then line = line .. " || info " .. fields(answer) end
+            end
+            out[#out + 1] = line
+        end
+    end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end
@@ -1326,6 +1685,53 @@ frame:SetScript("OnEvent", function(_, event)
     end
 end)
 
+-- **Which addon wrote a tooltip line** (Alberto, 2026-09-27: a *Vendors for:* line with coins and
+-- *(item doesn't stack)* above Family's block, from nobody known). A line gets onto a tooltip
+-- through `AddLine`, `AddDoubleLine`, or - for a figure in coins - the game's `SetTooltipMoney`, so
+-- all three are watched, and when the text asked for goes past, the call stack says which file
+-- and line sent it. `hooksecurefunc` runs after the call and changes nothing on the tooltip.
+-- Watched until the next /reload; each writer is printed once.
+local whoseWatch, whoseSeen, whoseHooked = nil, {}, false
+
+local function whoseCheck(text)
+    if not whoseWatch or type(text) ~= "string" then return end
+    if not text:lower():find(whoseWatch, 1, true) then return end
+    local stack = (type(debugstack) == "function" and debugstack(3, 6, 0)) or "no debugstack"
+    -- The first frame outside the game's own code and this probe is the writer.
+    local writer
+    for line in stack:gmatch("[^\n]+") do
+        if line:find("AddOns") and not line:find("FamilyProbe") then writer = line break end
+    end
+    writer = writer or stack:match("[^\n]+") or "?"
+    if whoseSeen[writer] then return end
+    whoseSeen[writer] = true
+    DEFAULT_CHAT_FRAME:AddMessage("|cff66bbffFamily Probe|r: |cffffd700" .. text:gsub("|", "!")
+        .. "|r written by |cffffffff" .. writer .. "|r")
+end
+
+local function watchWhose(text)
+    whoseWatch, whoseSeen = text:lower(), {}
+    if not whoseHooked then
+        whoseHooked = true
+        local tooltips = { GameTooltip, ItemRefTooltip, ShoppingTooltip1, ShoppingTooltip2 }
+        for _, tip in ipairs(tooltips) do
+            if tip then
+                hooksecurefunc(tip, "AddLine", function(_, left) whoseCheck(left) end)
+                hooksecurefunc(tip, "AddDoubleLine", function(_, left, right)
+                    whoseCheck(left) whoseCheck(right)
+                end)
+            end
+        end
+        if type(SetTooltipMoney) == "function" then
+            hooksecurefunc("SetTooltipMoney", function(_, _, _, prefix, suffix)
+                whoseCheck(prefix) whoseCheck(suffix)
+            end)
+        end
+    end
+    DEFAULT_CHAT_FRAME:AddMessage("|cff66bbffFamily Probe|r: watching tooltip lines containing |cffffd700"
+        .. text .. "|r - hover an item that shows one.")
+end
+
 SLASH_FAMILYPROBE1 = "/familyprobe"
 SlashCmdList.FAMILYPROBE = function(argument)
     argument = (argument or ""):lower()
@@ -1342,6 +1748,13 @@ SlashCmdList.FAMILYPROBE = function(argument)
     -- a client what a herb node looks like except by pointing at one.
     if argument == "node" or argument == "nodes" then
         watchNodes(false)
+        return
+    end
+
+    -- Backlog-free: which addon writes a tooltip line, by its text.
+    local whose = argument:match("^whose%s+(.+)$")
+    if whose then
+        watchWhose(whose)
         return
     end
 

@@ -1,6 +1,6 @@
 name: the Warband bank's holder is not marked as the Warband's
 file: addons/Family/Index.lua
 --- old
-			warband = guildKey == Index.WARBAND or nil }
+			warband = guildKey == Index.WARBAND or nil,
 --- new
-			warband = nil }
+			warband = nil,

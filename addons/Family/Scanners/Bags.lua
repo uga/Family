@@ -321,6 +321,11 @@ function Bags:Scan()
 						entry.slots[slot].bound = true
 					end
 
+					-- **Whether the account has its look** (backlog 108), asked by the holder because
+					-- the collection is the holder's account's. An uncached item answers nothing here,
+					-- and the binding above has already asked for the scan to run again.
+					entry.slots[slot].look = Family:LookOf(worth, itemID) or nil
+
 					-- How many charges are left, for the few items that have any.
 					--
 					-- Gated on the generated table, so a bag of cloth costs one lookup a

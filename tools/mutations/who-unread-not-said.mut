@@ -1,0 +1,5 @@
+name: a member whose armour is unread is not named to log in
+file: addons/Family/Core.lua
+--- old
+				unread[#unread + 1] = key
+--- new

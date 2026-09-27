@@ -1,0 +1,6 @@
+name: the look is asked by the one item, never by the appearance
+file: addons/Family/Core.lua
+--- old
+	if type(info) == "table" and type(info.appearanceIsCollected) == "boolean" then
+--- new
+	if false then

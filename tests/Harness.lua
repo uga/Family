@@ -92,6 +92,8 @@ fontMeta.__index = function(_, key)
 	if key == "GetHeight" then return function(self) return self.__height or 100 end end
 	if key == "GetText" then return function(self) return self.__text end end
 	if key == "SetText" then return function(self, t) self.__text = t end end
+	-- The room between wrapped lines, kept so a check can ask for it.
+	if key == "SetSpacing" then return function(self, s) self.__spacing = s end end
 
 	-- The client measures a rendered string in pixels, and the panels now ask it to, so the
 	-- stub has to answer something. Characters rather than bytes, colour codes not counted,
@@ -328,6 +330,8 @@ function frameMethods:CreateTexture()
 		texture.__fill = { r = r, g = g, b = b, a = a }
 	end
 	fs.SetAllPoints = function(texture) texture.__allPoints = true end
+	-- Kept, so a check can ask whether a picture was dimmed (the Possessions filters).
+	fs.SetAlpha = function(texture, alpha) texture.__alpha = alpha end
 
 	-- **An atlas is not a path**, and the difference is the whole reason Family can check one:
 	-- a path is echoed back whatever it was handed, while an atlas is a name the client either
@@ -6080,7 +6084,11 @@ if skills then
 		for id, entry in pairs(Family.SkillLines) do
 			-- Nothing is allowed to have none any more. Lockpicking was the last, and it
 			-- got a key on 2026-09-06 when it moved onto this set.
-			if not entry.icon then
+			--
+			-- The armour lines excepted: they are 1 of 1 on every sheet, which the skill
+			-- reader never files as a profession, so this panel cannot draw one. They are
+			-- in the table to be told apart by id (backlog 108), not to be shown.
+			if not entry.icon and not entry.armour then
 				missing[#missing + 1] = tostring(id) .. " " .. tostring(entry.key)
 			end
 		end
@@ -39572,18 +39580,32 @@ print("reputations in the game's order, headings shut, inactive per character")
 		-- The inactive copy first, whichever order the roster is read in: named so, and put
 		-- first here, so that taking the first copy's heading would file it under Inactive.
 		{ key = "Abshelver-Fire Maw", name = "Abshelver", inactive = true,
-			category = "Inactive" },
+			category = "Inactive", other = "Inactive" },
 		{ key = "Zactor-Fire Maw", name = "Zactor", inactive = nil, category = "Classic",
-			categoryID = 1118 },
+			categoryID = 1118, other = "Other" },
+		-- Saved before the flag was recorded (seen on Midnight 2026-09-27): the game's
+		-- *Inactive* as the heading, no id and no flag, and first in the roster, so neither
+		-- faction may take its heading from it. Silver Harbour has a copy whose heading has
+		-- an id; Grey Lantern only copies with none, as *Other* on Era: two agreeing, one
+		-- saved before the flag and one set inactive, which counted would tie the vote.
+		{ key = "Aabacus-Fire Maw", name = "Aabacus", category = "Inactive",
+			other = "Inactive" },
+		{ key = "Zeb-Fire Maw", name = "Zeb", other = "Other" },
 	}
 	for _, member in ipairs(roster) do
 		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
 			level = 60, classFile = "MAGE", faction = "Alliance" })
-		Family.Database:SetPayload(member.key, { reputations = {
-			{ id = 2701, name = "Silver Harbour", category = member.category,
+		local reps = {}
+		if member.category then
+			reps[#reps + 1] = { id = 2701, name = "Silver Harbour", category = member.category,
 				categoryID = member.categoryID, inactive = member.inactive, standing = 5,
-				value = 100, maximum = 1000 },
-		} })
+				value = 100, maximum = 1000 }
+		end
+		if member.other then
+			reps[#reps + 1] = { id = 2702, name = "Grey Lantern", category = member.other,
+				inactive = member.inactive, standing = 5, value = 100, maximum = 1000 }
+		end
+		Family.Database:SetPayload(member.key, { reputations = reps })
 	end
 	Family.UI.REPUTATIONS_START_OPEN = true
 	clickButton("Whole family")
@@ -39609,6 +39631,8 @@ print("reputations in the game's order, headings shut, inactive per character")
 	end
 	check("the whole family files an inactive faction where another member has it active",
 		shelverRow ~= nil and heading == nil and visibleText("Silver Harbour"))
+	check("and a copy saved before the flag files neither faction under Inactive",
+		heading == nil and visibleText("Grey Lantern") and visibleText("Other"))
 	check("and writes inactive before the progress of whoever set it so",
 		shelverRow and tostring(shelverRow.right.__text):find(Family.L["inactive"], 1, true) ~= nil,
 		shelverRow and shelverRow.right.__text)
@@ -39755,6 +39779,265 @@ print("archaeology: fragments, the project and the artifacts solved")
 	Family.Database:SetPayload(who, payload, { "archaeologySolved" })
 	for name, fn in pairs(held) do _G[name] = fn end
 	caps.archaeology = heldCan
+end)()
+
+print()
+print("looks to learn and looks known")
+
+-- Backlog 108, from the readings of 2026-09-27: the collection is the account's, so each holder
+-- asks about its own things when it is scanned, and the Possessions panel narrows to a look.
+-- A tunic whose look is not collected, boots whose look is, and a ring with no look at all.
+;(function()
+	local caps = Family.Capabilities.can
+	local heldCan, heldCollection, heldInfo = caps.transmogrify, _G.C_TransmogCollection, GetItemInfo
+	local heldNames = { ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] }
+	caps.transmogrify = true
+
+	local LOOKS = { [21001] = { 501, 9001, false }, [21002] = { 502, 9002, true } }
+	local function idOf(item)
+		return tonumber(item) or tonumber(tostring(item):match("item:(%d+)"))
+	end
+	_G.C_TransmogCollection = {
+		GetItemInfo = function(item)
+			local look = LOOKS[idOf(item)]
+			if look then return look[1], look[2] end
+		end,
+		GetAppearanceInfoBySource = function(source)
+			for _, look in pairs(LOOKS) do
+				if look[2] == source then return { appearanceIsCollected = look[3] } end
+			end
+		end,
+	}
+	ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] = "Mossy Tunic", "Dusty Boots",
+		"Plain Ring"
+	-- The bind kind at fourteen, which is what says the client has the item cached.
+	GetItemInfo = function(key)
+		local id = idOf(key)
+		if ITEM_NAMES[id] and id >= 21001 and id <= 21003 then
+			return ITEM_NAMES[id], "|Hitem:" .. id .. "|h", 2, 20, 10, nil, nil, nil, nil,
+				nil, nil, nil, nil, 2
+		end
+		return heldInfo(key)
+	end
+
+	check("a look the account lacks is one to learn", Family:LookOf(nil, 21001) == "need",
+		tostring(Family:LookOf(nil, 21001)))
+	check("a look it has is known", Family:LookOf(nil, 21002) == "have")
+	check("an item with no look has none", Family:LookOf(nil, 21003) == false)
+	check("and an item the client has not cached answers nothing, not a look",
+		Family:LookOf(nil, 21999) == nil)
+	caps.transmogrify = false
+	check("a client with no collection is never asked", Family:LookOf(nil, 21001) == false)
+	caps.transmogrify = true
+
+	-- Recorded by the bag scan, slot by slot.
+	BAGS[3] = { size = 16, free = 13, bagType = 0,
+		items = { [1] = { 21001, 1 }, [2] = { 21002, 1 }, [3] = { 21003, 1 } } }
+	Family.Bags:Scan()
+	local who = Family:CurrentMember()
+	local bag = ((Family.Database:Payload(who) or {}).bags or {})[3]
+	local slots = bag and bag.slots or {}
+	check("the bag scan records each slot's look as its holder read it",
+		slots[1] and slots[1].look == "need" and slots[2] and slots[2].look == "have"
+			and slots[3] and slots[3].look == nil,
+		tostring(slots[1] and slots[1].look) .. " / " .. tostring(slots[2] and slots[2].look))
+
+	-- Asked of the index with nothing typed.
+	Family.Index:Invalidate()
+	local function ids(found)
+		local out = {}
+		for _, item in ipairs(found) do out[Family:BaseItem(item.id)] = true end
+		return out
+	end
+	local need = ids(Family.Index:Search("", nil, "need"))
+	local have = ids(Family.Index:Search("", nil, "have"))
+	check("the family's search answers every item to learn, with nothing typed",
+		need[21001] and not need[21002] and not need[21003])
+	check("and every item whose look is known",
+		have[21002] and not have[21001] and not have[21003])
+
+	-- On the panel: one member dims what does not match, the family lists what does.
+	Family.UI:ShowTab("contents")
+	Family.UI:ShowContentsFor(who)
+	local buttons = Family.UI.__contentsLooks or {}
+	check("the two look switches are there on a client with a collection",
+		#buttons == 2 and buttons[1].__shown ~= false and buttons[2].__shown ~= false)
+	check("the possessions status parts its two lines by two pixels",
+		Family.UI.__contentsStatus and (Family.UI.__contentsStatus.__spacing or 0) >= 2)
+
+	-- Laid from the right, against *Whole family*, with the box ending at them: laid from the
+	-- box they ran under that button on Mists (2026-09-27).
+	local box = Family.UI.__contentsSearch
+	check("the switches sit against Whole family and the search box ends at them",
+		buttons[2] and buttons[2].__anchoredTo and contentsEveryone
+			and buttons[2].__anchoredTo[contentsEveryone]
+			and box and box.__anchoredTo and box.__anchoredTo[buttons[1]]
+			and box.__points and box.__points.RIGHT)
+	if buttons[1] then buttons[1].__scripts.OnClick(buttons[1]) end
+	local tunic, boots
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.icon and f.itemID == 21001 then tunic = f end
+		if f.__shown ~= false and f.icon and f.itemID == 21002 then boots = f end
+	end
+	check("looks to learn leaves the tunic lit and dims the boots on one member",
+		tunic and boots and tunic.icon.__alpha == 1 and boots.icon.__alpha == 0.15,
+		tostring(tunic and tunic.icon.__alpha) .. " / " .. tostring(boots and boots.icon.__alpha))
+
+	-- A second member holding the same tunic and reading its look as known - another account.
+	local other = "Otherlooks-Fire Maw"
+	Family.Database:SetMeta(other, { name = "Otherlooks", realm = "Fire Maw", level = 60,
+		classFile = "MAGE", faction = "Alliance" })
+	Family.Database:SetPayload(other, { bags = { [0] = { size = 16, free = 15, slots = {
+		[1] = { id = 21001, count = 1, look = "have" } } } } }, { "bags" })
+	Family.Index:Invalidate()
+
+	if contentsEveryone then
+		contentsEveryone.__scripts.OnClick(contentsEveryone)
+		Family.UI:Refresh()
+		local listed, holders = {}, {}
+		for _, line in ipairs(Family.UI.__contentsLines or {}) do
+			listed[line.itemName] = true
+			if line.itemName == "Mossy Tunic" then holders[#holders + 1] = tostring(line.who) end
+		end
+		check("across the family, looks to learn lists the tunic and not the boots, nothing typed",
+			listed["Mossy Tunic"] and not listed["Dusty Boots"] and not listed["Plain Ring"])
+		check("and only under the holders whose account lacks it",
+			#holders == 1 and not holders[1]:find("Otherlooks", 1, true), table.concat(holders, ", "))
+		contentsEveryone.__scripts.OnClick(contentsEveryone)
+	end
+	Family.Database:Forget(other)
+	if buttons[1] then buttons[1].__scripts.OnClick(buttons[1]) end
+
+	caps.transmogrify = false
+	Family.UI:Refresh()
+	check("and a client with no collection shows neither switch",
+		buttons[1] and buttons[1].__shown == false)
+
+	-- **Who could learn it** (backlog 108). The tunic is mail, level 10, bind on equip; the game
+	-- counts Paladins valid for it and Mages not. A plate-wearing Paladin learns nothing from
+	-- mail (Eccebombo, 2026-09-27), so only a Paladin whose own armour is mail counts, and only
+	-- at the tunic's level. A cloak is cloth everybody wears, and goes by class alone.
+	caps.transmogrify = true
+	LOOKS[21004] = { 504, 9004, false }
+	LOOKS[21005] = { 505, 9005, false }
+	LOOKS[21006] = { 506, 9006, false }
+	ITEM_NAMES[21006] = "High Boots"
+	ITEM_NAMES[21004], ITEM_NAMES[21005] = "Grey Cloak", "Bound Helm"
+	local SHAPE = {
+		[21001] = { 10, "INVTYPE_CHEST", 4, 3, 2 },
+		[21004] = { 1, "INVTYPE_CLOAK", 4, 1, 2 },
+		[21005] = { 1, "INVTYPE_HEAD", 4, 3, 1 },
+		-- Mail again, at 55: above every Paladin here.
+		[21006] = { 55, "INVTYPE_FEET", 4, 3, 2 },
+	}
+	local plainInfo = GetItemInfo
+	GetItemInfo = function(key)
+		local id = idOf(key)
+		local shape = SHAPE[id]
+		if shape then
+			return ITEM_NAMES[id], "|Hitem:" .. id .. "|h", 2, 20, shape[1], nil, nil, nil,
+				shape[2], nil, nil, shape[3], shape[4], shape[5]
+		end
+		return plainInfo(key)
+	end
+	_G.C_TransmogCollection.GetValidAppearanceSourcesForClass = function(appearance, classID)
+		if appearance == 504 or classID == 2 then return { {} } end
+		return {}
+	end
+	local heldCreature = _G.C_CreatureInfo
+	_G.C_CreatureInfo = { GetClassInfo = function(index)
+		local files = { [2] = "PALADIN", [8] = "MAGE" }
+		if files[index] then return { classFile = files[index], classID = index } end
+	end }
+	local cast = {
+		{ "Plated-Fire Maw", "Plated", "PALADIN", 49, 4 },
+		{ "Mailed-Fire Maw", "Mailed", "PALADIN", 30, 3 },
+		{ "Lowmail-Fire Maw", "Lowmail", "PALADIN", 5, 3 },
+		{ "Clothy-Fire Maw", "Clothy", "MAGE", 60, 1 },
+		{ "Unread-Fire Maw", "Unread", "PALADIN", 30, nil },
+		-- Mail by its record and a class the look is not for: the class answer decides.
+		{ "Oddmage-Fire Maw", "Oddmage", "MAGE", 60, 3 },
+	}
+	for _, member in ipairs(cast) do
+		Family.Database:SetMeta(member[1], { name = member[2], realm = "Fire Maw",
+			classFile = member[3], level = member[4], armour = member[5], faction = "Alliance" })
+	end
+	local function set(list)
+		local out = {}
+		for _, key in ipairs(list or {}) do out[key] = true end
+		return out
+	end
+	local tunicWho, tunicLater, tunicUnread = Family:WhoCanLearn(nil, 21001)
+	local tunicBy = set(tunicWho)
+	check("a mail look is learnt by a Paladin who wears mail, at its level",
+		tunicBy["Mailed-Fire Maw"] and not tunicBy["Lowmail-Fire Maw"])
+	check("and not by one who wears plate, nor by a class it is not for",
+		not tunicBy["Plated-Fire Maw"] and not tunicBy["Clothy-Fire Maw"])
+	check("nor by a member whose armour has not been read yet", not tunicBy["Unread-Fire Maw"])
+	check("nor by a class the game says the look is not for, whatever its armour",
+		not tunicBy["Oddmage-Fire Maw"])
+	-- Each absence that can change is said (Alberto, 2026-09-27: plate greaves named the Death
+	-- Knight and no Paladin, silently): the right class below the item's level, where its armour
+	-- does not rule the item out, and the right class whose armour is not read yet.
+	local later, unread = set(tunicLater), set(tunicUnread)
+	check("a member below the item's level whose armour fits is listed as later",
+		later["Lowmail-Fire Maw"] and not later["Mailed-Fire Maw"])
+	local _, bootsLater = Family:WhoCanLearn(nil, 21006)
+	bootsLater = set(bootsLater)
+	check("but not one who wears a higher armour than the item now",
+		bootsLater["Mailed-Fire Maw"] and not bootsLater["Plated-Fire Maw"]
+			and not bootsLater["Clothy-Fire Maw"])
+	check("and a member of the right class whose armour is unread is listed to log in",
+		unread["Unread-Fire Maw"] and not unread["Mailed-Fire Maw"])
+	local cloakBy = set(Family:WhoCanLearn(nil, 21004))
+	check("a cloak's look goes by class alone", cloakBy["Plated-Fire Maw"] and cloakBy["Clothy-Fire Maw"])
+	check("an item that binds on pickup reaches nobody else, so names nobody",
+		Family:WhoCanLearn(nil, 21005) == nil)
+	check("and a look already collected names nobody", Family:WhoCanLearn(nil, 21002) == nil)
+
+	-- On the item's own tooltip.
+	tooltipFor(21001)
+	local said = {}
+	for _, line in ipairs(GameTooltip.__lines) do said[#said + 1] = tostring(line[1]) end
+	said = table.concat(said, " / ")
+	check("the tooltip names who can learn the look",
+		said:find(Family.L["|cff66bbffLook can be learnt by|r"], 1, true) ~= nil
+			and said:find("Mailed", 1, true) ~= nil and said:find("Plated", 1, true) == nil, said)
+	check("and says in grey who could once levelled, and who has to log in once",
+		said:find(string.format(Family.L["also, once level %d: %s"], 10, "Lowmail"), 1, true) ~= nil
+			and said:find(string.format(Family.L["log in once to check: %s"], "Unread"), 1, true)
+				~= nil, said)
+
+	-- The armour a member wears as its own, off its skill list.
+	local heldSkills = SKILL_LINES
+	SKILL_LINES = {}
+	for _, line in ipairs(heldSkills) do SKILL_LINES[#SKILL_LINES + 1] = line end
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Armor Proficiencies", header = true, expanded = true }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Cloth", rank = 1, maxRank = 1 }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Mail", rank = 1, maxRank = 1 }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Plate Mail", rank = 1, maxRank = 1 }
+	SKILL_LINES[#SKILL_LINES + 1] = { name = "Leather", rank = 1, maxRank = 1 }
+	Family.Professions:Scan()
+	check("the skill scan records the best armour listed as the member's own",
+		(Family.Database:Meta(who) or {}).armour == 4,
+		tostring((Family.Database:Meta(who) or {}).armour))
+	local professions = (Family.Database:Payload(who) or {}).professions or {}
+	check("and files none of the armour lines as a profession",
+		professions[415] == nil and professions[293] == nil and professions["Mail"] == nil)
+	SKILL_LINES = heldSkills
+
+	for _, member in ipairs(cast) do Family.Database:Forget(member[1]) end
+	_G.C_CreatureInfo = heldCreature
+	GetItemInfo = plainInfo
+
+	BAGS[3] = nil
+	Family.Bags:Scan()
+	_G.C_TransmogCollection, GetItemInfo = heldCollection, heldInfo
+	ITEM_NAMES[21001], ITEM_NAMES[21002], ITEM_NAMES[21003] = heldNames[1], heldNames[2],
+		heldNames[3]
+	caps.transmogrify = heldCan
+	Family.Index:Invalidate()
+	Family.UI:Refresh()
 end)()
 
 print()

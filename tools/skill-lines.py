@@ -116,6 +116,14 @@ RIDING_ICON = 132164
 # every entry would be wrong.
 CLASS_IDS = {633}
 
+# **The four armour types, as the rank a member's best one is compared by** (backlog 108). Category 8
+# on all three builds - *Armor Proficiencies* on the skill sheet - and a character lists every type it
+# can put on, Plate Mail beside Cloth on a Paladin of 49 (DATASOURCES, *Who can learn a look*). The
+# game collects a look only for a class's own type, which is the best one listed, and an item's armour
+# subclass numbers them the same way: 1 cloth, 2 leather, 3 mail, 4 plate. Shield (433) is not a type
+# anybody wears as their own and is left out. Taken by id, not wholesale, for that reason.
+ARMOUR_RANKS = {415: 1, 414: 2, 413: 3, 293: 4}
+
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".skill-lines-cache")
 
 
@@ -219,7 +227,8 @@ def build_table():
                 is_class = skill_id in CLASS_IDS
                 is_weapon = row["CategoryID"] == WEAPON_CATEGORY
                 if (not is_primary and not is_weapon and skill_id not in SECONDARY_IDS
-                        and skill_id not in RIDING_IDS and not is_class):
+                        and skill_id not in RIDING_IDS and not is_class
+                        and skill_id not in ARMOUR_RANKS):
                     continue
 
                 name = row["DisplayName_lang"].strip()
@@ -257,6 +266,9 @@ def build_table():
             entry["riding"] = True
         elif skill_id in CHOSEN_ICONS:
             entry["icon"] = CHOSEN_ICONS[skill_id]
+
+        if skill_id in ARMOUR_RANKS:
+            entry["armour"] = ARMOUR_RANKS[skill_id]
 
     # **Which of them make nothing**, said only about the ones that make nothing: absent means
     # "makes things", so a skill line from a client newer than this table is treated as an
@@ -409,6 +421,8 @@ def emit(professions, out_path):
             add('\t\tweapon = true,')
         if entry.get("riding"):
             add('\t\triding = true,')
+        if entry.get("armour"):
+            add('\t\tarmour = %d,' % entry["armour"])
         # And this one only where it is false, for the same reason the other way round:
         # absent means it makes things, which is what almost every line does.
         if entry.get("makes") is False:

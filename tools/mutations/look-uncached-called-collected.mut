@@ -1,0 +1,9 @@
+name: an item the client has not cached is judged for its look anyway
+file: addons/Family/Core.lua
+--- old
+	if self:BindTypeOf(itemID) == nil then return nil end
+
+	-- By the item string where there is one, since a variant can carry its own look, and by the
+--- new
+
+	-- By the item string where there is one, since a variant can carry its own look, and by the

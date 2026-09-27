@@ -1,0 +1,6 @@
+name: a member below the item's level is counted as able to learn its look
+file: addons/Family/Core.lua
+--- old
+			elseif level >= minLevel then
+--- new
+			elseif true then

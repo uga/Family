@@ -1,0 +1,5 @@
+name: the skill scan does not record the member's own armour
+file: addons/Family/Scanners/Professions.lua
+--- old
+	if armour then Family.Database:SetMeta(key, { armour = armour }) end
+--- new

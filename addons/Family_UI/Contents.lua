@@ -566,6 +566,42 @@ local function build(frame)
 		self:ClearFocus()
 	end)
 
+	-- **Looks to learn and looks already known** (backlog 108), on a client with a collection:
+	-- one switch each, beside the box and working with it - one member's slots dimmed, or the
+	-- family's items listed. Each look was read by its holder, whose account the collection is.
+	-- The box gives up fifty pixels to make the room. Built on every client and shown on those
+	-- with a collection, at each redraw, so a check can drive both.
+	local lookFilter = nil
+	local lookButtons = {}
+	do
+		local previous = search
+		for _, entry in ipairs({
+			{ id = "need", label = L["Looks to learn"],
+				tip = L["Items whose look this account has not collected yet"] },
+			{ id = "have", label = L["Looks known"],
+				tip = L["Items whose look this account already has: safe to sell for the look"] },
+		}) do
+			local button = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+			button:SetSize(90, 20)
+			button:SetText(entry.label)
+			UI:FitButton(button, 110)
+			button.lookID = entry.id
+			button:SetScript("OnClick", function()
+				lookFilter = (lookFilter ~= entry.id) and entry.id or nil
+				for _, other in ipairs(lookButtons) do
+					UI:MarkSelected(other, other.lookID == lookFilter)
+				end
+				frame:Refresh()
+			end)
+			UI:AttachTooltip(button, function()
+				return nil, nil, { { entry.label }, { "|cffffffff" .. entry.tip .. "|r" } }
+			end)
+			lookButtons[#lookButtons + 1] = button
+			previous = button
+		end
+	end
+	UI.__contentsLooks = lookButtons
+
 
 	-- "Who has one of these" is a different question from "what is this member carrying",
 	-- and it wants a different answer: a list, with a name against every line. Bags are the
@@ -668,6 +704,11 @@ local function build(frame)
 	status:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 2, -6)
 	status:SetPoint("RIGHT", -8, 0)
 	status:SetJustifyH("LEFT")
+	-- Two lines - when things were seen, then what they are worth - and at the font's own
+	-- spacing the descenders of the first touched the figures of the second (*ago* on the *0*
+	-- below it, Alberto's screenshot on Mists, 2026-09-27). Two pixels part them.
+	status:SetSpacing(2)
+	UI.__contentsStatus = status
 
 	local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
 	scroll:SetPoint("TOPLEFT", status, "BOTTOMLEFT", -2, -6)
@@ -948,6 +989,27 @@ local function build(frame)
 		hint:SetText(wholeFamily and L["find across the family"] or L["dim everything but"])
 		hint:SetWidth(math.min(math.ceil(hint:GetStringWidth() or 0) + 2, HINT_MAX))
 
+		-- The look switches, where there is a collection to ask (backlog 108).
+		--
+		-- **Placed from the right**, against *Whole family*, and the box takes what is left
+		-- between the caption and them. Placed from the box's right they ran under *Whole
+		-- family* on Mists (Alberto's screenshot, 2026-09-27): the row's width is the
+		-- panel's, and only the box can give.
+		local looks = Family.Capabilities:Has("transmogrify")
+		for _, button in ipairs(lookButtons) do button:SetShown(looks) end
+		if not looks then lookFilter = nil end
+		search:ClearAllPoints()
+		search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
+		if looks and lookButtons[2] then
+			lookButtons[2]:ClearAllPoints()
+			lookButtons[2]:SetPoint("RIGHT", everyone, "LEFT", -6, 0)
+			lookButtons[1]:ClearAllPoints()
+			lookButtons[1]:SetPoint("RIGHT", lookButtons[2], "LEFT", -4, 0)
+			search:SetPoint("RIGHT", lookButtons[1], "LEFT", -10, 0)
+		else
+			search:SetWidth(200)
+		end
+
 		local member = picker:Reconcile()
 
 		local width = UI:ListWidth(scroll)
@@ -975,12 +1037,13 @@ local function build(frame)
 		if wholeFamily then
 			picker:Hide()
 
-			if #needle < 2 then
+			if #needle < 2 and not lookFilter then
 				return finish(L["|cff9d9d9dSearching the whole family. Type at least two "
 					.. "letters in the box above to see who has what.|r"])
 			end
 
-			local matches = Family.Index:Search(needle)
+			-- With a look switched on the box may be empty: every item with that look.
+			local matches = Family.Index:Search(#needle >= 2 and needle or "", nil, lookFilter)
 
 			-- Gathered first and drawn afterwards.
 			--
@@ -1000,11 +1063,23 @@ local function build(frame)
 				do
 					local kept = {}
 					for _, owner in ipairs(owners) do
-						if memberFilters:Passes(UI:Meta(owner.key) or owner) then
+						-- And with a look switched on, only the holders who read it so:
+						-- the same item can be to learn on one account and known on
+						-- another, and a linked family's looks are their account's.
+						if memberFilters:Passes(UI:Meta(owner.key) or owner)
+							and (not lookFilter
+								or (owner.look == lookFilter and not owner.familyName)) then
 							kept[#kept + 1] = owner
 						end
 					end
 					owners = kept
+					if lookFilter then
+						local held = {}
+						for _, guild in ipairs(guilds) do
+							if guild.look == lookFilter then held[#held + 1] = guild end
+						end
+						guilds = held
+					end
 				end
 
 				UI:NamesOf(owners)
@@ -1230,6 +1305,15 @@ local function build(frame)
 			if shown == 0 then
 				status:SetText(string.format(
 					L["|cff9d9d9dNothing named like \"%s\" is held by anybody.|r"], needle))
+			end
+
+			-- By look alone, with nothing typed: the switch's name says what was asked.
+			if lookFilter and #needle < 2 then
+				local asked = lookFilter == "need" and L["Looks to learn"] or L["Looks known"]
+				status:SetText(shown == 0
+					and string.format(L["|cff9d9d9dNothing held under \"%s\".|r"], asked)
+					or string.format(L["|cffffd700%d|r lines under \"%s\"   |cff888888|||r   "
+						.. "|cff888888as each holder's account read it|r"], shown, asked))
 			end
 
 			return finish()
@@ -1473,8 +1557,9 @@ local function build(frame)
 					-- out of it is not that bag any more, and where a thing sits is
 					-- half of what this panel is for.
 					local name = Family.Names:CachedItem(item.id)
-					local matches = needle == "" or not name
-						or name:lower():find(needle, 1, true) ~= nil
+					local matches = (needle == "" or not name
+						or name:lower():find(needle, 1, true) ~= nil)
+						and (not lookFilter or item.look == lookFilter)
 					button.icon:SetAlpha(matches and 1 or 0.15)
 					button.count:SetAlpha(matches and 1 or 0.15)
 				else

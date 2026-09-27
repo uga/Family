@@ -1,0 +1,5 @@
+name: the bag scan does not record a slot's look
+file: addons/Family/Scanners/Bags.lua
+--- old
+					entry.slots[slot].look = Family:LookOf(worth, itemID) or nil
+--- new

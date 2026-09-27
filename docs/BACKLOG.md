@@ -7515,3 +7515,163 @@ example Tailoring and Blacksmithing), plus Cooking, First Aid and Archaeology. O
 will be lines to show for Skinning, and maybe more. So the redesign is certain for the Midnight
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
+
+## 108. Transmogrification on Mists — BUILT 2026-09-27, both halves seen working in the game
+
+**Seen in the game 2026-09-27** (Alberto, *working*): *Traveler's Bracers* (leather, level 51, bind on
+equip) held by Duecalzini, whose look the account lacks, reads *Look can be learnt by: Luga, Uga*.
+
+**Built 2026-09-27: *can be learnt by*.** `Family:WhoCanLearn` (`Core.lua`) names this family's members
+who could learn an uncollected look: the class the game says it is for (`GetValidAppearanceSourcesForClass`,
+class ids from `GetClassInfo`), the member's own armour type for cloth to plate (`meta.armour`, the best
+*Armor Proficiencies* line on its skill list, recorded by the professions scan by skill line id; the four
+lines added to `SkillLines.lua` by `tools/skill-lines.py`), cloaks by class alone, and the item's level;
+nothing for an item that binds on pickup. Shown as a block on the item tooltip. A member is counted only
+once its armour has been read, so each needs one login with this version. Weapons go by the class answer,
+which is not yet tried against the game the way armour was. Not yet seen in the game.
+
+
+**Built 2026-09-27: the two Possessions filters (Alberto's 1, 2 and 3).** `Family:LookOf` in `Core.lua`
+answers *need* or *have* for an item on the account being played; the bag, bank, guild bank and mail
+scans record it per slot; `Index` keeps it per holder and per guild and `Index:Search` narrows to it with
+nothing typed; the Possessions panel has *Looks to learn* and *Looks known* beside its search, on clients
+with the `transmogrify` capability. Not yet seen in the game. The guild bank and mail recording is not
+covered by a harness check. Still to build: *can be learnt by*, which needs each member's own armour type.
+
+**Reshaped by Alberto the same evening** (DECISIONS): the game's own tooltip already says *You haven't
+collected this appearance* whoever looks. What it cannot say is which of the family could learn it. So
+the goal is a tooltip line - *appearance can be learnt by* and the members who can wear or wield it at
+their level - leaving out bind-on-pickup items and respecting class restrictions. The holder-only
+design below was dropped before it was committed. Probe *transmog who can learn* asks what that needs.
+
+**Chosen with it (Alberto, *We need 1 2 and 3*)**: on the Possessions panel, (1) a filter for items whose
+look the account already has - safe to sell or disenchant; (2) a filter for unbound items whose look it
+has not, with who can learn each; (3) both covering the guild bank and mail as well as bags and banks.
+
+**Read 2026-09-27 (DATASOURCES, *Who can learn a look*)**: the per-class call answers for all eleven
+classes from one character, so class and armour type are settled; level is not, and the skill-list probe
+asks for it on a character under 40.
+
+**Open, asked by Alberto the same evening:** does *valid for the class* mean *that class learns the look
+by equipping it*? Only a mail item was read, and the call counted the plate classes valid for it. Whether
+a Paladin or Warrior collects a **cloth** look by wearing it is unmeasured. Two readings settle it, both on
+Eccebombo (Paladin): the probe with the Journeyman's Robe as the first uncollected look in the backpack
+(which classes the call names), then the robe equipped and taken off - whether *You haven't collected
+this appearance* leaves its tooltip. If the call is looser than the game, the list counts each class's
+own armour type only, and that needs the skill list or a rule, not this call.
+
+**Answered for armour the same evening:** Eccebombo wore a cloth robe and did not learn its look. So
+the list counts each member's own armour type at its level, from the skill list if it says so; the
+per-class call stays for weapons and class restrictions until a weapon is tried the same way.
+**The skill list answers it (Eccebombo, 2026-09-27)**: *[Armor Proficiencies]* lists Cloth, Leather,
+Mail and Plate Mail on a Paladin of 49, so a member's own type is the best line there, and *[Weapon
+Skills]* lists its weapons. The lines arrive in the character's language, so they are filed by skill line
+id, which `SkillLines.lua` does not carry for armour yet (generated from wago.tools, already adopted).
+**Seen in the game the same evening**: both switches work on one member and across the family, and a
+guild tab's item is marked; the switches ran under *Whole family* and were moved to sit against it.
+
+**And Death Knights** (Alberto): plate from the start, so the level-40 change of armour type that
+Warriors, Paladins, Hunters and Shamans go through does not apply to them - which the skill list should
+show on its own if it names each member's armour.
+
+**Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
+whose look the account has not collected, marked on the Possessions panel, with who can learn them.
+
+**Proposed design, not yet agreed:**
+- **Checked by the item's own holder, at its scan.** Family does not know which game account a
+  character is on, and the collection answers only for the account logged in. So each character, when
+  its bags, bank and mail are scanned, asks `C_TransmogCollection.GetItemInfo(item)` for the source and
+  `PlayerHasTransmogItemModifiedAppearance(source)` for the look, and records the items whose look is
+  uncollected; and `PlayerCanCollectSource(source)` for whether that character itself can learn it. That
+  is right for every account in the family; it is stale when another character of the same account
+  collects the look, until the holder next logs in. The logged-in character's own items are re-asked live.
+- **Who can learn it, first slice: the holder, and nobody else by name.** Naming other members needs each
+  class's armour and weapon rules, which the client answers only for the character logged in; a
+  table of them would be a new data source (reserved). So the mark says *can learn it* or *cannot
+  learn it* for the holder.
+- **Shown** as a mark on the Possessions slot and a line on its tooltip (*look not collected*, then
+  whether the holder can learn it); a filter on the Possessions panel to show only such items.
+- **Items not yet cached** (`GetItemInfo` answering nothing) are asked again on
+  `TRANSMOG_SOURCE_COLLECTABILITY_UPDATE` or the next scan, never recorded as collected.
+
+**Settled 2026-09-27 (DATASOURCES)**: the collection is account-wide - a Paladin and a Druid of one
+account both answer *collected* to each other's worn looks. The per-character counts were the class
+filter. So *which family members have collected a look* answers the same for every member of one
+account, and the choice made on the per-character premise goes back to Alberto. What this makes cheap:
+any character can ask, at any time and with nothing stored, whether the account has an item's look.
+
+**Reopened the same afternoon.** The VARIE session sent a reference for both builds, read from
+Blizzard's UI source and generated API documentation:
+`/home/dietpi/dev/varie/wow-transmog-2026-09-27-tech/` - `README.md`, `mists-transmog.md` (for this
+slice) and `midnight-transmog.md`, **which goes to the Midnight session (`family-retail-57`) with the
+handoff once the Mists version lands**, not before. It says the collection is account-wide and the
+category counts are class-filtered, so the second reading's "per character" is not established. A fifth
+probe, *transmog collection: account or character*, asks each of Eccebombo and Luga about the other's
+worn looks. **If the collection is account-wide, Alberto's choice below was made on a wrong premise** -
+every member of one account would answer the same - and it goes back to him with the reading.
+
+**Chosen by Alberto 2026-09-27**: Eccebombo and Luga share one game account, so the collection is per
+character; what Family shows is **which family members have collected an item's look**, on the item's
+tooltip. Collection progress and outfits were offered and not chosen.
+
+**Second reading, Eccebombo and Luga 2026-09-27**: the collection counts differ between the two, so
+the collection is per character if they share a game account (Alberto's to say). Outfits, the active
+one and each slot's applied look all answer away from a Transmogrifier. A fourth probe, *transmog
+collection by category*, reads what one category's list looks like and what it costs, which is what
+storing each member's collected looks would take.
+
+**First reading, Eccebombo 2026-09-27** (DATASOURCES, *Transmogrification on Mists Classic is the modern
+system*): none of original Mists' calls is there; the wardrobe collection, sets and the outfit system
+(`C_TransmogOutfitInfo`, outfits and situations) are, and the game's window matches. So Mists Classic's
+transmog is the modern one - which may make the Midnight port far smaller than *very different* suggested,
+to be seen when that branch reads its own. A third probe, *transmog outfits and looks*, asks the outfits,
+the look each slot shows, and the collection's size, to be run on **two characters of one account** so
+the counts say whether the collection is account-wide.
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
+*Transmog instead does exist in Mists, and that must be supported Family Mists. Then, its different
+version must also be supported by Fam Midnight.* Midnight's system is *very different from Mists*
+(Alberto), so under the branch rule `main` builds the Mists version first and the Midnight branch
+ports it afterwards, as it did archaeology and reputations.
+
+**Today:** Family records nothing about transmogrification on any client. The `transmogrify`
+capability in `Capabilities.lua` (Mists true) is a fact no code reads.
+
+**Not designed yet.** What *supported* means is open and is Alberto's to settle once the client has
+answered: which looks (the one applied to each worn item, or a collection of appearances known),
+per character or for the family, where it is shown, and whether it is shared on Wide Family.
+Original Mists changed an item's look at a vendor and kept no collection; the wardrobe collection
+(`C_TransmogCollection`) came with Legion, and a Classic build carries whichever Blizzard gave it,
+so nothing about the design can be assumed before the probe says which.
+
+**The probes, in `tools/FamilyProbe/FamilyProbe.lua`, area `transmog`**, run by `/familyprobe apis`:
+- *transmog calls*: whether the original calls (`GetTransmogrifySlotInfo`, `GetTransmogrifyCost`,
+  `CanTransmogrifyItemWithItem`, `GetItemTransmogrifyInfo`) and the void storage ones are present,
+  and the members of `C_Transmog`, `C_TransmogCollection`, `C_TransmogSets`, `C_TransmogOutfitInfo`.
+- *transmog of what is worn*: for each worn slot, the item, what `GetTransmogrifySlotInfo` says, what
+  `C_TransmogCollection.GetItemInfo` says (appearance and source) and whether the character has that
+  source and that item's look; then, where the collection exists, collected and total per category.
+
+**To run on Mists**, on a character wearing at least one transmogrified item: once away from a
+Transmogrifier, and once with its window open, since the original calls may answer only there. Then
+log out to write the file. Nothing in the probes applies a look, buys anything or asks the server.
+
+## 109. A daily quest is not marked as one on the Quests page — OPEN 2026-09-27, probe written
+
+**Reported by Alberto 2026-09-27** with two screenshots of Luga on Mists: the game's quest log writes
+*(Daily)* beside *The Humanoid Cannonball* and *(Daily Heroic)* beside *Wanted: Aeonus's Hourglass*,
+and Family's Quests page shows both as plain rows, *normal* and *trivial*. Those two words are the
+quest's level against the character's (`Family_UI/Quests.lua`), not its kind.
+
+**Cause:** the scanner never records whether a quest is a daily. `Scanners/Quests.lua` keeps title,
+level, id, heading and progress; the specification (§3) says a daily is followed like any other quest
+while it is in the log, and it is - it is just not called one. Marking it is within that decision.
+
+**Probe first**, because `GetQuestLogTitle` answers a different list on each client: *which quests are
+daily* (area `quests`) prints each log row whole, beside `GetQuestTagInfo`, `C_QuestLog.GetQuestFrequency`
+and `C_QuestLog.GetInfo` where the client has them. To be run on Mists with a daily in the log, and on
+Burning Crusade with one if convenient; Era has none.
+
+**Also seen in the same screenshots, not this entry:** *Test Your Strength* reads *0 of 1* on the page and
+*Grisly Trophy: 0/250* in the game. The page counts objectives finished, not the count inside one; the
+objective's own text is on the row's tooltip. Left as it is unless Alberto asks otherwise.

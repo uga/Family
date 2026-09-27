@@ -5745,6 +5745,111 @@ reads *First Completion: 23/9/2026 8:51 PM* and *Number of times completed: 1*. 
 1790189489, is 20:51:29 CEST on 23 September 2026 - the same moment, as a Unix time - and the tenth is
 the count.
 
+### Transmogrification on Mists Classic is the modern system, not original Mists' — read 2026-09-27
+
+Eccebombo, `5.5.4`, the two *transmog* probes of backlog 108, away from a Transmogrifier.
+
+- **None of original Mists' calls is there**: `GetTransmogrifySlotInfo`, `GetTransmogrifyCost`,
+  `CanTransmogrifyItemWithItem` and `GetItemTransmogrifyInfo` are absent, and so are `GetVoidItemInfo`,
+  `CanUseVoidStorage` and `IsVoidStorageReady` - the client agrees with Alberto that void storage is gone.
+- **The modern system is there whole**: `C_Transmog` (6 members, among them `GetSlotVisualInfo`,
+  `GetItemIDForSource`, `IsAtTransmogNPC`), `C_TransmogCollection` (83, the wardrobe collection),
+  `C_TransmogSets` (41) and `C_TransmogOutfitInfo` (66: outfits, *situations*, pending changes and their
+  cost). The game's own window (Alberto's screenshot) matches: *Items*, *Sets*, *Custom Sets* and
+  *Situations* tabs, outfits down the left, *Purchase Outfit Slot*.
+- **Per worn item**, `C_TransmogCollection.GetItemInfo(link)` answers an appearance id and a source id -
+  slot 1, item 10763, `48224 123962` - and `PlayerHasTransmogItemModifiedAppearance(source)` and
+  `PlayerHasTransmog(itemID)` both answer `true` for most of what is worn. Neck, the two rings and the
+  trinket answer **no returns**: they have no appearance. The shirt, item 4334, answers an appearance and
+  source and `false` to both, though worn - not explained yet.
+- **The collection's size**, `GetCategoryCollectedCount(c)` / `GetCategoryTotal(c)` for categories 1-29:
+  `1=5/1392 2=3/1324 3=24/499 ...`, 28 and 29 `0/0`. Which category is which is not read yet
+  (`GetCategoryInfo`), nor whether the count is this character's or the account's.
+
+**Second reading, the same hour: Eccebombo and Luga, both Mirage Raceway, away from a Transmogrifier.**
+
+- **The collection counts differ between the two**: category 1 is 5/1392 on Eccebombo and 2/1392 on
+  Luga, category 13 5/247 and 0/247, category 23 0/414 and 7/414. The totals are the same. So the
+  collection this client answers about is **per character** - if the two are on one game account,
+  which is Alberto's to say; a Battle.net login can hold several. Custom sets differ too: two on
+  Eccebombo, none on Luga.
+- **Outfits**: both answer `IsTransmogEnabled` true, two outfits (*Outfit 1* id 2, *Outfit 2* id 3), the
+  active one id 2, 50 usable, situations on. `GetOutfitsInfo()` gives name, icon, outfitID,
+  isDisabled, isEventOutfit, playerFacingOutfitIndex.
+- **Each slot's look**: `GetViewedOutfitSlotInfo(outfitSlot, 0, 0)` answers a table - canTransmogrify,
+  isTransmogrified, **transmogID** (a source id), texture, error, warning and their texts, hasPending.
+- **`GetTransmogOutfitSlotFromInventorySlot` counts inventory slots from 0.** Handed 3 it answered about
+  Eccebombo's shirt (transmogID 119496, the shirt's own source) and Luga's empty shirt slot (*There is no
+  equipped item in this slot*); handed 5 about the waist (122502 and 275313, the belts' sources); handed
+  1, the neck, nil. The probe's first draft had `slot - 1`, "corrected" to `slot` before it ran; the
+  reading says the draft was right.
+- **Withdrawn the same afternoon: "per character" does not follow from the counts.** The VARIE session's
+  reference (`/home/dietpi/dev/varie/wow-transmog-2026-09-27-tech/mists-transmog.md`, §B.3, from
+  Blizzard's own UI and documentation for 5.5.4.69934) says the collection is **account-wide** and that
+  the category counts follow a **class filter** that is shared UI state - so two characters of
+  different classes answer different collected counts from one collection. The counts cannot tell the
+  two apart. The probe *transmog collection: account or character* asks each character about the
+  other's worn looks by source id, which can.
+- **Settled by the next reading: the collection is the account's.** Eccebombo (Paladin, class 2) and
+  Luga (Druid, class 11), one game account, each asked about both characters' worn looks by source id
+  (123962, 126931, 123325, 122502 and 275406, 275335, 275492, 275313): **all eight answer `true`** to
+  `PlayerHasTransmogItemModifiedAppearance` and `PlayerKnowsSource`, and `GetSourceInfo().isCollected`,
+  on both characters. What differs per character is `isValidSourceForPlayer` - true for the plate on the
+  Paladin and the leather on the Druid, false the other way - and `GetClassFilter()`, which answers the
+  character's own class (2 and 11): that is why the collected counts differ.
+- **One category's list is cheap**: `GetCategoryAppearances(1)` answers 1392 entries in 2.1-2.8 ms, (3)
+  499 in 0.8 ms, (13) 247 in 0.4-0.5 ms; each entry is visualID, isCollected, isUsable,
+  canDisplayOnPlayer, isHideVisual, uiOrder, exclusions and the holiday flags. `GetCategoryInfo(c)`
+  answered *no returns* for 1 and 3 and `"One-Handed Axes"` for 13 on Eccebombo, nothing for 13 on Luga.
+- **The outfit-slot conversion confirmed from 0**: handed 0 (the head) it answers outfit slot 0, 2
+  (shoulder) 1, 4 (chest) 4, 15 (main hand) 12. `C_Transmog.GetSlotVisualInfo(location)` answers one
+  table: baseSourceID and baseVisualID (the item's own look), appliedSourceID and appliedVisualID (0 where
+  nothing is applied), pendingSourceID, pendingVisualID, hasUndo, isHideVisual, itemSubclass.
+- `GetNumTransmogSources()` answers 6 on both - a count of source kinds, not of anything collected.
+- `C_Transmog.GetSlotVisualInfo(location)` answers a table of 9, not yet printed.
+
+### Who can learn a look: the per-class call answers for every class — read 2026-09-27
+
+Luga (Druid, 85), probe *transmog who can learn*, carrying *Lordly Armguards* (item 13135, mail,
+bind on equip), whose look the account has not collected: appearance 49402, source 125462.
+
+- **`GetValidAppearanceSourcesForClass(49402, classID)` answers for all eleven classes from one
+  character**: one source for 1, 2, 3, 6 and 7 (Warrior, Paladin, Hunter, Death Knight, Shaman) and none
+  for 4, 5, 8, 9, 10 and 11 (Rogue, Priest, Mage, Warlock, Monk, Druid) - exactly the classes that can
+  wear mail, plate wearers included. So armour type and, by the same token, class restrictions can be
+  judged for any member from whoever is logged in. It does **not** know level: whether a Hunter or a
+  Shaman under 40 can wear mail is not in this answer.
+- **`PlayerCanCollectSource` and `AccountCanCollectSource` both answer `true, true`** on the Druid, for a
+  mail item it cannot wear. So *can collect* is not *this class can wear it*; it cannot be used for the
+  list.
+- `GetAppearanceInfoBySource(125462)` answers the documented table: `appearanceIsCollected=false`,
+  `appearanceIsUsable=false`, `isAnySourceValidForPlayer=false`, `appearanceNumSources=2`,
+  `sourceIsKnown=true`, and the rest. **Read in a client for the first time here.**
+- **The proficiency spells answer nothing useful**: `IsSpellKnown` says `false` for all twenty on the
+  Druid - Leather and Staves among them, which a Druid has - while `GetSpellInfo` names each one
+  (*Cloth*, *Plate Mail*, *Staves* ...). So the ids are right and the call is the wrong question. The
+  whole skill list is asked next (*transmog skill list whole*), for the level-40 armour rule.
+- The item's bind type reads 2 (bind on equip) through `GetItemInfo`'s fourteenth value.
+- **A plate wearer does not learn a cloth look by wearing it**, tried in the game by Alberto the same
+  evening: *Disciple's Robe of the Owl* (cloth) bought, worn by Eccebombo (Paladin, 49), taken off - its
+  tooltip still reads *You haven't collected this appearance*. So for armour the per-class call's *valid*
+  is looser than the game's rule for collecting, which is each class's own armour type. Weapons not tried.
+- **Nor a mail look**, the same evening: *Sunblaze Coif* (mail, soulbound) on Eccebombo still reads *You
+  haven't collected this appearance* (Alberto's screenshot). So a plate wearer learns plate looks only,
+  though the per-class call counted Paladins valid for mail.
+- **The skill list names each character's armour** (Eccebombo, Paladin 49, *transmog skill list whole*):
+  headings *[Class Skills]*, *[Professions]*, *[Secondary Skills]*, *[Weapon Skills]* (Axes 166/245,
+  Polearms, Swords, Two-Handed Axes, Maces, Unarmed, Defense ...), **[Armor Proficiencies]: Cloth 1/1,
+  Leather 1/1, Mail 1/1, Plate Mail 1/1, Shield 1/1**, *[Languages]*. So a character's own armour type is
+  the best line under that heading, and its weapons are the lines under *Weapon Skills* - asked of each
+  character, in its own language, which is why they have to be filed by skill line id. Not yet read on a
+  character under 40.
+- **For cloth the per-class call names only the cloth wearers**: *Sage's Bracers of Intellect* (cloth,
+  item 6613) answers one source for 5, 8 and 9 (Priest, Mage, Warlock) and none for anybody else. For mail
+  it named Warrior, Paladin, Hunter, Death Knight and Shaman. So the call counts a class valid for a type it
+  wears as its own at some level (Warriors and Paladins below 40), which is not the level-aware rule the
+  game collects by.
+
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 
 Alberto's event trace on the Midnight branch (Ahia, guild Uga, tabs clicked about two seconds apart),
