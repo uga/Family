@@ -14134,14 +14134,34 @@ do
 		-- **And not on a client that forbids it.** Midnight answered this cast with *Family has
 		-- been blocked from an action only available to the Blizzard UI*, 2026-09-24 (§54).
 		local realBuild = GetBuildInfo
+		-- Where it does not, the window is asked for by the profession's line (§132).
+		local realTrade = _G.C_TradeSkillUI
+		local openedLine = {}
+		_G.C_TradeSkillUI = { OpenTradeSkill = function(line) openedLine[#openedLine + 1] = line end }
 		GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
 		Family.Capabilities:Detect()
 		local mine = professionButtonNamed("Blacksmithing")
 		if mine then fireClick(mine, "LeftButton") end
 		check("and on a client that forbids an addon to cast, the click asks for no cast",
 			mine ~= nil and #castWith == 2, tostring(#castWith))
+		check("but asks for the window by the profession's line instead",
+			#openedLine == 1 and openedLine[1] == Family:SkillLineFor("Blacksmithing"),
+			tostring(openedLine[1]))
+		Family.CurrentMember = function() return "Nobody-Nowhere" end
+		Family.UI:ShowProfessionFor(key, "Blacksmithing")
+		theirs = professionButtonNamed("Blacksmithing")
+		if theirs then fireClick(theirs, "LeftButton") end
+		check("and not for somebody else's profession",
+			#openedLine == 1, tostring(#openedLine))
+		Family.CurrentMember = held
+		Family.UI:ShowProfessionFor(key, "Blacksmithing")
 		GetBuildInfo = realBuild
 		Family.Capabilities:Detect()
+		mine = professionButtonNamed("Blacksmithing")
+		if mine then fireClick(mine, "LeftButton") end
+		check("while a client that lets an addon cast never takes that route",
+			#openedLine == 1 and #castWith == 3, tostring(#openedLine) .. " " .. tostring(#castWith))
+		_G.C_TradeSkillUI = realTrade
 
 		Family.UI:ShowProfessionFor(key, "Blacksmithing")
 		_G.CastSpellByName = realCast

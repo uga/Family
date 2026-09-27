@@ -1973,10 +1973,19 @@ local function build(frame)
 				-- character would open this player's own window under another name.
 				-- And only where the client lets an addon cast at all: Midnight answers this call
 				-- with a dialog telling the player Family was blocked (`addonCasts`).
+				--
+				-- **Where it does not, the window is asked for by the profession's line.** On
+				-- Midnight the secure attributes alone open nothing - Deiana's Cooking, armed
+				-- *spell Cooking*, protected, the game's own OnClick - and
+				-- `C_TradeSkillUI.OpenTradeSkill(185)` from a `/run`, which is addon code as
+				-- much as this is, opened Cooking with no dialog (`docs/MIDNIGHT.md` §132). The
+				-- button's id is that line. The same two conditions as the cast.
 				local word = member.key == Family:CurrentMember()
 					and record and record.openWith or nil
 				if word and Family.Capabilities:Has("addonCasts") then
 					Family:TryCall(_G.CastSpellByName, word)
+				elseif word then
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)
 				end
 
 				chosen = entry.id

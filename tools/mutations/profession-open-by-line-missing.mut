@@ -1,0 +1,8 @@
+name: where the client forbids a cast, the profession button opens nothing
+file: addons/Family_UI/Professions.lua
+--- old
+				elseif word then
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)
+--- new
+				elseif false then
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)

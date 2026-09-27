@@ -1,0 +1,9 @@
+name: a client that lets an addon cast also asks for the window by line
+file: addons/Family_UI/Professions.lua
+--- old
+				elseif word then
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)
+--- new
+				end
+				if word then
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)

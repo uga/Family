@@ -1,0 +1,6 @@
+name: the profession window is asked for by the wrong line
+file: addons/Family_UI/Professions.lua
+--- old
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)
+--- new
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, 185)

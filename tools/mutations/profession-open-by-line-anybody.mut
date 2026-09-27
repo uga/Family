@@ -1,0 +1,8 @@
+name: somebody else's profession window is asked for by its line
+file: addons/Family_UI/Professions.lua
+--- old
+				elseif word then
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)
+--- new
+				else
+					Family:TryCall((_G.C_TradeSkillUI or {}).OpenTradeSkill, entry.id)

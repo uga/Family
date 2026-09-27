@@ -4549,3 +4549,16 @@ no profession window and brings no dialog. So the cast is withheld as the column
 secure route alone opens nothing on Midnight - as it opened nothing on Burning Crusade before backlog
 61. The button still chooses the profession on Family's own page. Next: what the button is armed with
 (`/family openwith`), and whether `C_TradeSkillUI.OpenTradeSkill` opens a window from addon code.
+
+**Read** (Alberto, 2026-09-27, Deiana): `/family openwith` on the Cooking button - *openWith Cooking,
+armed true, inCombat false, type spell, spell Cooking, OnClick function, secureOnClick true,
+protected true, explicit true*. The button is everything a secure spell button should be, and the
+game does not open the window from it. `C_TradeSkillUI.OpenTradeSkill` is a function, and
+`pcall(C_TradeSkillUI.OpenTradeSkill, 185)` from a `/run` answered `true true` and **the Cooking
+window opened**, with no dialog.
+
+**Built.** Where `addonCasts` says no, the button's `PostClick` asks `C_TradeSkillUI.OpenTradeSkill`
+for the button's own id, which is the profession's skill line - under the same two conditions as the
+cast: the member being played, and a window Family has seen, so it knows the profession opens. A
+client that may cast keeps the cast and never takes this route. Three checks, four mutations.
+**Not yet seen in the game from Family's button.**
