@@ -5681,3 +5681,8 @@ true opens a sub-heading inside the current top-level one; a faction with `isChi
 current sub-heading, and one with `isChild` false to the top-level heading. A top-level heading's own
 factions come before its sub-headings. Era and Burning Crusade answer `isChild` false everywhere, which
 the same rule reads as one level - so one reader serves all three.
+
+**And with *Classic* open and *Alliance* shut** (9 rows): *Alliance* and *Steamwheedle Cartel* are collapsed
+headers with `isChild` true, and *Classic*'s own four factions `isChild` false - so the flag does not
+depend on whether a heading is open, and the list can be read as the player left it. *Alliance* stayed
+shut through Family's own scan, as the Burning Crusade headings did.
