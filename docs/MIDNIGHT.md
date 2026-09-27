@@ -4581,3 +4581,10 @@ read with its items, and tabs 2 to 7 **with their names** - *Metalli Pietre*, *P
 *Erbe e cibo*, *Cloth e pesci*, *Shard e ore* - and no time read, which the page draws as *not opened
 yet*. So every tab is recorded on Midnight. Not yet known: whether a tab clicked to on Midnight is
 then read, which is what turns *not opened yet* into *empty*.
+
+**Tabs clicked to, read** (Alberto, 2026-09-27, Ahia): after opening every tab of the guild *Uga*'s
+bank, only tab 2, *Metalli Pietre*, turned *empty*; tabs 3 to 7 still say *not opened yet*. The guild
+bank scan runs a second after `GUILDBANKFRAME_OPENED` or `GUILDBANKBAGSLOTS_CHANGED` and counts only the
+tab on screen at that moment as read; Midnight sent the second event eight times on opening (§127),
+which suggests every tab's contents arrive then and a switch sends nothing. Asked of the client next:
+the events, with the tab on screen, while switching tabs.
