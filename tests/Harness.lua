@@ -3216,6 +3216,11 @@ print("reputations on the fourth pretend client")
 			shut[#shut + 1] = row and row.name
 			if row then shutNow[row.name] = true end
 		end,
+		-- False for one faction set inactive, by the same index as its row (§133).
+		IsFactionActive = function(index)
+			local row = rows()[index]
+			return not (row and row.name == "Another Of This File's")
+		end,
 	})
 
 	-- The canary before the verdict: a section that reports anything about the newer route is
@@ -3271,6 +3276,11 @@ print("reputations on the fourth pretend client")
 			and cartels.maximum == 6000,
 		cartels and (tostring(cartels.standing) .. " " .. tostring(cartels.value) .. "/"
 			.. tostring(cartels.maximum)) or "missing")
+	check("a faction the client calls not active is recorded inactive, and only that one",
+		byName["Another Of This File's"] and byName["Another Of This File's"].inactive == true
+			and cartels and cartels.inactive == nil
+			and byName["Gallagio Loyalty Rewards Club"].inactive == nil,
+		tostring(byName["Another Of This File's"] and byName["Another Of This File's"].inactive))
 	local partly = byName["Another Of This File's"]
 	check("and a bar partly filled reads as how far along it is",
 		partly and partly.value == 1500 and partly.maximum == 3000,

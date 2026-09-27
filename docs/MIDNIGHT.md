@@ -4642,3 +4642,18 @@ open with the factions the game's own window lists under its *Inactive* (*Argent
 Dawn*, *Darnassus* ... *Frenzyheart Tribe* Hated 28873 / 36000 ...). One member's page is right. Not
 yet read: `IsFactionActive`, which the whole-family view needs to put *inactive* before a member's
 standing and to file a faction under the heading of whoever has it active.
+
+**`IsFactionActive`, read** (Alberto, 2026-09-27, Ahia, the game's *Inactive* heading open): 86 rows;
+false for **19**, rows 68 to 86 - *Argent Crusade* 1106, *Argent Dawn* 529, *Darnassus* 69 ... *Valiance
+Expedition* 1050 - exactly the factions under *Inactive*, in its order, none a heading; true for row 1.
+
+**Built.** On the route the count came from `C_Reputation` - Midnight's, which has no
+`IsFactionInactive` - a faction is inactive where `IsFactionActive` answers false for its row; the
+Classic clients keep `IsFactionInactive`. So Midnight's record carries `inactive` as `main`'s backlog
+105 shapes it, and the whole-family view can put *inactive* before a member's standing. One check,
+three mutations. **Not yet seen** in the whole-family view.
+
+Noticed on the way: `tools/surface.py` lists `C_Reputation` but none of its members - the scanner
+reaches them as `(_G.C_Reputation or {}).Name`, a form the generator does not follow - so the probe
+asks whether the namespace is there and not the calls in it. The same holds for every call reached
+that way. Not changed here; written down for a slice of its own.

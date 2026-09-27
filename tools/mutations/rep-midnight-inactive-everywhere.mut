@@ -1,0 +1,8 @@
+name: the Classic clients ask Midnight's call for inactive factions
+file: addons/Family/Scanners/Character.lua
+--- old
+	if modern then
+		local isActive = (_G.C_Reputation or {}).IsFactionActive
+--- new
+	if true then
+		local isActive = (_G.C_Reputation or {}).IsFactionActive

@@ -1,0 +1,8 @@
+name: Midnight's inactive factions are not read
+file: addons/Family/Scanners/Character.lua
+--- old
+	if modern then
+		local isActive = (_G.C_Reputation or {}).IsFactionActive
+--- new
+	if false then
+		local isActive = (_G.C_Reputation or {}).IsFactionActive

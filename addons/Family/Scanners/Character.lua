@@ -258,6 +258,15 @@ function Character:ReadReputations()
 	local category, categoryID, group, groupID
 	local inactiveCall = _G.IsFactionInactive
 
+	-- **On Midnight's route, by `C_Reputation.IsFactionActive`**, which has no `IsFactionInactive`.
+	-- Read on Ahia 2026-09-27 with the game's *Inactive* heading open: false for exactly the
+	-- nineteen factions under it, rows 68 to 86, none of them a heading, and true for row 1
+	-- (`docs/MIDNIGHT.md` §133). Asked by the same index as the row, as `factionAt` is.
+	if modern then
+		local isActive = (_G.C_Reputation or {}).IsFactionActive
+		inactiveCall = function(index) return Family:TryCall(isActive, index) == false end
+	end
+
 	local function heading(id)
 		id = tonumber(id)
 		if id and id > 0 then return id end
