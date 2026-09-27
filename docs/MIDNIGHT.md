@@ -4838,3 +4838,8 @@ Accessory*, soulbound and *Unique-Equipped: Back*; slots 31 to 34 four *Hexweave
 *Gatherer's Reagent Pouch* - the bag slots, which the bag scan already reads. `C_TradeSkillUI.GetProfessionSlots`
 is a function. Its screenshot also showed the pack's *Auction* line with no *(unbound)* mark: the mark
 knows bag slots and the character panel's own slot buttons, and the profession window's are neither.
+Per profession (Alberto, 2026-09-27, the skinner): `GetProfessionInfo`'s seventh value, the skill line,
+then `C_TradeSkillUI.GetProfessionInfoBySkillLineID(line).profession`, then `GetProfessionSlots` of it:
+*Enchanting* 333 → 9 → **20, 21, 22**; *Skinning* 393 → 11 → **23, 24, 25**; *Cooking* 185 → 5 → **26, 27**;
+*Fishing* 356 → 10 → **28, 29, 30**; *Archaeology* 794 → 14 → none. A tool and two accessories for a
+primary profession, two slots for Cooking, three for Fishing - each asked of the game, none written here.
