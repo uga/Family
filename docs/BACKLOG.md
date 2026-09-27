@@ -7521,6 +7521,13 @@ branch and likely for Mists. Not designed yet; the first step is to read the cur
 **For the Midnight port** (Alberto, 2026-09-27, passed to `family-retail-57`): on Midnight every class
 wears one armour type only, as he remembers it, and there are more classes (Demon Hunter, Evoker). If
 so, the per-class call may be exact for armour there and `meta.armour` unneeded; to be measured there.
+**Measured on Midnight live 2026-09-27** (Alberto, relayed by `family-retail-57`, recorded in
+`docs/MIDNIGHT.md` §134 on `midnight`): the class answer is exact there - Master's Leggings (cloth) are
+valid for priest, mage and warlock only - but a plate character who wore the uncollected leggings then
+collected the look. So on Midnight anyone who can *wear* an item learns its look (armour at or above the
+item's, plus level), the opposite of the Mists rule measured here, and the skill list that `meta.armour`
+comes from does not exist there. `main` is unchanged; the Midnight branch builds its own rule behind a
+capability once Alberto chooses what its tooltip lists.
 
 **Seen in the game 2026-09-27** (Alberto, *working*): *Traveler's Bracers* (leather, level 51, bind on
 equip) held by Duecalzini, whose look the account lacks, reads *Look can be learnt by: Luga, Uga*.
