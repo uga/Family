@@ -1060,6 +1060,30 @@ local function clientShowsSellPrice(tooltip)
 	return false
 end
 
+-- **Whether the copy under the pointer is known to be bound** - backlog 106. Asked only where the
+-- slot can be checked to hold this item: a bag or bank slot through the same guess `bagCount`
+-- makes, or a worn slot on the character frame. Worn gear is bound: equipping binds it. Anything
+-- else - another member's copy, a link, an auction row - answers nil, so a wrong guess costs a
+-- missing mark rather than a wrong one.
+local function copyIsBound(tooltip, itemID)
+	local owner, parent = ownerChain(tooltip)
+	if not owner then return nil end
+
+	local slot = idOf(owner)
+	local name = owner.GetName and Family:TryCall(owner.GetName, owner)
+	if type(name) == "string" and name:find("^Character.+Slot$") and slot then
+		local worn = Family:TryCall(GetInventoryItemID, "player", slot)
+		if tonumber(worn) == itemID then return true end
+		return nil
+	end
+
+	local bag = owner.bagID
+	if bag == nil then bag = idOf(parent) end
+	if bag == nil or slot == nil or not Family.Bags then return nil end
+	if Family.Bags:SlotContents(bag, slot) ~= itemID then return nil end
+	return Family:BoundIn(bag, slot, itemID) == true
+end
+
 local function priceLines(tooltip, itemID, variant)
 	if not (FamilyDB and FamilyDB.prices) then return nil end
 
@@ -1097,7 +1121,15 @@ local function priceLines(tooltip, itemID, variant)
 		-- column a reader is actually comparing down is the one thing that moves. Every
 		-- figure on this block is right-aligned by the tooltip itself, so putting the
 		-- qualification first puts them all back in a column.
-		lines[#lines + 1] = { L["Auction"],
+		-- **Marked where the copy under the pointer is bound** (backlog 106, Alberto's option 1
+		-- of three): the market price stays in view, and the mark says it is not what this copy
+		-- is worth. A bound copy is valued at the vendor price (`Index:WorthOfItem`), and a
+		-- bound Contender's shoulder read *Auction 12311g* and was taken for its worth.
+		local label = L["Auction"]
+		if copyIsBound(tooltip, itemID) then
+			label = label .. " |cff888888" .. L["(unbound)"] .. "|r"
+		end
+		lines[#lines + 1] = { label,
 			string.format("|cff888888(%s)|r %s", UI:Ago(seen), UI:MoneyLine(auction)),
 			0.4, 0.73, 1, 1, 1, 1 }
 	end

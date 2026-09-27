@@ -2164,7 +2164,7 @@ _G.debugprofilestop = function() return 1250 end
 fire("ADDON_LOADED", "Family")
 _G.debugprofilestop = nil
 
--- **Deferred work runs to a budget a frame** (`docs/MIDNIGHT.md` §122): on Midnight a boss kill
+-- **Deferred work runs to a budget a frame** (`docs/DECISIONS.md` 2026-09-27): on Midnight a boss kill
 -- made several jobs due in one frame and the client stopped it as *script ran too long*. The clock
 -- here moves only inside these jobs, by what each is said to cost.
 ;(function()
@@ -2203,6 +2203,9 @@ _G.debugprofilestop = nil
 	check("and runs on its new one", table.concat(ran, ",") == "asks,new", table.concat(ran, ","))
 
 	_G.debugprofilestop = nil
+	-- Padded to a whole minute: the frame clock moved 5.6 seconds above, and a part of a
+	-- minute changes where every later minute-rounded deadline falls (L-125).
+	advance(54.4)
 end)()
 print("  pass: " .. RUN.storage)
 if RUN.storage == "plain" then
@@ -10927,6 +10930,54 @@ do
 		-- reading down is the one thing that moves.
 		check("and the tooltip says it with the age of the reading in front of the money",
 			plain(shown) == "(just now) 0g 08s 00c", plain(shown))
+
+		-- **Backlog 106: a bound copy's Auction line says it is the unbound price.** Only where
+		-- the slot under the pointer is checked to hold this item.
+		do
+			local realOwner, realGetOwner = GameTooltip.__owner, GameTooltip.GetOwner
+			local realSlot, realBound = Family.Bags.SlotContents, Family.BoundIn
+			local realWorn = GetInventoryItemID
+			local button = {}
+			function button:GetID() return 3 end
+			function button:GetParent() return { GetID = function() return 0 end } end
+			GameTooltip.__owner = button
+			GameTooltip.GetOwner = function(self) return self.__owner end
+			Family.Bags.SlotContents = function(_, bag, slot)
+				if bag == 0 and slot == 3 then return 2880, 1 end
+			end
+			local bound = true
+			Family.BoundIn = function() return bound end
+
+			local mark = Family.L["(unbound)"]
+			local left = laneLine(2880, "Auction")
+			check("a bound copy in the bags marks its Auction line as the unbound price",
+				tostring(left):find(mark, 1, true) ~= nil, tostring(left))
+			bound = false
+			left = laneLine(2880, "Auction")
+			check("an unbound copy is not marked", tostring(left):find(mark, 1, true) == nil,
+				tostring(left))
+
+			bound = true
+			Family.Bags.SlotContents = function() return 9999, 1 end
+			left = laneLine(2880, "Auction")
+			check("and a slot that does not hold this item marks nothing",
+				tostring(left):find(mark, 1, true) == nil, tostring(left))
+
+			-- Worn gear is bound: equipping binds it.
+			local worn = {}
+			function worn:GetID() return 5 end
+			function worn:GetName() return "CharacterChestSlot" end
+			function worn:GetParent() return {} end
+			GameTooltip.__owner = worn
+			GetInventoryItemID = function(_, slot) if slot == 5 then return 2880 end end
+			left = laneLine(2880, "Auction")
+			check("a worn copy is marked too", tostring(left):find(mark, 1, true) ~= nil,
+				tostring(left))
+
+			GetInventoryItemID = realWorn
+			Family.Bags.SlotContents, Family.BoundIn = realSlot, realBound
+			GameTooltip.__owner, GameTooltip.GetOwner = realOwner, realGetOwner
+		end
 
 		-- **A price belongs to one realm and one side**, unlike everything else in `FamilyDB`.
 		-- Asked as a behaviour rather than by looking at the key: the first version of this

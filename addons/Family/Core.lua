@@ -756,7 +756,8 @@ local ticker = CreateFrame("Frame")
 -- **A budget a frame, the longest overdue first.** Every job that fell due in a frame used to run
 -- in that frame, and the client's patience is spent per frame: killing a boss makes the bags, the
 -- lockouts, the currencies and more due together, and on Midnight, still in combat with the adds,
--- the frame was stopped as *error in deferred bags: script ran too long* (`docs/MIDNIGHT.md` §122)
+-- the frame was stopped as *error in deferred bags: script ran too long* (the Midnight branch's
+-- 4846b7f; on `main`, `docs/DECISIONS.md` 2026-09-27, beside Mists' *error in deferred character*)
 -- while the bag scan alone measured 36 ms out of combat. So jobs run until the frame has spent
 -- `FRAME_BUDGET` milliseconds and the rest wait for the next: cheap ones still all go at once, and
 -- a costly one starts on a frame nothing else has spent - so an error that still comes names the

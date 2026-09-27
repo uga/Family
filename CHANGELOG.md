@@ -29,6 +29,19 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Errors
+
+- **Family no longer stops with *script ran too long* when a lot happens at once**, such as a boss
+  dying with the whole pack looted. The work Family does after an event now runs a little at a
+  time, the longest-waiting first, instead of all in the same moment. On Mists this showed as
+  *error in deferred character*.
+
+### Item tooltips
+
+- **On an item that is bound to you, the Auction line says *(unbound)*.** The auction price is
+  still shown, but it is what an unbound copy sells for, not what yours is worth: a bound item is
+  valued at the vendor price. Works in your bags, your bank and your worn gear.
+
 ### The summary
 
 - **Hovering a line on the Cooldowns page describes that line's character.** After looking at

@@ -7325,3 +7325,114 @@ the list to miss. The reading is taken the first time any Mists character earns 
 read as twelve values, none empty, id 515 last - the Burning Crusade shape. Family filed it by id and
 drew it on the Currencies set. Nothing to change (DATASOURCES, *On Mists the currency list is empty*).
 
+
+---
+
+## 104. Archaeology's contents: fragments by race, the project in progress, artifacts solved
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
+Family does not read Archaeology's contents at all. Mists has Archaeology and so does Midnight, so
+under the branch rule `main` builds it first for Mists and the Midnight branch ports it and measures
+its own side when it lands.
+
+**Today:** Archaeology is a skill line with its rank and nothing more - `SkillLines.lua:611`, the
+profession list in `Scanners/Professions.lua`, and the guild share's `[794]` (`Guild.lua:229`).
+Nothing reads the races, their fragments, the project each race has in progress, or the artifacts
+solved.
+
+**What has been read, once, on Luga (`5.5.4`, 2026-09-23)** - DATASOURCES, *On Mists the currency
+list is empty*: `GetNumArchaeologyRaces` answered 13, and `GetArchaeologyRaceInfo(13)` answered
+`"Dwarf" 461831 52843 11 32 200`, the fourth value the fragments held and the sixth the cap.
+`C_CurrencyInfo.GetCurrencyInfo(384)` agreed: 11 of 200. Fragments are **not** in the client's
+currency list (the same entry), so the Currencies set will never show them and this is its own slice.
+
+**Open, and Alberto's to settle before building:**
+
+- **What is shown, and where.** Fragments per race are a figure per member per race: a Summary set,
+  a section on the Character panel, or both. The entry that found them left open whether they
+  should be shown at all.
+- **Projects and solved artifacts.** Unmeasured. Whether `GetActiveArtifactByRace`,
+  `GetArtifactInfoByRace` and `GetNumArtifactsByRace` answer without the Archaeology window having
+  been opened in the session is the first thing to probe, in the same shape as the professions'
+  window rule.
+- **Shared or not** over Wide Family, and in which category.
+
+**First step: a FamilyProbe entry** asking each of those calls on Luga, with the window closed and
+then open, before any scanner is written.
+
+**Settled by Alberto, 2026-09-27:** fragments, the project in progress and the solved artifacts;
+shown on a Summary set **and** on the Character panel; shared over Wide Family **under
+professions**. The probe is `/familyprobe apis`, entry *archaeology projects* - run on a Mists
+character with the Archaeology window not yet opened this session, then again after opening it.
+
+---
+
+## 105. The Reputations panel in the game's order, collapsed, with inactive per character
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word,
+designed from Eccebombo's Reputations page beside the game's window. For every client; `main` builds
+it and the Midnight branch makes its `C_Reputation` reader fill the same shape (its
+`docs/MIDNIGHT.md` §129).
+
+**His design:**
+
+1. Headings start collapsed.
+2. The game's order, not alphabetical: Classic lists its own headings in its own order; Midnight
+   lists expansions newest first.
+3. **Inactive is per character** - his choice, option 2 of two. One character's page keeps the
+   game's *Inactive* heading, as the game does. The whole-family view drops that heading and lists
+   each faction once under its own category, with its members; those who set it inactive get
+   *inactive* written before their progress. (Rejected, option 1: the tag everywhere and a
+   show/hide switch.)
+
+**Today:** `Character:ReadReputations` (`Scanners/Character.lua:135`) keeps only the nearest heading
+without a standing, carried down the list (`:160-171`): no parent heading, no order. So an inactive
+faction's category is recorded as *Inactive* and its own category is lost. It also opens every
+collapsed heading in the game's own list to read under it (`ExpandFactionHeader`, `:151`), which the
+redesign should look at: whether those headings are put back as they were.
+
+**What the redesign needs recorded:** each faction's position in the list, its heading and the
+heading above that where there is one, and whether it sits under *Inactive*. The game has no call
+that names an inactive faction's own heading (the Midnight session read `C_Reputation` in full), so
+the whole-family view takes it from another member who has that faction active, and falls back to
+*Inactive* when nobody does. **Family must never call `SetFactionActive`.**
+
+**Measured on Midnight live, every heading shut** (the Midnight session): 12 headings in order - The
+War Within 2569, Dragonflight 2506, Battle for Azeroth 2104, Legion 1834, Warlords of Draenor 1444,
+Mists of Pandaria 1245, Cataclysm 1162, Wrath of the Lich King 1097, The Burning Crusade 980, Classic
+1118, Guild 1169, Inactive 0. None a child, none with a standing; *Inactive* is the heading with
+faction id 0.
+
+**First step: a FamilyProbe entry** on Era, Burning Crusade and Mists printing the headings in order
+with their ids, child flags and standings, to see whether the Classic clients' *Inactive* heading
+also answers 0 and how their nesting looks.
+
+**Probe written 2026-09-27:** `/familyprobe apis`, entry *reputation headings* - every row of the
+reputation list as it stands, and `C_Reputation`'s where present. Run with every heading shut in
+the game's own Reputation window, on Era, Burning Crusade and Mists.
+
+---
+
+## 106. The Auction line on a bound copy's tooltip says it is the unbound price — DONE 2026-09-27, not yet seen in game
+
+**Built 2026-09-27** as below: `copyIsBound` in `Tooltip.lua`, a bag or bank slot checked to hold the item and asked `Family:BoundIn`, or a `Character…Slot` button whose worn item is this one. The label reads *Auction (unbound)*, the mark in grey.
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word.
+All builds, so `main`'s; the Midnight branch takes it at the merge.
+
+**The case**, on Midnight: Eccebombo's Soulbound *Contender's Revenant Shoulders* (82944, bind on
+equip, now bound). The tooltip read *Auction (yesterday) 12311g* and he took it for what that copy
+is worth. The valuation is right, by the 2026-09-11 rule: `Family:BoundIn` is true, so
+`Index:WorthOfItem` values it at the vendor price and the CTRL line multiplies that. What misleads is
+`priceLines`' Auction line (`Family_UI/Tooltip.lua:1060-1072`), which shows the item's market price
+whatever the copy under the pointer is.
+
+**His choice, option 1 of three:** where the copy under the pointer is known to be bound - own bags,
+bank, worn gear - keep the Auction line and mark it *(unbound)* in grey, so the market price stays
+visible without reading as this copy's worth. Rejected: hiding the line, and leaving it as it is.
+On another member's copy the tooltip has only a link, so no mark there.
+
+**The parts are already in the tree:** `ownerChain` and the bag/slot guess `bagCount` makes and
+checks (`Tooltip.lua:704-730`), `Family:BoundIn(bag, slot, itemID)` and `Family:BindingWorn(slot)`
+(`Core.lua:530`, `:563`). The guess must be checked against the item before it is used, as
+`bagCount` does: a wrong slot has to cost a missing mark, never a wrong one.
