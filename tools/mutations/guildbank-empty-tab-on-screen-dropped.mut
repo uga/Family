@@ -1,0 +1,6 @@
+name: an empty guild bank tab on screen is not recorded
+file: addons/Family/Scanners/Bank.lua
+--- old
+		if seen or tab == onScreen then
+--- new
+		if seen then

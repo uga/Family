@@ -1061,4 +1061,6 @@ Family.locales.deDE = {
 	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dDieser Charakter hat noch nichts ausgegraben.|r",
 	["%d races, %d artifacts solved"] = "%d Völker, %d Artefakte gelöst",
 	["first solved %s"] = "zuerst gelöst %s",
+	["|cff888888not opened yet|r"] = "|cff888888noch nicht geöffnet|r",
+	["|cff888888empty|r"] = "|cff888888leer|r",
 }

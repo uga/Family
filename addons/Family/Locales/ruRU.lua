@@ -1061,4 +1061,6 @@ Family.locales.ruRU = {
 	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dЭтот персонаж ещё ничего не раскопал.|r",
 	["%d races, %d artifacts solved"] = "Рас: %d, решено артефактов: %d",
 	["first solved %s"] = "впервые решён %s",
+	["|cff888888not opened yet|r"] = "|cff888888ещё не открыта|r",
+	["|cff888888empty|r"] = "|cff888888пусто|r",
 }

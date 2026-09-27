@@ -60,6 +60,10 @@ is a decision rather than an afternoon of archaeology.
 
 ### Possessions
 
+- **Every guild bank tab is recorded, with its name, including the empty ones.** A tab you have
+  not opened yet is shown as *not opened yet*, and one you opened empty says *empty*. A tab read
+  on an earlier visit keeps what it held until you open it again. Before, only the tabs holding
+  something were recorded, and a visit that did not load a tab forgot what it had held.
 - **CTRL-ALT and a click on an item in a Possessions block now opens the family's list of it**, as
   its tooltip says. It did nothing on Family's own blocks; it worked only on the game's bags and
   links.

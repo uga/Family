@@ -1061,4 +1061,6 @@ Family.locales.frFR = {
 	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dCe personnage n'a encore rien déterré.|r",
 	["%d races, %d artifacts solved"] = "%d races, %d objets résolus",
 	["first solved %s"] = "résolu la première fois %s",
+	["|cff888888not opened yet|r"] = "|cff888888pas encore ouvert|r",
+	["|cff888888empty|r"] = "|cff888888vide|r",
 }

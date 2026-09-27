@@ -1,0 +1,6 @@
+name: Possessions does not say a guild bank tab was never opened
+file: addons/Family_UI/Contents.lua
+--- old
+				if container.unseen then
+--- new
+				if false then
