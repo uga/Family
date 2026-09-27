@@ -4543,3 +4543,9 @@ the game's profession window on Midnight.
 **What the fourth column still lacks**: `dailyQuests`, `currencies`, `dualSpec`, `transmogrify`,
 `talentTrees`, `glyphs`, `keyring`, `ammoBags`, `weaponSkills` - none gates anything Family draws on
 Midnight, and each still needs an answer from a reading.
+
+**Read** (Alberto, 2026-09-27, Deiana on Midnight): clicking the *Cooking 175* profession button opens
+no profession window and brings no dialog. So the cast is withheld as the column says, and the
+secure route alone opens nothing on Midnight - as it opened nothing on Burning Crusade before backlog
+61. The button still chooses the profession on Family's own page. Next: what the button is armed with
+(`/family openwith`), and whether `C_TradeSkillUI.OpenTradeSkill` opens a window from addon code.
