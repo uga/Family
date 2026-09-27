@@ -4602,3 +4602,13 @@ runs, would keep them all.
 After those clicks Ahia's page said tab 1 with its items, tabs 2, 4 and 5 *empty*, and 3, 6 and 7
 *not opened yet* - tab 3's event was in the trace, and 4 came less than a second after it. Sent to
 `main` at Alberto's word: note the tab on screen as each event arrives.
+
+**Seen, every tab read** (Alberto, 2026-09-27, Ahia, the guild *Uga*): with `main`'s `647bcdc` deployed,
+tabs 6 and 7 clicked to now say *empty*, and all seven tabs carry a time read, 1790510767 to
+1790512892. The trace of that visit showed the game's own `SetCurrentGuildBankTab` (a function here,
+as `QueryGuildBankTab` is) called for 6, 7 and 1, each followed by `GUILDBANKBAGSLOTS_CHANGED` with the
+new tab on screen, and seven `GUILDBANK_UPDATE_TABS` before the window opened. The first attempt,
+which left 6 and 7 *not opened yet*, ran on a build without `647bcdc`.
+
+Merged since: `main`'s `8f7c9ad`, a guild tab with anything in it drawn at its full 98 slots with
+*N of 98 free* under its heading, from Alberto's short tab on Monaca. Not yet seen on Midnight.
