@@ -1,0 +1,6 @@
+name: an empty or unread guild tab shows a bare 0 under its heading
+file: addons/Family_UI/Contents.lua
+--- old
+			elseif not (container.unseen or container.empty) then
+--- new
+			else

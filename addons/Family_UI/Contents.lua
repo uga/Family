@@ -1408,7 +1408,10 @@ local function build(frame)
 					lines[#lines + 1] = { L["|cffffaa00only its own kind of thing fits "
 						.. "here|r"] }
 				end
-			else
+			elseif not (container.unseen or container.empty) then
+				-- Not under a guild tab that says *not opened yet* or *empty*: its size is its
+				-- highest filled slot, so the count there is a bare 0 under the word that
+				-- already said it (seen on Midnight 2026-09-27, Alberto: leave it out).
 				lines[#lines + 1] = { string.format("|cff888888%d|r", container.size or 0) }
 			end
 

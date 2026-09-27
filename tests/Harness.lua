@@ -16319,6 +16319,16 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 			end
 		end
 		titles = table.concat(titles, " | ")
+		-- And no bare count under either: a size of 0 is what those two words already say.
+		local zeroUnder = false
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and type(f.lines) == "table" and f.lines[1]
+				and tostring(f.lines[1][1]):find("Spare", 1, true) and f.lines[2]
+				and tostring(f.lines[2][1]) == "|cff8888880|r" then
+				zeroUnder = true
+			end
+		end
+		check("an empty tab's heading has no bare 0 under it", not zeroUnder)
 		check("a guild bank tab is titled by its own name, and one with none by its number",
 			titles:find("|cff888888Mats|r", 1, true) ~= nil and titles:find("tab 2", 1, true) ~= nil,
 			titles)
