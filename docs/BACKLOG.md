@@ -7516,7 +7516,11 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, two readings taken, the design waits on Alberto
+## 108. Transmogrification on Mists — OPEN 2026-09-27, shape chosen, waiting on the fourth probe
+
+**Chosen by Alberto 2026-09-27**: Eccebombo and Luga share one game account, so the collection is per
+character; what Family shows is **which family members have collected an item's look**, on the item's
+tooltip. Collection progress and outfits were offered and not chosen.
 
 **Second reading, Eccebombo and Luga 2026-09-27**: the collection counts differ between the two, so
 the collection is per character if they share a game account (Alberto's to say). Outfits, the active
