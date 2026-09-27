@@ -5648,3 +5648,8 @@ Cartel* again carrying standings with `hasRep` false. Whether anything nests und
 this reading, which had every heading shut. **The headings were still collapsed after the probe and
 Family's own scan**, per Alberto, so the scan's put-back worked here; Era's all-open list followed a
 relog and is to be retried.
+
+**Read again with only *Outland* open**: twelve rows. Under *Outland* 980: Cenarion Expedition 942, Honor
+Hold 946, Kurenai 978, Sporeggar 970, The Consortium 933 - every one `isChild` false, and *Shattrath
+City* 936 follows as a top-level heading of its own, not under *Outland*. **So Burning Crusade has one
+level of headings, as Era does**; the nesting the Midnight branch reads does not appear on either.

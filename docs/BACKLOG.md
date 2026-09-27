@@ -7430,8 +7430,8 @@ wanted: Burning Crusade and Mists, every heading shut.
 
 **Burning Crusade read 2026-09-27**: seven headings, *Alliance* 469, *Alliance Forces* 891, *Outland* 980,
 *Shattrath City* 936, *Steamwheedle Cartel* 169, *Other* 0, *Inactive* 0 - Era's shape with two added.
-Still wanted: Mists, and on Burning Crusade one run with *Outland* open, to see whether anything is a
-child of it. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
+*Outland* opened on its own lists five factions, none a child, and *Shattrath City* is a heading of its
+own beside it: **one level on Burning Crusade, as on Era**. Still wanted: Mists. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
 all-open list on Era came after a relog, and Alberto will retry it there.
 
 ---
