@@ -5706,3 +5706,9 @@ for the window.
   unsolved artifact is listed at all, is not read yet.
 
 Eccebombo, with no Archaeology, answered the same thirteen races with 0 everywhere and no project.
+
+**The second listed artifact, settled from Alberto's screenshot the same hour:** the game's Archaeology
+book for Dwarf shows one completed artifact, *Worn Hunting Knife*, with the skill at 12/75. So of the
+two `GetNumArtifactsByRace(13)` lists, the second is the project in progress, *Bone Gaming Dice*, not yet
+solved: **the list holds the solved artifacts and the current project, and a solved one is one whose
+tenth value (times solved) is above 0.**

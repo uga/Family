@@ -7363,8 +7363,8 @@ then open, before any scanner is written.
 **Read on Luga, 2026-09-27** (DATASOURCES, *Archaeology on Mists*): fragments, the project's cost, the
 project and the listed artifacts all answer at login with the window never opened; only an
 artifact's flavour text waits for it. `GetArtifactInfoByRace`'s ninth and tenth values read as first
-solved and times solved. Buildable; the one thing still to read, from the scanner's own debug line
-or the probe on a race with more listed, is whether the list holds unsolved artifacts too.
+solved and times solved. Buildable. The list holds the solved artifacts **and** the project in progress
+(Alberto's screenshot of the book: one completed, two listed), so *solved* is times-solved above 0.
 
 **Settled by Alberto, 2026-09-27:** fragments, the project in progress and the solved artifacts;
 shown on a Summary set **and** on the Character panel; shared over Wide Family **under
