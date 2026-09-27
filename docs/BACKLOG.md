@@ -7518,6 +7518,10 @@ branch and likely for Mists. Not designed yet; the first step is to read the cur
 
 ## 108. Transmogrification on Mists — BUILT 2026-09-27, both halves seen working in the game
 
+**For the Midnight port** (Alberto, 2026-09-27, passed to `family-retail-57`): on Midnight every class
+wears one armour type only, as he remembers it, and there are more classes (Demon Hunter, Evoker). If
+so, the per-class call may be exact for armour there and `meta.armour` unneeded; to be measured there.
+
 **Seen in the game 2026-09-27** (Alberto, *working*): *Traveler's Bracers* (leather, level 51, bind on
 equip) held by Duecalzini, whose look the account lacks, reads *Look can be learnt by: Luga, Uga*.
 
