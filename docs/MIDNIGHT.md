@@ -4677,3 +4677,14 @@ copy in the roster, Deiana's. Each of the five logged in once with this build ca
 five read that way may also say whether *inactive* is set per character or across the realm's
 characters on Midnight. The same stale copy is every Classic user's after `main`'s next release: a
 4.4.0 record has the game's *Inactive* heading and no flag until its character logs in again.
+
+**Transmog and void storage** (Alberto, 2026-09-27). Transmog exists on Midnight, *very different from
+Mists*, and **must be supported by Family Mists and then, in its own version, by Family Midnight** -
+today nothing records it on any client; `transmogrify` is a fact about the game that no code reads.
+Sent to `main` as a new feature to be opened there first; this branch ports it after, as it did
+archaeology and reputations. Transmog exists on Mists too, so §111's rule does not hold it back.
+**Void storage does not exist on Mists Classic** - the specification's *Transmogrification, void
+storage* row is wrong on that half, sent to `main` to correct. On Midnight it is two character bank
+tabs, *Void Storage 1* and *2*, already read (§130). Daily quests: in the game on Midnight, Alberto's
+word; Family follows a daily as any quest in the log, with no history, as on every client by his
+decision of 2026-09-23.
