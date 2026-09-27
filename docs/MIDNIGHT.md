@@ -4831,3 +4831,5 @@ in each profession's window (his screenshot of *Classic Herbalism*, *Profession 
 reads worn gear from slot 1 to 19 (`Scanners/Character.lua`, `INVSLOT_LAST_EQUIPPED`) and nothing past it.
 Which slots the game uses, and what they hold, is read first: every `INVSLOT_` constant from 20 up,
 with what the character wears there.
+First reading (Alberto, 2026-09-27): no global `INVSLOT_` at 20 or above - the walk of `_G` printed
+nothing. Asked next by number, 20 to 40.
