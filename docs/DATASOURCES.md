@@ -5718,6 +5718,30 @@ reads *First Completion: 23/9/2026 8:51 PM* and *Number of times completed: 1*. 
 1790189489, is 20:51:29 CEST on 23 September 2026 - the same moment, as a Unix time - and the tenth is
 the count.
 
+### Transmogrification on Mists Classic is the modern system, not original Mists' — read 2026-09-27
+
+Eccebombo, `5.5.4`, the two *transmog* probes of backlog 108, away from a Transmogrifier.
+
+- **None of original Mists' calls is there**: `GetTransmogrifySlotInfo`, `GetTransmogrifyCost`,
+  `CanTransmogrifyItemWithItem` and `GetItemTransmogrifyInfo` are absent, and so are `GetVoidItemInfo`,
+  `CanUseVoidStorage` and `IsVoidStorageReady` - the client agrees with Alberto that void storage is gone.
+- **The modern system is there whole**: `C_Transmog` (6 members, among them `GetSlotVisualInfo`,
+  `GetItemIDForSource`, `IsAtTransmogNPC`), `C_TransmogCollection` (83, the wardrobe collection),
+  `C_TransmogSets` (41) and `C_TransmogOutfitInfo` (66: outfits, *situations*, pending changes and their
+  cost). The game's own window (Alberto's screenshot) matches: *Items*, *Sets*, *Custom Sets* and
+  *Situations* tabs, outfits down the left, *Purchase Outfit Slot*.
+- **Per worn item**, `C_TransmogCollection.GetItemInfo(link)` answers an appearance id and a source id -
+  slot 1, item 10763, `48224 123962` - and `PlayerHasTransmogItemModifiedAppearance(source)` and
+  `PlayerHasTransmog(itemID)` both answer `true` for most of what is worn. Neck, the two rings and the
+  trinket answer **no returns**: they have no appearance. The shirt, item 4334, answers an appearance and
+  source and `false` to both, though worn - not explained yet.
+- **The collection's size**, `GetCategoryCollectedCount(c)` / `GetCategoryTotal(c)` for categories 1-29:
+  `1=5/1392 2=3/1324 3=24/499 ...`, 28 and 29 `0/0`. Which category is which is not read yet
+  (`GetCategoryInfo`), nor whether the count is this character's or the account's.
+
+Not read yet, and asked by the probe *transmog outfits and looks*: the outfits and which is active, the
+look each slot shows now, and the source count on a second character of the same account.
+
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 
 Alberto's event trace on the Midnight branch (Ahia, guild Uga, tabs clicked about two seconds apart),

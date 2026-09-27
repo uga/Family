@@ -962,6 +962,71 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog of what is worn", as
     return table.concat(out, " | ")
 end }
 
+-- **Backlog 108, second reading.** The first (Eccebombo, 5.5.4, 2026-09-27) found none of original
+-- Mists' calls and the modern system whole: the wardrobe collection, sets, and
+-- `C_TransmogOutfitInfo` with outfits and situations. What it did not ask: which outfits the
+-- character has and which is active, what look each slot wears now, and how many appearances the
+-- collection holds - the last to be compared between two characters of one account, which is what
+-- says whether the collection is per character or account-wide. Every call is attempted with the
+-- arguments it is most likely to take, and a refusal is printed as one; run it once away from a
+-- Transmogrifier and once at one.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog outfits and looks", ask = function()
+    local out = {}
+    local function ask(label, namespace, name, ...)
+        local fn = inside(namespace, name)
+        if not fn then out[#out + 1] = label .. " absent" return nil end
+        local answer = callPacked(fn, ...)
+        local said = shape(answer)
+        if answer and answer.n == 1 and type(answer[1]) == "table" then said = fields(answer[1]) end
+        out[#out + 1] = label .. " " .. said
+        return answer
+    end
+
+    ask("at NPC", "C_Transmog", "IsAtTransmogNPC")
+    ask("enabled", "C_TransmogOutfitInfo", "IsTransmogEnabled")
+    ask("active outfit", "C_TransmogOutfitInfo", "GetActiveOutfitID")
+    ask("viewed outfit", "C_TransmogOutfitInfo", "GetCurrentlyViewedOutfitID")
+    ask("usable outfits", "C_TransmogOutfitInfo", "GetMaxNumberOfUsableOutfits")
+    ask("situations on", "C_TransmogOutfitInfo", "GetOutfitSituationsEnabled")
+    ask("equipped gear shown", "C_TransmogOutfitInfo", "IsEquippedGearOutfitDisplayed")
+    local outfits = ask("outfits", "C_TransmogOutfitInfo", "GetOutfitsInfo")
+    if outfits and type(outfits[1]) == "table" then
+        for index, outfit in ipairs(outfits[1]) do
+            if index > 6 then break end
+            out[#out + 1] = "outfit " .. index .. ": " .. fields(outfit)
+        end
+    end
+    ask("sources known", "C_TransmogCollection", "GetNumTransmogSources")
+    ask("custom sets", "C_TransmogCollection", "GetCustomSets")
+
+    -- What each worn slot shows. The outfit system names its own slots, so the inventory slot
+    -- is turned into one first; the older call takes a location table where the client
+    -- carries the helper that builds one.
+    local toOutfit = inside("C_TransmogOutfitInfo", "GetTransmogOutfitSlotFromInventorySlot")
+    local visual = inside("C_Transmog", "GetSlotVisualInfo")
+    local util = type(_G.TransmogUtil) == "table" and _G.TransmogUtil or nil
+    out[#out + 1] = "TransmogUtil " .. membersOf(util)
+    for _, slot in ipairs({ 1, 3, 5, 16 }) do
+        local line = "slot " .. slot
+        local outfitSlot = toOutfit and try(toOutfit, slot) or nil
+        line = line .. " || outfit slot " .. describe(outfitSlot)
+        if outfitSlot ~= nil then
+            local viewed = inside("C_TransmogOutfitInfo", "GetViewedOutfitSlotInfo")
+            if viewed then
+                local answer = callPacked(viewed, outfitSlot, 0, 0)
+                line = line .. " || viewed " .. ((answer and answer.n == 1
+                    and type(answer[1]) == "table") and fields(answer[1]) or shape(answer))
+            end
+        end
+        if visual and util and type(util.CreateTransmogLocation) == "function" then
+            local where = try(util.CreateTransmogLocation, slot, 0, 0)
+            if where then line = line .. " || visual " .. shape(callPacked(visual, where)) end
+        end
+        out[#out + 1] = line
+    end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end

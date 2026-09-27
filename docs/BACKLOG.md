@@ -7516,7 +7516,15 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, probes written, not yet read
+## 108. Transmogrification on Mists — OPEN 2026-09-27, first reading taken, second probe written
+
+**First reading, Eccebombo 2026-09-27** (DATASOURCES, *Transmogrification on Mists Classic is the modern
+system*): none of original Mists' calls is there; the wardrobe collection, sets and the outfit system
+(`C_TransmogOutfitInfo`, outfits and situations) are, and the game's window matches. So Mists Classic's
+transmog is the modern one - which may make the Midnight port far smaller than *very different* suggested,
+to be seen when that branch reads its own. A third probe, *transmog outfits and looks*, asks the outfits,
+the look each slot shows, and the collection's size, to be run on **two characters of one account** so
+the counts say whether the collection is account-wide.
 
 **Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
 *Transmog instead does exist in Mists, and that must be supported Family Mists. Then, its different
