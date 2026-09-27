@@ -39538,9 +39538,19 @@ print("archaeology: fragments, the project and the artifacts solved")
 		button ~= nil)
 	if button then button.__scripts.PostClick(button) end
 	Family.UI:Refresh()
-	check("chosen, it lists the race, its project and the artifact solved",
-		visibleText("Dwarf") and visibleText("Bone Gaming Dice")
-			and visibleText("Worn Hunting Knife") and visibleText("11 / 32"))
+	check("chosen, it lists the race and its project, the history shut",
+		visibleText("Dwarf") and visibleText("Bone Gaming Dice") and visibleText("11 / 32")
+			and not visibleText("Worn Hunting Knife"))
+	local raceRow
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.toggleRace and type(f.text) == "table"
+			and tostring(f.text.__text):find("+ Dwarf", 1, true) then
+			raceRow = f
+		end
+	end
+	check("a race with a history says so with a plus", raceRow ~= nil)
+	if raceRow then raceRow.__scripts.OnClick(raceRow) end
+	check("and clicking it opens the artifacts solved", visibleText("Worn Hunting Knife"))
 	-- Put back before leaving, and the panel drawn once more so that it lets go of
 	-- Archaeology: the checks after this one expect it on a profession with recipes.
 	Family.Database:SetMeta(who, { skills = heldSkills or Family.CLEAR,

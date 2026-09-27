@@ -1,0 +1,6 @@
+name: an archaeology race's history starts open
+file: addons/Family_UI/Professions.lua
+--- old
+					local open = needle ~= "" or UI.__openRaces[race.race] == true
+--- new
+					local open = true

@@ -27,6 +27,7 @@ UI:OnFold("professions", function()
 	-- And the expansion lines opened (`groupByLine`), by the same rule: shut again whenever
 	-- the page changes.
 	UI.__openLines = {}
+	UI.__openRaces = {}
 end)
 UI.__openLines = {}
 
@@ -973,6 +974,15 @@ local function build(frame)
 		r:RegisterForClicks("LeftButtonUp")
 
 		r:SetScript("OnClick", function(self)
+			-- An archaeology race, opened and shut (backlog 104). Kept on the panel, as the
+			-- crafters' fold is, so a pooled row carries none of it.
+			if self.toggleRace then
+				UI.__openRaces = UI.__openRaces or {}
+				UI.__openRaces[self.toggleRace] = not UI.__openRaces[self.toggleRace] or nil
+				frame:Refresh()
+				return
+			end
+
 			-- A row in the whole-family search that has more crafters than it can show
 			-- unfolds instead of casting. It has nothing to cast: the search is about
 			-- everybody's recipes and this row is usually somebody else's, which is why
@@ -2026,6 +2036,7 @@ local function build(frame)
 				r.canOpen, r.announce = false, nil
 				r.fallback = { { text } }
 				r.icon:SetTexture(icon)
+				r.toggleRace = nil
 				return r
 			end
 
@@ -2036,17 +2047,24 @@ local function build(frame)
 					if wanted(artifact.name) then keep = true end
 				end
 				-- Alberto, 2026-09-27: *a list of races, and under each race the ongoing
-				-- project and the complete artifacts history*.
+				-- project and the complete artifacts history* - and, seen in the game the
+				-- same day, *races start collapsed, with a + to hint at the drilldown, except
+				-- for the single line of the current project*. So the project always shows,
+				-- and the history waits for a click on the race; a filter opens them all.
 				if keep then
-					line("|cff88bbff" .. tostring(race.name) .. "|r",
+					UI.__openRaces = UI.__openRaces or {}
+					local open = needle ~= "" or UI.__openRaces[race.race] == true
+					local heading = line(string.format("|cff88bbff%s %s|r",
+						(#artifacts > 0) and (open and "-" or "+") or " ", tostring(race.name)),
 						race.cap and string.format("|cff888888%d / %d|r", race.fragments,
 							race.cap) or tostring(race.fragments), race.icon)
+					if #artifacts > 0 then heading.toggleRace = race.race end
 					if race.project then
 						line("  |cffffd700" .. race.project .. "|r",
 							race.need and string.format("%d / %d", race.fragments, race.need),
 							race.projectIcon)
 					end
-					for _, artifact in ipairs(artifacts) do
+					for _, artifact in ipairs(open and artifacts or {}) do
 						line("  " .. tostring(artifact.name),
 							artifact.count and artifact.count > 1
 								and ("|cff888888x" .. artifact.count .. "|r")

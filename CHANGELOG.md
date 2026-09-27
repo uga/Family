@@ -42,7 +42,8 @@ is a decision rather than an afternoon of archaeology.
   progress, and every artifact solved, with when it was first solved and how many times. It is
   read when the character logs in and whenever fragments or projects change, without the
   Archaeology window being opened. On the **Professions** panel, Archaeology has a button of its
-  own: a line per race, the project under it, and the artifacts solved. The summary still shows
+  own: a line per race with the project in progress under it; click a race to open the artifacts
+  it has solved. The summary still shows
   its rank alone. It is shared with a linked family under *Professions*. Before, Family knew only
   the rank.
 
