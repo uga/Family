@@ -4794,3 +4794,8 @@ Coif's tooltip is the check in the game**. One check, one mutation. The shared c
 `Core.lua`: on a client where the appearance answer is already right, the new question is never
 reached. The surface list gains `C_TransmogCollection.GetAllAppearanceSources`, and `IsPlayerSpell`,
 which the previous commit added without regenerating it.
+
+**The other sources, read** (Alberto, 2026-09-27, the Eventide Coif, 159212): appearance **36063**, its
+own source 94947, `GetAllAppearanceSources(36063)` **6** sources, of which
+`PlayerHasTransmogItemModifiedAppearance` answers true for **4**. So the route built above answers
+*have* for it, which is the game's *collected, but not from this item*. Still to see: the tooltip.
