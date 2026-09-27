@@ -209,8 +209,11 @@ local EXPECTED = {
 	bankTabs     = { [MIDNIGHT] = true },
 
 	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
-	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104).
-	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
+	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104). Midnight answers 20, and
+	-- each of the four calls the scanner makes in the shape Mists does: a race's six values, the
+	-- project's name and icon, an artifact's first solved and times solved, the project listed
+	-- among them with nought (`docs/MIDNIGHT.md` §131).
+	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -238,7 +241,8 @@ local CONFIRMED = {
 	warbandBank = { [MIDNIGHT] = true },
 	bankTabs     = { [MIDNIGHT] = true },
 	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
-	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
+	-- Midnight 2026-09-27, on live: Drust, 153 of 200 fragments, its project and seven artifacts.
+	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

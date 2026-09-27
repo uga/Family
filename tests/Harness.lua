@@ -2518,6 +2518,8 @@ end)()
 	-- It answers, and it answers **1**. Not an error, as Anniversary's does, and not a number
 	-- above one, as Mists' does: Midnight has one specialisation group and says so plainly.
 	set("GetNumSpecGroups", function() return 1 end)
+	-- Twenty races, read on live 2026-09-27 (`docs/MIDNIGHT.md` §131).
+	set("GetNumArchaeologyRaces", function() return 20 end)
 
 	Family.Capabilities:Detect()
 
@@ -2530,6 +2532,8 @@ end)()
 	check("while the ones that have their answer - the guild bank, achievements - are on",
 		Family.Capabilities:Has("guildBank") == true
 			and Family.Capabilities:Has("achievements") == true)
+	check("and archaeology, which answers there as it does on Mists (§131)",
+		Family.Capabilities:Has("archaeology") == true)
 
 	-- The ones the table is wrong about, and the diagnostics say so by name. This is step 3's
 	-- list of work, written as checks rather than as a paragraph: as the fourth column lands,

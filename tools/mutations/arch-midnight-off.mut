@@ -1,0 +1,6 @@
+name: archaeology is not read on Midnight
+file: addons/Family/Capabilities.lua
+--- old
+	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },
+--- new
+	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true },

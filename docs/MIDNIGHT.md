@@ -4488,3 +4488,28 @@ before its bag's item, and a Warband block *Warband Bank Primo* the way a guild 
 name, by number where none was read. Six checks, eight mutations. `C_Bank`,
 `C_Bank.FetchPurchasedBankTabData` and `Enum.BankType` join the surface list. **Not yet seen in the
 game.**
+
+**Seen** (Alberto, 2026-09-27): *Warband tab custom name now acquired correctly*; and `main`'s fix of
+§128's first fault, merged here as `2b267dc` - *CTRL-ALT click works ok*. The first guild's six
+missing tabs are not Midnight's: they hold nothing, and the guild bank scan on every client records
+a tab only when a slot of it answers an item, because an empty tab and one never opened answer
+alike. Whether an empty tab can be told apart is `main`'s question.
+
+## 131. Archaeology on Midnight (2026-09-27)
+
+`main`'s backlog 104 reads archaeology on Mists behind a capability, `archaeology`, merged here with
+no Midnight answer, so off. Read on live, 2026-09-27, on a character who digs:
+`GetNumArchaeologyRaces()` **20**; `GetArchaeologyRaceInfo(1)` six values, *Drust*, 2060049, 154990,
+**153, 200, 200** - name, icon, keystone, fragments held, needed, cap, the shape Mists answers;
+`GetActiveArtifactByRace(1)` eight values, *Fetish of the Tormented Mind* and 2101972 fourth, the
+icon; `GetNumArtifactsByRace(1)` 7, and `GetArtifactInfoByRace(1, j)` gave six solved - *Soul Coffer*
+to *Ceremonial Bonesaw*, each with a first-solved time and a count, *Disembowling Sickle* twice - and
+the seventh, the project, with 0 and 0. Every value the scanner takes is where it looks.
+
+**The races are numbered differently**: 20 here and 13 on Mists, Drust first here where Mists' first
+is *UNUSED*. The scanner keeps a race by number, and nothing compares numbers across members: the
+Professions page matches a member's artifacts to that member's races, and the Summary shows the rank
+only. So nothing breaks, and a view that ever lines races up across the family has to go by name.
+
+**`archaeology` is true for Midnight**, expected and confirmed; the fourth client's §18 check says so.
+One mutation. Not yet seen in the game as a recorded page.
