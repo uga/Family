@@ -4833,3 +4833,8 @@ Which slots the game uses, and what they hold, is read first: every `INVSLOT_` c
 with what the character wears there.
 First reading (Alberto, 2026-09-27): no global `INVSLOT_` at 20 or above - the walk of `_G` printed
 nothing. Asked next by number, 20 to 40.
+By number (Alberto, 2026-09-27, the skinner): slot **24** *Durable Pack* 193480, the *Skinning
+Accessory*, soulbound and *Unique-Equipped: Back*; slots 31 to 34 four *Hexweave Bag* and 35 the
+*Gatherer's Reagent Pouch* - the bag slots, which the bag scan already reads. `C_TradeSkillUI.GetProfessionSlots`
+is a function. Its screenshot also showed the pack's *Auction* line with no *(unbound)* mark: the mark
+knows bag slots and the character panel's own slot buttons, and the profession window's are neither.
