@@ -7401,3 +7401,27 @@ faction id 0.
 **First step: a FamilyProbe entry** on Era, Burning Crusade and Mists printing the headings in order
 with their ids, child flags and standings, to see whether the Classic clients' *Inactive* heading
 also answers 0 and how their nesting looks.
+
+---
+
+## 106. The Auction line on a bound copy's tooltip says it is the unbound price
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word.
+All builds, so `main`'s; the Midnight branch takes it at the merge.
+
+**The case**, on Midnight: Eccebombo's Soulbound *Contender's Revenant Shoulders* (82944, bind on
+equip, now bound). The tooltip read *Auction (yesterday) 12311g* and he took it for what that copy
+is worth. The valuation is right, by the 2026-09-11 rule: `Family:BoundIn` is true, so
+`Index:WorthOfItem` values it at the vendor price and the CTRL line multiplies that. What misleads is
+`priceLines`' Auction line (`Family_UI/Tooltip.lua:1060-1072`), which shows the item's market price
+whatever the copy under the pointer is.
+
+**His choice, option 1 of three:** where the copy under the pointer is known to be bound - own bags,
+bank, worn gear - keep the Auction line and mark it *(unbound)* in grey, so the market price stays
+visible without reading as this copy's worth. Rejected: hiding the line, and leaving it as it is.
+On another member's copy the tooltip has only a link, so no mark there.
+
+**The parts are already in the tree:** `ownerChain` and the bag/slot guess `bagCount` makes and
+checks (`Tooltip.lua:704-730`), `Family:BoundIn(bag, slot, itemID)` and `Family:BindingWorn(slot)`
+(`Core.lua:530`, `:563`). The guess must be checked against the item before it is used, as
+`bagCount` does: a wrong slot has to cost a missing mark, never a wrong one.
