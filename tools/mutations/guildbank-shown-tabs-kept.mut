@@ -1,0 +1,8 @@
+name: the tabs shown on one visit are carried into the next
+file: addons/Family/Scanners/Bank.lua
+--- old
+	self.tabsShown = nil
+
+	if known == 0 then return end
+--- new
+	if known == 0 then return end

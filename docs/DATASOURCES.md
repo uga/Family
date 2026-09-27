@@ -5717,3 +5717,11 @@ tenth value (times solved) is above 0.**
 reads *First Completion: 23/9/2026 8:51 PM* and *Number of times completed: 1*. The ninth value,
 1790189489, is 20:51:29 CEST on 23 September 2026 - the same moment, as a Unix time - and the tenth is
 the count.
+
+### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
+
+Alberto's event trace on the Midnight branch (Ahia, guild Uga, tabs clicked about two seconds apart),
+each line the event, then `GetCurrentGuildBankTab()`: the bank opening sends
+`GUILDBANKBAGSLOTS_CHANGED` eight times with tab 1 current, and each click on another tab sends it once
+with **that tab already current** (3, 4, 5). So a tab on screen at an event is a tab the client has
+loaded. Not read on Era, Burning Crusade or Mists; the same trace line reads it there.
