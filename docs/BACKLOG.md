@@ -7501,7 +7501,13 @@ checks (`Tooltip.lua:704-730`), `Family:BoundIn(bag, slot, itemID)` and `Family:
 
 ---
 
-## 107. The Professions window, for more than four professions with something to show
+## 107. The Professions window, for more than four professions with something to show — Mists seen fine 2026-09-27, Midnight open
+
+**Seen in the game on Mists, 2026-09-27** (Alberto: *more than 4 professions with "lists" seen in
+game, panel adjusts OK*): Luga's five - Enchanting, Leatherworking, Archaeology, Cooking, First Aid -
+wrap to a second row of buttons and every one is reachable. Nothing to do on Mists. What stays open
+is Midnight's side, for the Midnight branch to judge with its own professions.
+
 
 **Asked by Alberto 2026-09-27.** A character now has more professions with something to show than
 the window was laid out for. On Mists: two primary professions, possibly both with recipes (for

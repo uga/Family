@@ -58,6 +58,12 @@ is a decision rather than an afternoon of archaeology.
   real heading, and the characters who set it inactive have *inactive* written before their
   standing. Before, it could be listed under *Inactive* for everybody.
 
+### Possessions
+
+- **CTRL-ALT and a click on an item in a Possessions block now opens the family's list of it**, as
+  its tooltip says. It did nothing on Family's own blocks; it worked only on the game's bags and
+  links.
+
 ### Item tooltips
 
 - **On an item that is bound to you, the Auction line says *(unbound)*.** The auction price is

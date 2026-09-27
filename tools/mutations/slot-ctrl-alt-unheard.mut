@@ -1,0 +1,5 @@
+name: CTRL-ALT and a click on a Family slot does nothing, as before
+file: addons/Family_UI/Contents.lua
+--- old
+			if link and UI.FamilyListFromClick and UI:FamilyListFromClick(link) then return end
+--- new

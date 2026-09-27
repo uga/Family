@@ -715,6 +715,15 @@ local function build(frame)
 
 		button:RegisterForClicks("LeftButtonUp")
 		button:SetScript("OnClick", function(self)
+			-- **CTRL-ALT first: the family's list, which the slot's tooltip offers.** Family's
+			-- own buttons never call `HandleModifiedItemClick`, so the hook that answers the
+			-- gesture everywhere else never heard these (`ItemClick.lua`). Asked of Family's
+			-- own search rather than of the game's handler, which would also open the
+			-- Dressing Room on CTRL.
+			local link = self.itemLink
+				or (self.itemID and ("|Hitem:" .. self.itemID .. "|h[]|h")) or nil
+			if link and UI.FamilyListFromClick and UI:FamilyListFromClick(link) then return end
+
 			-- A merged block's slot opens the bag that slot is really in.
 			local block = self.block
 			if block and self.realBag then block = { where = block.where, bag = self.realBag } end

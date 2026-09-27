@@ -36201,6 +36201,52 @@ print("archaeology: fragments, the project and the artifacts solved")
 end)()
 
 print()
+print("CTRL-ALT on a Family slot opens the family's list")
+
+-- Found on the Midnight branch 2026-09-27, the same code on main: a Possessions slot's tooltip
+-- offered *CTRL-ALT-click to open the family's list*, and the click did nothing, because Family's
+-- own buttons never reach `HandleModifiedItemClick`, where the gesture is heard.
+;(function()
+	Family.UI:Show()
+	Family.UI:ShowTab("contents")
+	Family.UI:Refresh()
+	local slot
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.block and f.itemID and f.__scripts.OnClick then slot = f end
+	end
+	check("a Possessions slot with an item is drawn to click", slot ~= nil)
+
+	-- A name the client knows, as it does for anything drawn in a bag in the game.
+	local realItem = Family.Names.Item
+	Family.Names.Item = function(self, id, ...)
+		if slot and id == slot.itemID then return "Star Ruby", true end
+		return realItem(self, id, ...)
+	end
+
+	local searched
+	local realSearch = Family.UI.SearchPossessions
+	Family.UI.SearchPossessions = function(_, name) searched = name end
+	local ctrl, alt, shift = IsControlKeyDown, IsAltKeyDown, IsShiftKeyDown
+	IsControlKeyDown = function() return true end
+	IsAltKeyDown = function() return true end
+	IsShiftKeyDown = function() return false end
+	if slot then slot.__scripts.OnClick(slot) end
+	check("CTRL-ALT and a click on it searches the family for that item",
+		searched == "Star Ruby", tostring(searched))
+
+	searched = nil
+	IsControlKeyDown = function() return false end
+	IsAltKeyDown = function() return false end
+	if slot then slot.__scripts.OnClick(slot) end
+	check("while a plain click does not", searched == nil, tostring(searched))
+
+	IsControlKeyDown, IsAltKeyDown, IsShiftKeyDown = ctrl, alt, shift
+	Family.UI.SearchPossessions = realSearch
+	Family.Names.Item = realItem
+	Family.UI:Hide()
+end)()
+
+print()
 print("a currency filed under its name joins the column of its id")
 
 -- Reported from play 2026-09-23 on Burning Crusade: two *Honor Points* columns, Tossica's 1,428
