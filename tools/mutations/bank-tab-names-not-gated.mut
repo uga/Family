@@ -1,0 +1,6 @@
+name: tab names are asked on a client whose bank is bags
+file: addons/Family/Scanners/Bank.lua
+--- old
+	local names = Family.Capabilities:Has("bankTabs") and tabNames("Character") or {}
+--- new
+	local names = tabNames("Character")

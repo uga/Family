@@ -1,0 +1,6 @@
+name: a bank tab is titled by its bag's item where it has a name of its own
+file: addons/Family_UI/Contents.lua
+--- old
+	if entry.name then return entry.name end
+--- new
+	if false then return entry.name end

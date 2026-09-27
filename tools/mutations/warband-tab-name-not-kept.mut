@@ -1,0 +1,6 @@
+name: a Warband tab's own name is not kept
+file: addons/Family/Scanners/Bank.lua
+--- old
+			local entry, used = { size = size, slots = {}, name = names[bag] }, 0
+--- new
+			local entry, used = { size = size, slots = {} }, 0

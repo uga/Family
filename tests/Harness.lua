@@ -4484,7 +4484,7 @@ print("the Warband bank on the fourth pretend client")
 		_G[name] = value
 	end
 
-	local SIZES = { [6] = 98, [12] = 98 }
+	local SIZES = { [6] = 98, [7] = 98, [12] = 98 }
 	local ITEMS = { [6] = { [1] = { 2589, 20 } }, [12] = { [1] = { 2589, 5 }, [3] = { 2592, 7 } } }
 	local asked = {}
 	set("C_Container", {
@@ -4498,14 +4498,19 @@ print("the Warband bank on the fourth pretend client")
 		GetContainerItemLink = function() return nil end,
 	})
 	set("Enum", setmetatable({ BagIndex = { ReagentBag = 5, CharacterBankTab_1 = 6,
-		CharacterBankTab_6 = 11, AccountBankTab_1 = 12, AccountBankTab_5 = 16 } },
+		CharacterBankTab_6 = 11, AccountBankTab_1 = 12, AccountBankTab_5 = 16 },
+		BankType = { Character = 0, Account = 2 } },
 		{ __index = _G.Enum or {} }))
+	-- The tabs' own names as §130 read them at a bank; an empty name is not one.
+	local TAB_NAMES = { [0] = { { ID = 6, name = "Tab 1", icon = 134400 },
+		{ ID = 7, name = "", icon = 134400 } }, [2] = { { ID = 12, name = "Primo", icon = 134400 } } }
+	set("C_Bank", { FetchPurchasedBankTabData = function(kind) return TAB_NAMES[kind] end })
 	set("BANK_CONTAINER", nil)
 	set("NUM_BAG_SLOTS", 4)
 	set("NUM_BANKBAGSLOTS", 7)
 	local heldWarband = FamilyDB.warband
 
-	local caps = { warbandBank = true, reagentBag = true }
+	local caps = { warbandBank = true, reagentBag = true, bankTabs = true }
 	local handlers, stored = {}, { meta = {}, payload = {} }
 	local midnight = setmetatable({}, { __index = FamilyPrivate })
 	midnight.Capabilities = { Has = function(_, feature) return caps[feature] == true end }
@@ -4529,6 +4534,8 @@ print("the Warband bank on the fourth pretend client")
 		tabs and tabs[1] and tostring(tabs[1].free))
 	check("and only the tabs bought, which are the ones that answer",
 		tabs and tabs[2] == nil and asked[16] == true)
+	check("a Warband tab keeps the name the player gave it",
+		tabs and tabs[1] and tabs[1].name == "Primo", tabs and tabs[1] and tostring(tabs[1].name))
 
 	FamilyDB.warband = nil
 	handlers.BANKFRAME_OPENED()
@@ -4539,6 +4546,19 @@ print("the Warband bank on the fourth pretend client")
 	local bank = stored.payload["Mirror-Midnight"] and stored.payload["Mirror-Midnight"].bank
 	check("and the character's own tabs stay the character's, without the account's in them",
 		bank and bank.containers[6] and bank.containers[12] == nil)
+	check("a tab of the character's bank keeps its own name, not the placeholder item's",
+		bank and bank.containers[6] and bank.containers[6].name == "Tab 1",
+		bank and bank.containers[6] and tostring(bank.containers[6].name))
+	check("and a tab whose name came back empty has none",
+		bank and bank.containers[7] and bank.containers[7].name == nil,
+		bank and bank.containers[7] and tostring(bank.containers[7].name))
+
+	-- Where the bank is bags, a bag's item names it and nothing else is asked.
+	caps.bankTabs = false
+	midnight.Bank:Scan()
+	bank = stored.payload["Mirror-Midnight"].bank
+	check("and a client whose bank is bags is not asked for tab names",
+		bank and bank.containers[6] and bank.containers[6].name == nil)
 
 	-- Away from the bank, nothing is written, the account's tabs as little as the character's.
 	FamilyDB.warband = { tabs = { [1] = { size = 98, slots = {} } }, seen = 1 }
@@ -16251,6 +16271,35 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 			titles:find("|cff888888Mats|r", 1, true) ~= nil and titles:find("tab 2", 1, true) ~= nil,
 			titles)
 		meta.guild, FamilyDB.guilds = heldGuild, heldGuilds
+	end
+
+	-- **A bank tab and a Warband tab titled by their own names** (`docs/MIDNIGHT.md` §130) where
+	-- the bank gave them, and as before where it did not.
+	do
+		local heldWarband, heldOption2 = FamilyDB.warband, FamilyDB.consolidateBags
+		FamilyDB.consolidateBags = nil
+		payload.bank.containers[5].name = "Void Storage 1"
+		FamilyDB.warband = { tabs = {
+			[1] = { size = 98, free = 97, slots = { [1] = { id = 2589, count = 1 } }, name = "Primo" },
+			[2] = { size = 98, free = 98, slots = {} },
+		}, seen = time() }
+		Family.UI:ShowContentsFor(me)
+		local titles = {}
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and type(f.lines) == "table" and f.lines[1] then
+				titles[#titles + 1] = tostring(f.lines[1][1])
+			end
+		end
+		titles = table.concat(titles, " | ")
+		check("a bank tab is titled by the name its player gave it, not its bag's item",
+			titles:find("Void Storage 1", 1, true) ~= nil, titles)
+		check("and a Warband tab by its own name, one with none by its number",
+			titles:find("|cff888888Primo|r", 1, true) ~= nil
+				and titles:find(Family.UI:WarbandWord() .. " |cff888888tab 2|r", 1, true) ~= nil,
+			titles)
+		payload.bank.containers[5].name = nil
+		FamilyDB.warband, FamilyDB.consolidateBags = heldWarband, heldOption2
+		Family.UI:ShowContentsFor(me)
 	end
 
 	Family.UI:ShowTab("options")

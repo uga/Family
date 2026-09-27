@@ -113,6 +113,10 @@ local function containerName(entry, bag, where)
 		return _G.BANK or L["Bank"]
 	end
 
+	-- A bank tab's own name, where the bank is tabs (Midnight): the item in its slot is the
+	-- client's placeholder there, so the name comes first.
+	if entry.name then return entry.name end
+
 	if entry.itemID then
 		local name = Family.Names:CachedItem(entry.itemID)
 		if name then return name end
@@ -153,6 +157,7 @@ local function containersOf(payload, meta)
 				free = entry.free,
 				special = entry.special,
 				itemID = entry.itemID,
+				name = entry.name,
 				slots = entry.slots or {},
 			}
 		end
@@ -297,7 +302,7 @@ local function containersOf(payload, meta)
 		for _, tab in ipairs(tabs) do
 			local contents = warband.tabs[tab]
 			blocks[#blocks + 1] = { where = "warband", bag = tab, size = contents.size or 0,
-				free = contents.free or 0, slots = contents.slots or {} }
+				free = contents.free or 0, slots = contents.slots or {}, name = contents.name }
 		end
 	end
 
@@ -1345,8 +1350,11 @@ local function build(frame)
 			elseif container.where == "equipped" then
 				title = LABEL.equipped
 			elseif container.where == "warband" then
-				title = string.format(L["%s |cff888888tab %d|r"], UI:WarbandWord(),
-					container.bag or 0)
+				-- By the tab's own name where the bank gave one, as a guild tab is.
+				title = container.name
+					and (UI:WarbandWord() .. " |cff888888" .. container.name .. "|r")
+					or string.format(L["%s |cff888888tab %d|r"], UI:WarbandWord(),
+						container.bag or 0)
 			elseif container.where == "guild" then
 				-- By the tab's own name where the guild bank gave one (backlog 86), and by its
 				-- number where it did not.

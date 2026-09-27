@@ -1,0 +1,6 @@
+name: a Warband tab's name does not reach its block
+file: addons/Family_UI/Contents.lua
+--- old
+				free = contents.free or 0, slots = contents.slots or {}, name = contents.name }
+--- new
+				free = contents.free or 0, slots = contents.slots or {} }

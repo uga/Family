@@ -4463,3 +4463,28 @@ the members' copies and in the Inventory block. The same screenshots raised thre
    (above). A guild tab's name is read on every client since `main`'s backlog 86, and answered
    *Res mistae* on Midnight (§127) - so why it is not drawn is to be read from what was stored,
    not guessed.
+
+## 130. The bank tabs' own names (2026-09-27)
+
+§128's second and third faults, read by Alberto on live.
+
+**What Family stored for each guild tab**: *Uga*'s guild on Chamber of Aspects, tab 1 *Res mistae*;
+*Già mi creo pagu*'s guild on Emerald Dream, tabs 1 to 3 *Tab 1*, *Tab 2*, *Tab 3*. So the guild tab's
+name is read and drawn on Midnight as on every client (`main`'s backlog 86): the second guild's tabs
+are really called *Tab 1* to *Tab 3*, which reads like Family's placeholder and is not. Nothing to
+build. Still open: only one of the first guild's seven tabs (§127) is stored.
+
+**`C_Bank.FetchPurchasedBankTabData`**, at a bank: for `Enum.BankType.Character` six rows, `ID` 6
+*Tab 1*, 7 *Tab 2*, 8 *Tab 3*, 9 *Reagents*, 10 *Void Storage 1*, 11 *Void Storage 2*; for
+`Enum.BankType.Account` one, 12 *Primo*; every icon 134400. Away from the bank both answered **0**
+rows. So a tab's `ID` is its container, and its name is readable exactly when its contents are.
+
+**Built.** The bank scan asks the list once for each kind and keeps a non-empty name on the tab's
+record. For the character's tabs this is behind a new capability, **`bankTabs`** (Midnight): there the
+item in a tab's slot also answers, as *Character Bank Tab Bag (DNT)*, the client's placeholder -
+an old reader that answers and is wrong, which step 3 puts in the table. The Warband's tabs have no
+item and are read under `warbandBank`. The Possessions page titles a bank block by its tab's name
+before its bag's item, and a Warband block *Warband Bank Primo* the way a guild block carries its tab
+name, by number where none was read. Six checks, eight mutations. `C_Bank`,
+`C_Bank.FetchPurchasedBankTabData` and `Enum.BankType` join the surface list. **Not yet seen in the
+game.**

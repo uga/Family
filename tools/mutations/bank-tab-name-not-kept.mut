@@ -1,0 +1,9 @@
+name: a character bank tab's own name is not kept
+file: addons/Family/Scanners/Bank.lua
+--- old
+				entry.name = names[bag]
+
+				local used = 0
+--- new
+
+				local used = 0

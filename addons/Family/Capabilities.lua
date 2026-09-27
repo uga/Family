@@ -200,6 +200,14 @@ local EXPECTED = {
 	-- Midnight's first release by Alberto's exception to §111.
 	warbandBank = { [MIDNIGHT] = true },
 
+	-- **A bank of tabs the player names**, where Classic's bank holds bags. On Midnight containers 6
+	-- to 11 are the character's tabs, and the item in each one's slot answers *Character Bank Tab
+	-- Bag (DNT)*, the client's placeholder, while `C_Bank.FetchPurchasedBankTabData` names them as
+	-- the player did, *Tab 1* to *Void Storage 2*, read at a bank on Ahia 2026-09-27
+	-- (`docs/MIDNIGHT.md` §130). The item's name answers and is wrong there, so which one titles
+	-- a block lives here.
+	bankTabs     = { [MIDNIGHT] = true },
+
 	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
 	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104).
 	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
@@ -228,6 +236,7 @@ local CONFIRMED = {
 	petGuidGeneric = { [MIDNIGHT] = true },
 	achievementsWarband = { [MIDNIGHT] = true },
 	warbandBank = { [MIDNIGHT] = true },
+	bankTabs     = { [MIDNIGHT] = true },
 	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
 	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 }

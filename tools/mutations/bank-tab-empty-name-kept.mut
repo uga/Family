@@ -1,0 +1,6 @@
+name: an empty tab name is kept as a name
+file: addons/Family/Scanners/Bank.lua
+--- old
+		if id and type(tab.name) == "string" and tab.name ~= "" then names[id] = tab.name end
+--- new
+		if id and type(tab.name) == "string" then names[id] = tab.name end

@@ -49,6 +49,27 @@ local REAGENT_BAG = 5
 local bagIndex = (_G.Enum and _G.Enum.BagIndex) or {}
 local WARBAND_FIRST, WARBAND_LAST = bagIndex.AccountBankTab_1, bagIndex.AccountBankTab_5
 
+-- **The names the player gave the bank's tabs**, by container: on Midnight a tab of the character's
+-- bank is a container whose slot holds the client's placeholder item, *Character Bank Tab Bag
+-- (DNT)*, and a Warband tab has no item at all. `C_Bank.FetchPurchasedBankTabData` names each by
+-- its `ID`, which is its container - read at a bank on Ahia 2026-09-27, *Tab 1* to *Void Storage 2*
+-- as 6 to 11 and *Primo* as 12; away from it both lists came back empty (`docs/MIDNIGHT.md` §130).
+-- An empty name is not a name. Nothing where the client has no such list.
+local function tabNames(kind)
+	local names = {}
+	local bankApi = _G.C_Bank
+	local kinds = (_G.Enum and _G.Enum.BankType) or {}
+	if type(bankApi) ~= "table" or kinds[kind] == nil then return names end
+
+	local list = Family:TryCall(bankApi.FetchPurchasedBankTabData, kinds[kind])
+	if type(list) ~= "table" then return names end
+	for _, tab in ipairs(list) do
+		local id = type(tab) == "table" and tonumber(tab.ID)
+		if id and type(tab.name) == "string" and tab.name ~= "" then names[id] = tab.name end
+	end
+	return names
+end
+
 -- The third return is the item string, and only for the items whose id does not describe them
 -- - a random-enchantment suffix, an enchant, a gem. See Family:ItemString in Core.lua.
 local function slotContents(bag, slot)
@@ -82,11 +103,11 @@ function Bank:ReadWarband()
 	if not Family.Capabilities:Has("warbandBank") then return nil end
 	if not (WARBAND_FIRST and WARBAND_LAST) then return nil end
 
-	local tabs = {}
+	local tabs, names = {}, tabNames("Account")
 	for bag = WARBAND_FIRST, WARBAND_LAST do
 		local size = tonumber((Family:TryCall(GetNumSlots, bag))) or 0
 		if size > 0 then
-			local entry, used = { size = size, slots = {} }, 0
+			local entry, used = { size = size, slots = {}, name = names[bag] }, 0
 			for slot = 1, size do
 				local itemID, count, worth = slotContents(bag, slot)
 				if itemID then
@@ -138,6 +159,10 @@ function Bank:Scan()
 	local containers = {}
 	local slots, free = 0, 0
 
+	-- Where the bank is tabs the player names, which is Midnight (`bankTabs`): there the item in a
+	-- tab's slot answers too, and is the client's placeholder.
+	local names = Family.Capabilities:Has("bankTabs") and tabNames("Character") or {}
+
 	for bag = BANK, LAST_BANK_BAG do
 		-- The bank container is -1 and the bank bags start above the carried ones, so the
 		-- carried bags in between are skipped rather than scanned twice.
@@ -185,6 +210,7 @@ function Bank:Scan()
 				if bag ~= BANK and ToInventoryId then
 					entry.itemID = GetInventoryItemID("player", ToInventoryId(bag))
 				end
+				entry.name = names[bag]
 
 				local used = 0
 				for slot = 1, size do

@@ -1,0 +1,7 @@
+name: a bank tab's name does not reach its block
+file: addons/Family_UI/Contents.lua
+--- old
+				itemID = entry.itemID,
+				name = entry.name,
+--- new
+				itemID = entry.itemID,
