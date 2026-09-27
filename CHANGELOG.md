@@ -29,6 +29,13 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Errors
+
+- **Family no longer stops with *script ran too long* when a lot happens at once**, such as a boss
+  dying with the whole pack looted. The work Family does after an event now runs a little at a
+  time, the longest-waiting first, instead of all in the same moment. On Mists this showed as
+  *error in deferred character*.
+
 ### The summary
 
 - **Hovering a line on the Cooldowns page describes that line's character.** After looking at

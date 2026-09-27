@@ -1,0 +1,6 @@
+name: the least overdue job runs first
+file: addons/Family/Core.lua
+--- old
+	if a.remaining ~= b.remaining then return a.remaining < b.remaining end
+--- new
+	if a.remaining ~= b.remaining then return a.remaining > b.remaining end

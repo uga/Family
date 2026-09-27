@@ -693,21 +693,51 @@ end
 local pending = {}
 local ticker = CreateFrame("Frame")
 
+-- **A budget a frame, the longest overdue first.** Every job that fell due in a frame used to run
+-- in that frame, and the client's patience is spent per frame: killing a boss makes the bags, the
+-- lockouts, the currencies and more due together, and on Midnight, still in combat with the adds,
+-- the frame was stopped as *error in deferred bags: script ran too long* (the Midnight branch's
+-- 4846b7f; on `main`, `docs/DECISIONS.md` 2026-09-27, beside Mists' *error in deferred character*)
+-- while the bag scan alone measured 36 ms out of combat. So jobs run until the frame has spent
+-- `FRAME_BUDGET` milliseconds and the rest wait for the next: cheap ones still all go at once, and
+-- a costly one starts on a frame nothing else has spent - so an error that still comes names the
+-- job that spent it rather than whichever was running when a shared budget ran out (L-094). The
+-- first always runs, and a tie goes by name so the order does not hang on `pairs`. A client
+-- without the clock runs them all, as before.
+local FRAME_BUDGET = 10
+
+local function overdueFirst(a, b)
+	if a.remaining ~= b.remaining then return a.remaining < b.remaining end
+	return a.key < b.key
+end
+
 ticker:SetScript("OnUpdate", function(_, elapsed)
 	local due
 	for key, entry in pairs(pending) do
 		entry.remaining = entry.remaining - elapsed
 		if entry.remaining <= 0 then
 			due = due or {}
-			due[key] = entry.fn
+			due[#due + 1] = { key = key, remaining = entry.remaining, fn = entry.fn }
 		end
 	end
 	if not due then return end
-	for key, fn in pairs(due) do
-		pending[key] = nil
-		local ok, err = pcall(fn)
-		if not ok then
-			Family:Print(Family.L["|cffff5555error in deferred %s|r: %s"], key, tostring(err))
+	table.sort(due, overdueFirst)
+
+	local began = tonumber((Family:TryCall(_G.debugprofilestop)))
+	for index, job in ipairs(due) do
+		if index > 1 and began then
+			local now = tonumber((Family:TryCall(_G.debugprofilestop)))
+			if now and now - began >= FRAME_BUDGET then break end
+		end
+		-- Only if it is still this job: one run earlier in the frame may have asked for it
+		-- again, and that request waits its own delay.
+		if pending[job.key] and pending[job.key].fn == job.fn then
+			pending[job.key] = nil
+			local ok, err = pcall(job.fn)
+			if not ok then
+				Family:Print(Family.L["|cffff5555error in deferred %s|r: %s"], job.key,
+					tostring(err))
+			end
 		end
 	end
 	if not next(pending) then ticker:Hide() end

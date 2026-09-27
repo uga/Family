@@ -2159,6 +2159,50 @@ print("startup")
 _G.debugprofilestop = function() return 1250 end
 fire("ADDON_LOADED", "Family")
 _G.debugprofilestop = nil
+
+-- **Deferred work runs to a budget a frame** (`docs/DECISIONS.md` 2026-09-27): on Midnight a boss kill
+-- made several jobs due in one frame and the client stopped it as *script ran too long*. The clock
+-- here moves only inside these jobs, by what each is said to cost.
+;(function()
+	local clock, ran = 0, {}
+	_G.debugprofilestop = function() return clock end
+	local function job(name, cost)
+		return function() ran[#ran + 1] = name clock = clock + cost end
+	end
+
+	Family:After(0.05, "test.cheap2", job("cheap2", 1))
+	Family:After(0.05, "test.cheap1", job("cheap1", 1))
+	advance(0.1)
+	check("cheap jobs that fall due together still run in the same frame, a tie by name",
+		table.concat(ran, ",") == "cheap1,cheap2", table.concat(ran, ","))
+
+	ran = {}
+	Family:After(0.05, "test.after", job("after", 1))
+	Family:After(0.02, "test.costly", job("costly", 30))
+	advance(0.1)
+	check("the longest overdue runs first, and a costly one leaves the rest to the next frame",
+		table.concat(ran, ",") == "costly", table.concat(ran, ","))
+	advance(0.1)
+	check("where they run", table.concat(ran, ",") == "costly,after", table.concat(ran, ","))
+
+	-- A job asked for again by one that ran before it in the frame waits its new delay.
+	ran = {}
+	Family:After(0.05, "test.again", job("old", 0))
+	Family:After(0.02, "test.asks", function()
+		ran[#ran + 1] = "asks"
+		Family:After(5, "test.again", job("new", 0))
+	end)
+	advance(0.3)
+	check("a job asked for again in the same frame is not run on its old request",
+		table.concat(ran, ",") == "asks", table.concat(ran, ","))
+	advance(5)
+	check("and runs on its new one", table.concat(ran, ",") == "asks,new", table.concat(ran, ","))
+
+	_G.debugprofilestop = nil
+	-- Padded to a whole minute: the frame clock moved 5.6 seconds above, and a part of a
+	-- minute changes where every later minute-rounded deadline falls (L-125).
+	advance(54.4)
+end)()
 print("  pass: " .. RUN.storage)
 if RUN.storage == "plain" then
 	-- The libraries stay: the wire needs them, and the first pass's fixtures would otherwise
