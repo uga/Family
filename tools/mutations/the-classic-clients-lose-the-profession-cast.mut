@@ -1,6 +1,6 @@
 name: the Classic clients are told an addon may not cast, and their profession buttons open nothing
 file: addons/Family/Capabilities.lua
 --- old
-	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
 --- new
-	addonCasts   = { [VANILLA] = false, [TBC] = false, [MISTS] = false },
+	addonCasts   = { [VANILLA] = false, [TBC] = false, [MISTS] = false, [MIDNIGHT] = false },

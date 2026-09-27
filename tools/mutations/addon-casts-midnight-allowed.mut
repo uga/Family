@@ -1,0 +1,6 @@
+name: Midnight is told an addon may cast
+file: addons/Family/Capabilities.lua
+--- old
+	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
+--- new
+	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },

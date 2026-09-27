@@ -107,8 +107,10 @@ local EXPECTED = {
 	-- carrying aura 207, mounted flight speed, and Burning Crusade has 49 of them. So the mount
 	-- column says `100%/-` where flying is a thing somebody might have and does not, and plain
 	-- `100%` where the game has no such thing to have - a dash promising something Era never
-	-- offers is worse than saying nothing.
-	flying       = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
+	-- offers is worse than saying nothing. Midnight flies: Ahia's Mount column said *Skyriding*
+	-- from the style's aura (`docs/MIDNIGHT.md` §86), so a Midnight character with neither style
+	-- read shows the dash as a Burning Crusade one with no wings does (§132).
+	flying       = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
 
 	-- Whether weapon skills are a thing this game has. Cataclysm took them out: on Era and
 	-- Burning Crusade the skill sheet has a *Weapon Skills* heading with a rank and a maximum
@@ -137,8 +139,8 @@ local EXPECTED = {
 	-- only available to the Blizzard UI*, `ADDON_ACTION_FORBIDDEN` with the function named
 	-- `UNKNOWN()`, twice, from that button and nothing else (`docs/MIDNIGHT.md` §54). Not an error
 	-- a `TryCall` can catch - the client stops the call and asks the player what to do - so the
-	-- call is not made where the table says no. Midnight has no column, so the answer there is no.
-	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+	-- call is not made where the table says no.
+	addonCasts   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
 
 	-- **Skyriding and Steady Flight**, Midnight's two flying styles, and no Classic client's. Seen
 	-- on the PTR, 12.1.5, 2026-09-25: `C_MountJournal.IsDragonridingUnlocked()` true on Ahia and
@@ -230,7 +232,10 @@ local CONFIRMED = {
 	weaponSkills = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 	-- 2026-09-11, Burning Crusade: *cast Leatherworking, callWorked true, windowNow
 	-- Leatherworking*, measured from inside the click (Family_UI/Professions.lua).
-	addonCasts   = {                   [TBC] = true                 },
+	-- Midnight 2026-09-24: the dialog and `ADDON_ACTION_FORBIDDEN` on that click (§54).
+	addonCasts   = {                   [TBC] = true,               [MIDNIGHT] = true },
+	-- Midnight 2026-09-25: *Skyriding* in Ahia's Mount column (§86).
+	flying       = { [MIDNIGHT] = true },
 	skyriding    = { [MIDNIGHT] = true },
 	talentNodes  = { [MIDNIGHT] = true },
 	reagentBag   = { [MIDNIGHT] = true },

@@ -1,0 +1,6 @@
+name: Midnight is taken for a game without flying
+file: addons/Family/Capabilities.lua
+--- old
+	flying       = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
+--- new
+	flying       = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },

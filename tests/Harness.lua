@@ -29748,6 +29748,10 @@ print("how fast a character can get about")
 			meta.flightStyle == nil and meta.mount == 100
 				and Family.UI.__summaryCell.mount(meta) ~= "Skyriding",
 			tostring(meta.flightStyle))
+		-- And the dash says flying is a thing to have there, as it does on Burning Crusade (§132).
+		check("and the Mount column says the ground with a dash for the flying not read",
+			Family.UI.__summaryCell.mount(meta) == "100%/-",
+			tostring(Family.UI.__summaryCell.mount(meta)))
 
 		-- Nor about somebody else: a spell known and an aura on are this player's.
 		style = 404464

@@ -4519,3 +4519,27 @@ One mutation. Not yet seen in the game as a recorded page.
 *Ogre 32 / 250*), its project under it with the fragments it needs (*Fetish of the Tormented Mind
 153 / 200*, *Urn of Passage 29 / 45*), and a race with solved artifacts marked to open (*+ Drust*),
 one without none (*Zandalari*).
+
+## 132. The fourth column: flying and the profession cast (2026-09-27)
+
+§126's other two gated rows, at Alberto's word, both answered from readings already taken.
+
+**`flying` is true for Midnight**, expected and confirmed. The row asks whether a character can leave
+the ground at all in that game, and on Midnight they can: Ahia's Mount column said *Skyriding*, read
+from the style's aura (§86). What changes is one cell: a Midnight character whose ground speed is
+recorded and whose flying style is not - neither aura on when the scan ran, or skyriding not yet
+learnt - said `100%`, and now says `100%/-`, as a Burning Crusade character without wings does. The
+style, where it was read, is still what the cell says. One check, one mutation.
+
+**`addonCasts` is false for Midnight**, now written in its column rather than falling to false for
+want of one, and confirmed by §54's reading: the profession button's cast brought the *blocked from an
+action* dialog and `ADDON_ACTION_FORBIDDEN`. The cast was already withheld there; the check that
+says so stands, and a mutation now tells Midnight it may cast. §54's own mutation is re-anchored to
+the row.
+
+Still open from §54 and never read: whether the profession button, by its secure route alone, opens
+the game's profession window on Midnight.
+
+**What the fourth column still lacks**: `dailyQuests`, `currencies`, `dualSpec`, `transmogrify`,
+`talentTrees`, `glyphs`, `keyring`, `ammoBags`, `weaponSkills` - none gates anything Family draws on
+Midnight, and each still needs an answer from a reading.
