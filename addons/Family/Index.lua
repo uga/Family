@@ -65,7 +65,7 @@ local variantNames = {}
 local function bucket(variant, key)
 	entries[variant] = entries[variant] or {}
 	entries[variant][key] = entries[variant][key] or
-		{ bags = 0, bank = 0, mail = 0, auctions = 0, worn = 0, bound = 0 }
+		{ bags = 0, bank = 0, mail = 0, auctions = 0, worn = 0, bound = 0, vendor = 0, priced = 0 }
 	return entries[variant][key]
 end
 
@@ -107,6 +107,13 @@ local function addContainers(key, containers, field)
 				-- both at the same time and the figure needs to split them.
 				if item.bound then
 					record.bound = record.bound + (item.count or 1)
+				end
+
+				-- What a vendor pays for these copies, where the scan read it off each copy's link
+				-- (Midnight, `Family:VendorPriceOf`).
+				if item.sell then
+					record.vendor = record.vendor + item.sell * (item.count or 1)
+					record.priced = record.priced + (item.count or 1)
 				end
 
 				-- Whether the holder's account has its look (backlog 108), as the holder
@@ -154,6 +161,10 @@ local function addMember(key)
 				-- Nearly always bound, and not always: a shirt binds to nobody. Read per
 				-- piece rather than assumed, which is the measurement backlog 63 rests on.
 				if item.bound then record.bound = record.bound + 1 end
+				if item.sell then
+					record.vendor = record.vendor + item.sell
+					record.priced = record.priced + 1
+				end
 			end
 		end
 	end
@@ -544,7 +555,15 @@ end
 -- this session, so asking alone would value a family differently at every login. Written down
 -- instead, by id and with no language in it, the same arrangement `FamilyDB.itemNames` uses - and
 -- filled in from wherever an item is looked at, so it fills up rather than being gathered.
-local function sellPriceOf(itemID)
+-- **What a vendor pays for one of a member's copies**: the price read off their own links where the
+-- scan kept one (Midnight, where it follows the item's level), and the price per id elsewhere.
+local sellPriceOf
+local function vendorPriceFor(record, variant)
+	if record.priced > 0 then return math.floor(record.vendor / record.priced + 0.5) end
+	return sellPriceOf(Family:BaseItem(variant))
+end
+
+function sellPriceOf(itemID)
 	if type(_G.FamilyDB) ~= "table" then return nil end
 	FamilyDB.sellPrices = FamilyDB.sellPrices or {}
 
@@ -641,7 +660,7 @@ function Index:Worth()
 					-- different question here would file a variant's price under the
 					-- plain item for everything else that reads it. Written down rather
 					-- than guessed at: backlog 67 leaves it out on purpose.
-					local sell = sellPriceOf(Family:BaseItem(variant))
+					local sell = vendorPriceFor(record, variant)
 					if sell then
 						row.worth = row.worth + sell * bound
 						row.atVendor = row.atVendor + bound
@@ -731,7 +750,7 @@ function Index:WorthOfItem(variant)
 
 			if bound > 0 then
 				-- The base item's, as in `Worth` above and for the reason written there.
-				local sell = sellPriceOf(Family:BaseItem(variant))
+				local sell = vendorPriceFor(record, variant)
 				if sell then
 					out.worth = out.worth + sell * bound
 					out.atVendor = out.atVendor + bound

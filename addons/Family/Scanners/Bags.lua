@@ -293,7 +293,8 @@ function Bags:Scan()
 			for slot = 1, size do
 				local itemID, count, worth = slotContents(bag, slot)
 				if itemID then
-					entry.slots[slot] = { id = itemID, count = count, item = worth }
+					entry.slots[slot] = { id = itemID, count = count, item = worth,
+						sell = Family:VendorPriceOf(Family:TryCall(GetLink, bag, slot)) }
 
 					-- **Whether this one can still be sold at an auction house.**
 					--

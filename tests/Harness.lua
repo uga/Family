@@ -2780,6 +2780,12 @@ print("the same bag scan on the fourth pretend client")
 		SetPayload = function(_, k, p) stored.payload[k] = p end,
 	}
 
+	-- A price that follows the item's level, asked of the copy's own link (§134).
+	local HEARTH_LINK = "|Hitem:6948::::::::60:::::|h[Hearthstone]|h"
+	midnight.ItemInfo = function(self, item)
+		if item == HEARTH_LINK then return "Hearthstone", nil, 1, 1, 1, "", "", 1, "", nil, 1234 end
+		return FamilyPrivate.ItemInfo(self, item)
+	end
 	load("addons/Family/Scanners/Bags.lua", "Family", midnight)
 	check("the scanner loads against a client with no loose container globals",
 		type(midnight.Bags) == "table" and type(midnight.Bags.Scan) == "function")
@@ -2801,6 +2807,9 @@ print("the same bag scan on the fourth pretend client")
 	-- The shape, which is the half a shim cannot fix by aliasing a name. The loose global
 	-- answered ten values beginning with a texture; this one answers a table, and `itemID`
 	-- and `stackCount` live inside it.
+	check("on Midnight a slot keeps what a vendor pays for that copy, read off its link",
+		payload and payload.bags[0].slots[1] and payload.bags[0].slots[1].sell == 1234,
+		payload and payload.bags[0].slots[1] and tostring(payload.bags[0].slots[1].sell))
 	check("a slot read from a table answer keeps its id and its count",
 		payload and payload.bags[0].slots[2]
 			and payload.bags[0].slots[2].id == 2589
@@ -4534,7 +4543,11 @@ print("the Warband bank on the fourth pretend client")
 			if not row then return nil end
 			return { itemID = row[1], stackCount = row[2] }
 		end,
-		GetContainerItemLink = function() return nil end,
+		-- The character's first tab holds a copy whose price the link answers (§134).
+		GetContainerItemLink = function(bag, slot)
+			if bag == 6 and slot == 1 then return "|Hitem:2589::::::::60:::::|h[Linen Cloth]|h" end
+			return nil
+		end,
 	})
 	set("Enum", setmetatable({ BagIndex = { ReagentBag = 5, CharacterBankTab_1 = 6,
 		CharacterBankTab_6 = 11, AccountBankTab_1 = 12, AccountBankTab_5 = 16 },
@@ -4549,7 +4562,7 @@ print("the Warband bank on the fourth pretend client")
 	set("NUM_BANKBAGSLOTS", 7)
 	local heldWarband = FamilyDB.warband
 
-	local caps = { warbandBank = true, reagentBag = true, bankTabs = true }
+	local caps = { warbandBank = true, reagentBag = true, bankTabs = true, scaledPrices = true }
 	local handlers, stored = {}, { meta = {}, payload = {} }
 	local midnight = setmetatable({}, { __index = FamilyPrivate })
 	midnight.Capabilities = { Has = function(_, feature) return caps[feature] == true end }
@@ -4561,6 +4574,12 @@ print("the Warband bank on the fourth pretend client")
 	midnight.BoundIn = function() return false end
 	-- Whether the account has each look: the copper ore's it has, the tin's not.
 	midnight.LookOf = function(_, _, itemID) return itemID == 2592 and "need" or "have" end
+	midnight.ItemInfo = function(self, item)
+		if type(item) == "string" and item:find("item:2589:", 1, true) then
+			return "Linen Cloth", nil, 1, 1, 1, "", "", 200, "", nil, 13
+		end
+		return FamilyPrivate.ItemInfo(self, item)
+	end
 	midnight.Database = {
 		Payload = function(_, k) return stored.payload[k] end,
 		SetPayload = function(_, k, p) stored.payload[k] = p end,
@@ -4590,6 +4609,11 @@ print("the Warband bank on the fourth pretend client")
 	local bank = stored.payload["Mirror-Midnight"] and stored.payload["Mirror-Midnight"].bank
 	check("and the character's own tabs stay the character's, without the account's in them",
 		bank and bank.containers[6] and bank.containers[12] == nil)
+	check("and a bank slot keeps what a vendor pays for that copy, read off its link",
+		bank and bank.containers[6] and bank.containers[6].slots[1]
+			and bank.containers[6].slots[1].sell == 13,
+		bank and bank.containers[6] and bank.containers[6].slots[1]
+			and tostring(bank.containers[6].slots[1].sell))
 	check("a tab of the character's bank keeps its own name, not the placeholder item's",
 		bank and bank.containers[6] and bank.containers[6].name == "Tab 1",
 		bank and bank.containers[6] and tostring(bank.containers[6].name))
@@ -9340,6 +9364,30 @@ do
 		lot and lot.worth == 105000 and lot.atMarket == 1 and lot.atVendor == 1,
 		lot and tostring(lot.worth) or "nothing")
 
+	-- **Where the scan read each copy's own price** (Midnight, `docs/MIDNIGHT.md` §134): a price
+	-- that follows the item's level, 49729 for a copy whose id answers 5000, is the one it is
+	-- valued at.
+	Family.Database:SetPayload(mine, {
+		bags = { { slots = {
+			{ id = SWORD, count = 1, sell = 49729 },
+			{ id = SWORD, count = 1, bound = true, sell = 49729 },
+		} } },
+	})
+	Family.Index:Invalidate()
+	held = Family.Index:WorthOf(mine)
+	check("a copy whose own price the scan read is valued at it, not at the id's",
+		held and held.worth == 100000 + 49729, held and tostring(held.worth) or "no row")
+	lot = Family.Index:WorthOfItem(SWORD)
+	check("and the item's own lot the same",
+		lot and lot.worth == 100000 + 49729, lot and tostring(lot.worth) or "nothing")
+	Family.Database:SetPayload(mine, {
+		bags = { { slots = {
+			{ id = SWORD, count = 1 },
+			{ id = SWORD, count = 1, bound = true },
+		} } },
+	})
+	Family.Index:Invalidate()
+
 	-- **Bound and unpriceable is unpriced, not nought.** A soulbound thing no vendor buys is
 	-- something Family cannot value, and saying nought would be a claim rather than a gap.
 	FamilyDB.sellPrices[SWORD] = nil
@@ -12829,6 +12877,28 @@ do
 	check("and so does a bound piece of worn gear",
 		home and home.equipment.worn[16].bound == true,
 		tostring(home and home.equipment.worn[16].bound))
+end
+
+-- **Worn gear keeps what a vendor pays for it** where the price follows the item's level (Midnight,
+-- `docs/MIDNIGHT.md` §134), read off the worn piece's own link; elsewhere nothing is kept.
+do
+	local caps = Family.Capabilities.can
+	local heldScaled, heldInfo = caps.scaledPrices, Family.ItemInfo
+	Family.ItemInfo = function(self, item)
+		if type(item) == "string" and item:find("item:4005:", 1, true) then
+			return "Chest", nil, 4, 60, 60, "", "", 1, "", nil, 77777
+		end
+		return heldInfo(self, item)
+	end
+	caps.scaledPrices = true
+	local worn = Family.Character:ReadEquipment()
+	check("where prices follow the item's level, a worn piece keeps its own vendor price",
+		worn and worn[5] and worn[5].sell == 77777, worn and worn[5] and tostring(worn[5].sell))
+	caps.scaledPrices = false
+	worn = Family.Character:ReadEquipment()
+	check("and a client where they do not keeps none",
+		worn and worn[5] and worn[5].sell == nil, worn and worn[5] and tostring(worn[5].sell))
+	caps.scaledPrices, Family.ItemInfo = heldScaled, heldInfo
 end
 
 print()

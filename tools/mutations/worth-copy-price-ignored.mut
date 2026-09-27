@@ -1,0 +1,6 @@
+name: the worth ignores each copy's own vendor price
+file: addons/Family/Index.lua
+--- old
+	if record.priced > 0 then return math.floor(record.vendor / record.priced + 0.5) end
+--- new
+	if false then return math.floor(record.vendor / record.priced + 0.5) end

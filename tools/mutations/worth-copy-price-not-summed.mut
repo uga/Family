@@ -1,0 +1,6 @@
+name: the index does not add up the copies' vendor prices
+file: addons/Family/Index.lua
+--- old
+					record.vendor = record.vendor + item.sell * (item.count or 1)
+--- new
+					record.vendor = record.vendor

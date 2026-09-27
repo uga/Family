@@ -4813,3 +4813,13 @@ prices have a call of their own after the others. Three checks, three mutations.
 **Not done: the family's worth.** `Index`'s vendor price is kept per id (`FamilyDB.sellPrices`), so a
 Midnight family's worth still values a levelled item at its base price. Keyed by what each slot holds
 instead, it would be right; that is `main`'s `Index.lua` and a question of its own.
+
+**The family's worth, built** (Alberto: *build it here*, behind the same capability). A bag or bank slot
+keeps no item string for a plain item, and on Midnight a levelled piece's level lives in fields
+`Family:ItemString` does not keep - so the price cannot be asked later. It is read at scan time instead:
+`Family:VendorPriceOf(link)`, only where `scaledPrices` holds, and the bag, bank and worn scans keep it on
+the slot as `sell`. The index adds a member's copies' prices up per item and values their bound copies at
+the average, falling back to the price per id where no copy carries one - so the Classic clients, which
+never keep `sell`, are valued as before. Mail and auctions are not changed: what sits there is not bound,
+and goes by the auction price. Five checks, six mutations. **Not yet seen**: every bag, bank and worn
+piece has to be scanned once on this build before its price is right.

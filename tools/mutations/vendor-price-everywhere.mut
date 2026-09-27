@@ -1,0 +1,6 @@
+name: a vendor price is read off every client's links
+file: addons/Family/Core.lua
+--- old
+	if type(link) ~= "string" or not self.Capabilities:Has("scaledPrices") then return nil end
+--- new
+	if type(link) ~= "string" then return nil end

@@ -167,6 +167,15 @@ function Family:ItemInfo(item)
 	return self:TryCall(_G.C_Item and _G.C_Item.GetItemInfo, item)
 end
 
+-- **What a vendor pays for one copy, where the price follows the item's level** (Midnight,
+-- `scaledPrices`): asked by that copy's link while a scanner holds it, since a bag or bank slot keeps
+-- no string for a plain item and the id answers the base item's price - 406 for a coif that sells
+-- for 49729 (`docs/MIDNIGHT.md` §134). Nil elsewhere, where the index's price per id is right.
+function Family:VendorPriceOf(link)
+	if type(link) ~= "string" or not self.Capabilities:Has("scaledPrices") then return nil end
+	return tonumber((select(11, self:ItemInfo(link))))
+end
+
 function Family:ItemInfoInstant(item)
 	local old = packed(self:TryCall(_G.GetItemInfoInstant, item))
 	if old[1] ~= nil then return unpack(old, 1, old.n) end

@@ -70,7 +70,8 @@ function Character:ReadEquipment()
 			local worth = Family:ItemString(link)
 				or (type(link) == "string" and link:match("|H(item[%-%d:]+)|h")) or nil
 
-			worn[slot] = { id = id, itemLevel = level, item = worth }
+			worn[slot] = { id = id, itemLevel = level, item = worth,
+				sell = Family:VendorPriceOf(link) }
 
 			-- **And whether it can still be sold**, which on worn gear is nearly always no
 			-- and is not always no: a shirt binds to nobody, and reads `nil` on every one of

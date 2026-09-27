@@ -1,0 +1,6 @@
+name: a worn piece forgets what a vendor pays for it
+file: addons/Family/Scanners/Character.lua
+--- old
+				sell = Family:VendorPriceOf(link) }
+--- new
+				}

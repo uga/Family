@@ -1,0 +1,6 @@
+name: a bag slot forgets what a vendor pays for it
+file: addons/Family/Scanners/Bags.lua
+--- old
+						sell = Family:VendorPriceOf(Family:TryCall(GetLink, bag, slot)) }
+--- new
+						}
