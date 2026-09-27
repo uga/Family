@@ -4574,3 +4574,10 @@ read 11:48 UTC. The reading that matters is at that guild's bank, by a character
 
 **Seen** (Alberto, 2026-09-27): *clicking on profession button now opens the profession panel* - the
 game's own window, from Family's button, on Midnight. §132's route works on live.
+
+**Read at the right bank** (Alberto, 2026-09-27, Ahia, in the guild *Uga*): `GetNumGuildBankTabs` 7,
+`GetCurrentGuildBankTab` 1, *Uga*, rank *Dudu Alt*. Stored after `main`'s `9bf16f9`: tab 1 *Res mistae*
+read with its items, and tabs 2 to 7 **with their names** - *Metalli Pietre*, *Pelli*, *Rare mats*,
+*Erbe e cibo*, *Cloth e pesci*, *Shard e ore* - and no time read, which the page draws as *not opened
+yet*. So every tab is recorded on Midnight. Not yet known: whether a tab clicked to on Midnight is
+then read, which is what turns *not opened yet* into *empty*.
