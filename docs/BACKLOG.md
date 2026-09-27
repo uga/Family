@@ -7516,7 +7516,13 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, account or character unsettled, two probes waiting
+## 108. Transmogrification on Mists — OPEN 2026-09-27, the collection is the account's, the shape goes back to Alberto
+
+**Settled 2026-09-27 (DATASOURCES)**: the collection is account-wide - a Paladin and a Druid of one
+account both answer *collected* to each other's worn looks. The per-character counts were the class
+filter. So *which family members have collected a look* answers the same for every member of one
+account, and the choice made on the per-character premise goes back to Alberto. What this makes cheap:
+any character can ask, at any time and with nothing stored, whether the account has an item's look.
 
 **Reopened the same afternoon.** The VARIE session sent a reference for both builds, read from
 Blizzard's UI source and generated API documentation:

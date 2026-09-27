@@ -5763,6 +5763,21 @@ Eccebombo, `5.5.4`, the two *transmog* probes of backlog 108, away from a Transm
   different classes answer different collected counts from one collection. The counts cannot tell the
   two apart. The probe *transmog collection: account or character* asks each character about the
   other's worn looks by source id, which can.
+- **Settled by the next reading: the collection is the account's.** Eccebombo (Paladin, class 2) and
+  Luga (Druid, class 11), one game account, each asked about both characters' worn looks by source id
+  (123962, 126931, 123325, 122502 and 275406, 275335, 275492, 275313): **all eight answer `true`** to
+  `PlayerHasTransmogItemModifiedAppearance` and `PlayerKnowsSource`, and `GetSourceInfo().isCollected`,
+  on both characters. What differs per character is `isValidSourceForPlayer` - true for the plate on the
+  Paladin and the leather on the Druid, false the other way - and `GetClassFilter()`, which answers the
+  character's own class (2 and 11): that is why the collected counts differ.
+- **One category's list is cheap**: `GetCategoryAppearances(1)` answers 1392 entries in 2.1-2.8 ms, (3)
+  499 in 0.8 ms, (13) 247 in 0.4-0.5 ms; each entry is visualID, isCollected, isUsable,
+  canDisplayOnPlayer, isHideVisual, uiOrder, exclusions and the holiday flags. `GetCategoryInfo(c)`
+  answered *no returns* for 1 and 3 and `"One-Handed Axes"` for 13 on Eccebombo, nothing for 13 on Luga.
+- **The outfit-slot conversion confirmed from 0**: handed 0 (the head) it answers outfit slot 0, 2
+  (shoulder) 1, 4 (chest) 4, 15 (main hand) 12. `C_Transmog.GetSlotVisualInfo(location)` answers one
+  table: baseSourceID and baseVisualID (the item's own look), appliedSourceID and appliedVisualID (0 where
+  nothing is applied), pendingSourceID, pendingVisualID, hasUndo, isHideVisual, itemSubclass.
 - `GetNumTransmogSources()` answers 6 on both - a count of source kinds, not of anything collected.
 - `C_Transmog.GetSlotVisualInfo(location)` answers a table of 9, not yet printed.
 
