@@ -4666,3 +4666,14 @@ that way. Not changed here; written down for a slice of its own.
 one has answered on Midnight in a reading already (§23, §39, §41, §57, and this section and §132);
 the probe will now ask them too. The generator has no check in the harness - its gate is
 `--check`, which now says the regenerated list is current - so no mutation records this.
+
+**Why the whole-family view filed *Argent Crusade* under *Inactive*** (Alberto's screenshot and reading,
+2026-09-27). Ahia's line carried *inactive* before *Exalted* - the reading above works - but the
+faction sat under *Inactive (2)*. Every member's stored copy of 1106: thirteen say *Wrath of the Lich
+King* (some with 1097, those read before backlog 105 without), Ahia says *Inactive* with `inactive`
+true, and **Deiana, Eccebombo, Ulula, Mara and Druiduga say *Inactive* with no flag** - scanned before
+this build, when Midnight could not record it. The merge takes its heading from the first unflagged
+copy in the roster, Deiana's. Each of the five logged in once with this build carries the flag; so the
+five read that way may also say whether *inactive* is set per character or across the realm's
+characters on Midnight. The same stale copy is every Classic user's after `main`'s next release: a
+4.4.0 record has the game's *Inactive* heading and no flag until its character logs in again.
