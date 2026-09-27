@@ -5712,3 +5712,8 @@ book for Dwarf shows one completed artifact, *Worn Hunting Knife*, with the skil
 two `GetNumArtifactsByRace(13)` lists, the second is the project in progress, *Bone Gaming Dice*, not yet
 solved: **the list holds the solved artifacts and the current project, and a solved one is one whose
 tenth value (times solved) is above 0.**
+
+**And the two values confirmed against the game's own tooltip**: hovering *Worn Hunting Knife* in the book
+reads *First Completion: 23/9/2026 8:51 PM* and *Number of times completed: 1*. The ninth value,
+1790189489, is 20:51:29 CEST on 23 September 2026 - the same moment, as a Unix time - and the tenth is
+the count.
