@@ -4868,3 +4868,8 @@ drawing work on live - but the rows stood 68 pixels apart and each name sat a li
 and a gap. Fixed: the row's top is taken before `nextRow`, the name and the slots share it, and the row
 steps once. The check now reads the anchors: a name level with its slots, the next profession 36 below;
 a mutation puts the double step back.
+
+**Seen, right** (Alberto's screenshot, 2026-09-27, Mara): the four profession rows under the weapons, one
+slot and a gap apart, each name level with its slots, the *Durable Pack* at 70 in Skinning's middle
+slot. Profession gear is done on one member's page; the whole-family grid and the *(unbound)* mark on the
+profession window's slots remain.
