@@ -1,0 +1,6 @@
+name: an achievement only the Warband has is kept as started
+file: addons/Family/Scanners/Character.lua
+--- old
+			if ok and not (byWarband and not mine) then
+--- new
+			if ok then

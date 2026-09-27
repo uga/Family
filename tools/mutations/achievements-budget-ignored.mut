@@ -1,0 +1,6 @@
+name: the walk reads a whole category whatever it costs
+file: addons/Family/Scanners/Character.lua
+--- old
+			if now and now >= stopAt then return offered, asked, index end
+--- new
+			if now and now >= stopAt then end

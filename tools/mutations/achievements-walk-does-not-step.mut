@@ -2,8 +2,9 @@ name: the achievements walk runs every category in one frame, which is the Molte
 file: addons/Family/Scanners/Character.lua
 --- old
 local function stepOn()
-	if Character:StepAchievements() then
-		Family:After(Character.CATEGORY_STEP, "character.achievements", stepOn)
+	local more, midway = Character:StepAchievements()
+	if more then
+		Family:After(midway and 0 or Character.CATEGORY_STEP, "character.achievements", stepOn)
 	end
 end
 --- new

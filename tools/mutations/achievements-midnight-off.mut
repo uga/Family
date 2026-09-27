@@ -1,0 +1,6 @@
+name: Midnight's achievements are left without their answer
+file: addons/Family/Capabilities.lua
+--- old
+	achievements = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },
+--- new
+	achievements = { [VANILLA] = false, [TBC] = false, [MISTS] = true },

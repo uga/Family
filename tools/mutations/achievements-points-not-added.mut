@@ -1,0 +1,6 @@
+name: this character's points are not added up
+file: addons/Family/Scanners/Character.lua
+--- old
+				into.points = (into.points or 0) + (tonumber(achievementPoints) or 0)
+--- new
+				into.points = into.points

@@ -91,7 +91,9 @@ local EXPECTED = {
 	-- builds all of these from one codebase, so Anniversary ships the whole achievement API
 	-- and the game behind it has no achievements. The client carrying the call is a fact
 	-- about the build, not about the game - which is the whole thesis of this file.
-	achievements = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
+	-- Midnight: 169 categories and 5,087 achievements answered on Ahia, 2026-09-27; the walk
+	-- steps by a time budget there, since one category took 446 ms (`docs/MIDNIGHT.md` §127).
+	achievements = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },
 	currencies   = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
 	dualSpec     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
 	talentTrees  = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
@@ -186,11 +188,17 @@ local EXPECTED = {
 	-- still answered a `Creature-` GUID naming 416. The GUID answers and is wrong for a pet there,
 	-- so which reader names the creature is the game's and lives here.
 	petGuidGeneric = { [MIDNIGHT] = true },
+
+	-- **An achievement's completion that is the Warband's.** On Midnight `GetAchievementInfo`'s
+	-- fourth value is true for 1,790 of Ahia's achievements and its thirteenth, earned by this
+	-- character, for 1,145 (`docs/MIDNIGHT.md` §127). The fourth answers and is not this
+	-- character's, so which value a member's achievements are read from lives here.
+	achievementsWarband = { [MIDNIGHT] = true },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
 local CONFIRMED = {
-	achievements = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
+	achievements = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
 	currencies   = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 	dualSpec     = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 	guildBank    = {                   [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
@@ -209,6 +217,7 @@ local CONFIRMED = {
 	questLogAsked = { [MIDNIGHT] = true },
 	lockoutBosses = { [MIDNIGHT] = true },
 	petGuidGeneric = { [MIDNIGHT] = true },
+	achievementsWarband = { [MIDNIGHT] = true },
 }
 
 --------------------------------------------------------------------------------------------

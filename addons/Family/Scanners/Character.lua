@@ -532,7 +532,7 @@ end
 --------------------------------------------------------------------------------------------
 -- Achievements
 --
--- Mists only, and gated on the capability table rather than on the calls existing - which is
+-- Mists and Midnight, and gated on the capability table rather than on the calls existing - which is
 -- the whole point of §2.3, since Anniversary carries GetAchievementInfo and has no
 -- achievements to report.
 --
@@ -575,13 +575,40 @@ end
 -- how many criteria were asked about across them. That is the whole shape of the price - two
 -- calls per achievement and one per criterion - and it is a count rather than a clock, so it
 -- means the same on every machine.
-function Character:ReadAchievementCategory(category, into)
+--
+-- **From where, and until when**, since Midnight (`docs/MIDNIGHT.md` §127): one of its categories
+-- holds 194 achievements and took 446 ms to read without a criterion asked, so a walk there stops
+-- inside a category once `stopAt` - a reading of `debugprofilestop` - has passed, and answers the
+-- index to go on from. Without either, the whole category, as before.
+--
+-- **This character's, not the Warband's** (§127): on Midnight the fourth value is the Warband's
+-- completion - 1,790 of Ahia's against 1,145 she earned herself - and the thirteenth is this
+-- character's, which is what a member's page counts (Alberto, 2026-09-27). One the Warband has and
+-- this character has not is neither earned here nor started, and is left out. Read through `pcall`
+-- rather than `TryCall` there, because the thirteenth comes after values an unfinished
+-- achievement answers nil for, and `TryCall` cannot promise a count past a nil.
+function Character:ReadAchievementCategory(category, into, from, stopAt)
 	local offered = Family:TryCall(GetCategoryNumAchievements, category) or 0
 	local asked = 0
+	local warband = Family.Capabilities:Has("achievementsWarband")
+	local clock = stopAt and _G.debugprofilestop
 
-	for index = 1, offered do
-		local id, _, achievementPoints, completed =
-			Family:TryCall(GetAchievementInfo, category, index)
+	for index = from or 1, offered do
+		if clock and index > (from or 1) then
+			local now = tonumber((Family:TryCall(clock)))
+			if now and now >= stopAt then return offered, asked, index end
+		end
+
+		local id, achievementPoints, completed
+		if warband then
+			local ok, got, _, gotPoints, byWarband, _, _, _, _, _, _, _, _, mine =
+				pcall(GetAchievementInfo, category, index)
+			if ok and not (byWarband and not mine) then
+				id, achievementPoints, completed = got, gotPoints, mine == true
+			end
+		else
+			id, _, achievementPoints, completed = Family:TryCall(GetAchievementInfo, category, index)
+		end
 
 		if id then
 			local done, criteria = criteriaProgress(id)
@@ -589,6 +616,7 @@ function Character:ReadAchievementCategory(category, into)
 
 			if completed then
 				into.count = into.count + 1
+				into.points = (into.points or 0) + (tonumber(achievementPoints) or 0)
 				into.earned[#into.earned + 1] = id
 				into.list[#into.list + 1] = {
 					id = id,
@@ -697,7 +725,10 @@ function Character:StartAchievements()
 		-- that, the achievements gathered belong to the one it started on. `earned` is ids only,
 		-- in the order the index answers with.
 		key = Family:CurrentMember(),
-		points = Family:TryCall(GetTotalAchievementPoints),
+		-- The client's total, except where it is the Warband's: there the points are this
+		-- character's own, added up as the walk goes.
+		points = not Family.Capabilities:Has("achievementsWarband")
+			and Family:TryCall(GetTotalAchievementPoints) or nil,
 		categories = categories,
 		at = 1,
 		into = { earned = {}, list = {}, count = 0 },
@@ -705,21 +736,33 @@ function Character:StartAchievements()
 	return true
 end
 
--- One category's worth. Answers whether another is waiting.
+-- What a step may spend, in milliseconds, where the client has a clock to spend it by. A walk
+-- that stops inside a category goes on at the next frame rather than after `CATEGORY_STEP`.
+Character.ACHIEVEMENT_BUDGET = Character.ACHIEVEMENT_BUDGET or 5
+
+-- One category's worth, or as much of one as the budget allows. Answers whether more is waiting,
+-- and whether it stopped inside a category.
 function Character:StepAchievements()
 	if not walking then return false end
 
 	local category = walking.categories[walking.at]
+	local midway = false
 	if category then
-		walking.at = walking.at + 1
-		self:ReadAchievementCategory(category, walking.into)
+		local began = tonumber((Family:TryCall(_G.debugprofilestop)))
+		local _, _, resume = self:ReadAchievementCategory(category, walking.into, walking.index,
+			began and (began + Character.ACHIEVEMENT_BUDGET) or nil)
+		if resume then
+			walking.index, midway = resume, true
+		else
+			walking.at, walking.index = walking.at + 1, nil
+		end
 	end
 
-	if walking.categories[walking.at] then return true end
+	if walking.categories[walking.at] then return true, midway end
 
 	local finished = walking
 	walking = nil
-	keepAchievements(finished.key, finished.into, finished.points)
+	keepAchievements(finished.key, finished.into, finished.points or finished.into.points)
 	return false
 end
 
@@ -728,8 +771,9 @@ function Character:IsWalkingAchievements()
 end
 
 local function stepOn()
-	if Character:StepAchievements() then
-		Family:After(Character.CATEGORY_STEP, "character.achievements", stepOn)
+	local more, midway = Character:StepAchievements()
+	if more then
+		Family:After(midway and 0 or Character.CATEGORY_STEP, "character.achievements", stepOn)
 	end
 end
 

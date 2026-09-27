@@ -4350,3 +4350,22 @@ then **385 ms** on its own, before a single criterion is asked. The walk does a 
 So two things before `achievements` gets its Midnight answer: the walk steps by a time budget
 rather than by category, and which completion a member's page counts - this character's or the
 Warband's - is Alberto's to choose.
+
+**Seen**: Ahia's Possessions page drew the guild bank's tabs after it was opened - Alberto: *guild
+bank seen working*.
+
+**Achievements, built.** Alberto chose **this character's** (2026-09-27): a Warband completion is the
+same on every alt and says nothing about the one on the page. So on Midnight, behind the new
+capability `achievementsWarband`, the walk reads `GetAchievementInfo`'s thirteenth value through
+`pcall` (the fourth answers and is the Warband's); an achievement only the Warband has is neither
+earned nor started here and is left out; and the points are this character's own, added up as the
+walk goes, since `GetTotalAchievementPoints` is the Warband's total. The walk now stops inside a
+category once a step has spent `ACHIEVEMENT_BUDGET`, 5 ms by `debugprofilestop`, and goes on from
+there at the next frame; a client without the clock reads a whole category a step, as before, which
+the Mists checks still hold. `achievements` is true for Midnight. Seven checks, nine mutations, one
+rewritten because this character's and the Warband's never differ on an achievement it earned, and
+the Molten Core mutation re-anchored. **Not yet seen in the game**, and the price is a reading to
+take: about 5,087 achievements at 5 ms a frame is some thirty seconds of frames after arrival.
+
+**The Warband bank: read now**, Alberto's exception to §111 (2026-09-27), after it was pointed out
+that the rule would have it wait. It is next.

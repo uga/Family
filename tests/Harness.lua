@@ -2516,24 +2516,23 @@ end)()
 	check("Midnight is not mistaken for one of the three Classic clients",
 		Family.Capabilities.name == "interface 12", Family.Capabilities.name)
 	check("and a row with no Midnight answer claims nothing there",
-		Family.Capabilities:Has("achievements") == false
-			and Family.Capabilities:Has("currencies") == false
+		Family.Capabilities:Has("currencies") == false
 			and Family.Capabilities:Has("dualSpec") == false)
-	-- The guild bank's fourth column landed 2026-09-27 (`docs/MIDNIGHT.md` §127).
-	check("while one that has its answer - the guild bank - is on",
-		Family.Capabilities:Has("guildBank") == true)
+	-- The guild bank's and achievements' fourth column landed 2026-09-27 (`docs/MIDNIGHT.md` §127).
+	check("while the ones that have their answer - the guild bank, achievements - are on",
+		Family.Capabilities:Has("guildBank") == true
+			and Family.Capabilities:Has("achievements") == true)
 
 	-- The ones the table is wrong about, and the diagnostics say so by name. This is step 3's
 	-- list of work, written as checks rather than as a paragraph: as the fourth column lands,
-	-- these stop disagreeing, and this check is what says so - the guild bank has.
+	-- these stop disagreeing, and this check is what says so - two have.
 	local reported = {}
 	for _, entry in ipairs(Family.Capabilities:Report()) do reported[entry.feature] = entry end
-	check("while the diagnostics name the two whose symbols are on the client and have no answer",
-		reported.achievements.disagrees ~= nil and reported.currencies.disagrees ~= nil,
-		tostring(reported.achievements.disagrees) .. " / "
-			.. tostring(reported.currencies.disagrees))
-	check("and the guild bank, answered, no longer disagrees",
-		reported.guildBank.disagrees == nil, tostring(reported.guildBank.disagrees))
+	check("while the diagnostics name the one whose symbol is on the client and has no answer",
+		reported.currencies.disagrees ~= nil, tostring(reported.currencies.disagrees))
+	check("and the guild bank and achievements, answered, no longer disagree",
+		reported.guildBank.disagrees == nil and reported.achievements.disagrees == nil,
+		tostring(reported.guildBank.disagrees) .. " / " .. tostring(reported.achievements.disagrees))
 	check("and say the symbol is there, not that the feature is",
 		reported.currencies.disagrees == "client has the symbol",
 		tostring(reported.currencies.disagrees))
@@ -12358,6 +12357,89 @@ do
 	check("and how many criteria it had to ask about, which is what the walk costs",
 		criteriaTotal == 12, tostring(criteriaTotal))
 end
+
+-- **Midnight's achievements** (`docs/MIDNIGHT.md` §127): the thirteenth value is this character's
+-- and the fourth the Warband's, and the walk stops inside a category once its budget is spent.
+;(function()
+	local heldInfo, heldList, heldCount, heldPoints, heldClock =
+		GetAchievementInfo, GetCategoryList, GetCategoryNumAchievements, GetTotalAchievementPoints,
+		_G.debugprofilestop
+	local heldWarband = Family.Capabilities.can.achievementsWarband
+	local heldCriteria, heldCriterion = GetAchievementNumCriteria, GetAchievementCriteriaInfo
+
+	-- One category of six: two this character earned, one only the Warband did, one started,
+	-- one untouched, one earned by the Warband whose criteria are all done.
+	local ROWS = {
+		{ 101, true, true, 10 }, { 102, true, false, 10 }, { 103, false, false, 5 },
+		{ 104, false, false, 5 }, { 105, true, true, 25 }, { 106, true, false, 10 },
+	}
+	local asked = 0
+	GetCategoryList = function() return { 15119 } end
+	GetCategoryNumAchievements = function() return #ROWS end
+	GetTotalAchievementPoints = function() return 19575 end
+	GetAchievementInfo = function(_, index)
+		asked = asked + 1
+		local row = ROWS[index]
+		if not row then return nil end
+		-- Fifteen values, the date and more nil for an unfinished one, as the client answers.
+		return row[1], "Achievement " .. row[1], row[4], row[2], row[2] and 9 or nil,
+			row[2] and 27 or nil, row[2] and 26 or nil, "", 0, 0, "", false, row[3],
+			row[3] and "Ahia" or nil, false
+	end
+	GetAchievementNumCriteria = function(id)
+		if id == 103 or id == 106 then return 4 end
+		return 0
+	end
+	GetAchievementCriteriaInfo = function(id, index)
+		return "c", 0, id == 106 or index <= 2
+	end
+
+	Family.Capabilities.can.achievementsWarband = true
+	local into = { earned = {}, list = {}, count = 0 }
+	Family.Character:ReadAchievementCategory(15119, into)
+	local ids = {}
+	for _, entry in ipairs(into.list) do ids[#ids + 1] = entry.id .. (entry.done and "" or "~") end
+	check("on Midnight a member's achievements are the ones this character earned",
+		table.concat(into.earned, ",") == "101,105", table.concat(into.earned, ","))
+	check("the Warband's alone are left out, and a started one is kept",
+		table.concat(ids, ",") == "101,103~,105", table.concat(ids, ","))
+	check("and the points are this character's own, added up", into.points == 35,
+		tostring(into.points))
+
+	-- The budget: a clock that moves two milliseconds an achievement stops the category midway.
+	local clock = 1000
+	_G.debugprofilestop = function() return clock end
+	local stepped = GetAchievementInfo
+	GetAchievementInfo = function(...) clock = clock + 2 return stepped(...) end
+	into = { earned = {}, list = {}, count = 0 }
+	asked = 0
+	local _, _, resume = Family.Character:ReadAchievementCategory(15119, into, 1, clock + 5)
+	check("a walk with a budget stops inside a category once it is spent",
+		resume == 4 and asked == 3, tostring(resume) .. " / " .. tostring(asked))
+	local _, _, done = Family.Character:ReadAchievementCategory(15119, into, resume, clock + 100)
+	check("and goes on from there to the end of it",
+		done == nil and table.concat(into.earned, ",") == "101,105", table.concat(into.earned, ","))
+
+	-- The whole walk on a schedule: it spans frames inside the category and keeps what it read.
+	local key = Family:CurrentMember()
+	Family.Character:ScanAchievements()
+	advance(0.1)
+	check("the scheduled walk is still going after a frame, midway through the one category",
+		Family.Character:IsWalkingAchievements() == true)
+	advance(1)
+	local kept = Family.Database:Payload(key).achievements
+	check("and finishes with this character's achievements and points, not the Warband's total",
+		kept and kept.count == 2 and kept.points == 35,
+		kept and (tostring(kept.count) .. " / " .. tostring(kept.points)))
+
+	GetAchievementInfo, GetCategoryList, GetCategoryNumAchievements, GetTotalAchievementPoints =
+		heldInfo, heldList, heldCount, heldPoints
+	GetAchievementNumCriteria, GetAchievementCriteriaInfo = heldCriteria, heldCriterion
+	_G.debugprofilestop = heldClock
+	Family.Capabilities.can.achievementsWarband = heldWarband
+	Family.Character:ScanAchievements()
+	advance(2)
+end)()
 
 -- Back to Era for the rest.
 GetBuildInfo, GetTalentInfo = savedBuild, savedTalentInfo

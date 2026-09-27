@@ -1,0 +1,6 @@
+name: Midnight's achievements are read through the Classic route
+file: addons/Family/Scanners/Character.lua
+--- old
+	local warband = Family.Capabilities:Has("achievementsWarband")
+--- new
+	local warband = false

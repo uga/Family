@@ -1,0 +1,10 @@
+name: a category stopped midway is left unfinished for the next one
+file: addons/Family/Scanners/Character.lua
+--- old
+		if resume then
+			walking.index, midway = resume, true
+		else
+--- new
+		if false then
+			walking.index, midway = resume, true
+		else

@@ -1,0 +1,6 @@
+name: a category stopped midway starts again from its first achievement
+file: addons/Family/Scanners/Character.lua
+--- old
+	for index = from or 1, offered do
+--- new
+	for index = 1, offered do

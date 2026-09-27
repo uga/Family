@@ -1,0 +1,7 @@
+name: Midnight keeps the Warband's point total
+file: addons/Family/Scanners/Character.lua
+--- old
+		points = not Family.Capabilities:Has("achievementsWarband")
+			and Family:TryCall(GetTotalAchievementPoints) or nil,
+--- new
+		points = Family:TryCall(GetTotalAchievementPoints),

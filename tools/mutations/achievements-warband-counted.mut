@@ -1,0 +1,6 @@
+name: on Midnight every achievement read is counted as earned
+file: addons/Family/Scanners/Character.lua
+--- old
+				id, achievementPoints, completed = got, gotPoints, mine == true
+--- new
+				id, achievementPoints, completed = got, gotPoints, true
