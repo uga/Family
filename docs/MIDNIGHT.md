@@ -4588,3 +4588,13 @@ bank scan runs a second after `GUILDBANKFRAME_OPENED` or `GUILDBANKBAGSLOTS_CHAN
 tab on screen at that moment as read; Midnight sent the second event eight times on opening (§127),
 which suggests every tab's contents arrive then and a switch sends nothing. Asked of the client next:
 the events, with the tab on screen, while switching tabs.
+
+**The events while switching** (Alberto, 2026-09-27, Ahia, the guild *Uga*'s bank, tabs clicked about
+two seconds apart): `PLAYER_INTERACTION_MANAGER_FRAME_SHOW` 10 with tab 1 on screen, eight
+`GUILDBANKBAGSLOTS_CHANGED` with tab 1, then **one `GUILDBANKBAGSLOTS_CHANGED` per switch, with the new
+tab already on screen - 3, 4, 5** - and `PLAYER_INTERACTION_MANAGER_FRAME_HIDE` twice, 10 then 0, tab 5
+still answered. So Midnight does say when a tab is shown. What loses it is the wait: every event
+re-arms one timer, `bank.guild`, a second long, and the scan counts only the tab on screen when it
+runs - so tabs clicked through faster than a second are read as one, the last. That is `main`'s scan
+on every client; noting the tab on screen **when each event arrives**, rather than when the scan
+runs, would keep them all.
