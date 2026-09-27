@@ -1,0 +1,5 @@
+name: the possessions status keeps the font's own line spacing, and its two lines touch
+file: addons/Family_UI/Contents.lua
+--- old
+	status:SetSpacing(2)
+--- new

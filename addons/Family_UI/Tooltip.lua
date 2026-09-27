@@ -1349,30 +1349,53 @@ end
 -- as worth knowing before an item is sold. Names in their class colour, the most a line holds.
 local LEARNERS_SHOWN = 6
 
-local function learnLines(link, itemID)
-	local who = Family:WhoCanLearn(link, itemID)
-	if not who then return nil end
-	if #who == 0 then
-		return { { L["|cff66bbffLook: nobody in the family can learn it|r"] } }
-	end
-
+-- The members, class-coloured and sorted, the most a line holds.
+local function learnerNames(keys, plain)
 	local names = {}
-	for _, key in ipairs(who) do
+	for _, key in ipairs(keys) do
 		local meta = Family.Database:Meta(key) or {}
-		names[#names + 1] = { key = key, name = meta.name or key, realm = meta.realm,
-			classFile = meta.classFile }
+		names[#names + 1] = { name = meta.name or key, classFile = meta.classFile }
 	end
 	table.sort(names, function(a, b) return a.name < b.name end)
 
 	local parts = {}
 	for index = 1, math.min(#names, LEARNERS_SHOWN) do
 		local entry = names[index]
-		parts[#parts + 1] = UI:ClassMarkup(entry.classFile) .. entry.name .. "|r"
+		parts[#parts + 1] = plain and entry.name
+			or (UI:ClassMarkup(entry.classFile) .. entry.name .. "|r")
 	end
 	if #names > LEARNERS_SHOWN then
 		parts[#parts + 1] = string.format(L["|cff888888and %d more|r"], #names - LEARNERS_SHOWN)
 	end
-	return { { L["|cff66bbffLook can be learnt by|r"] }, { table.concat(parts, ", ") } }
+	return table.concat(parts, ", ")
+end
+
+local function learnLines(link, itemID)
+	local who, later, unread = Family:WhoCanLearn(link, itemID)
+	if not who then return nil end
+	later, unread = later or {}, unread or {}
+	if #who == 0 and #later == 0 and #unread == 0 then
+		return { { L["|cff66bbffLook: nobody in the family can learn it|r"] } }
+	end
+
+	local lines = { { L["|cff66bbffLook can be learnt by|r"] } }
+	if #who > 0 then
+		lines[#lines + 1] = { learnerNames(who) }
+	else
+		lines[#lines + 1] = { L["|cff888888nobody yet|r"] }
+	end
+
+	-- Grey, and only where there is somebody: each absence that can change, said.
+	if #later > 0 then
+		local level = tonumber((select(5, Family:TryCall(GetItemInfo, link or itemID)))) or 0
+		lines[#lines + 1] = { "|cff888888" .. string.format(L["also, once level %d: %s"], level,
+			learnerNames(later, true)) .. "|r" }
+	end
+	if #unread > 0 then
+		lines[#lines + 1] = { "|cff888888" .. string.format(L["log in once to check: %s"],
+			learnerNames(unread, true)) .. "|r" }
+	end
+	return lines
 end
 
 local function onItem(tooltip, itemID, data)

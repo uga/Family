@@ -67,7 +67,9 @@ is a decision rather than an afternoon of archaeology.
 - **Who in the family can learn a look, on Mists.** An item whose look your account has not
   collected now says on its tooltip which of your characters could learn it - the right class,
   wearing that armour type as their own, and high enough level - or that none of them can.
-  Items that bind on pickup are left out, since nobody else can receive them.
+  Items that bind on pickup are left out, since nobody else can receive them. Below the names, in
+  grey, who could learn it once they reach the item's level, and who has to log in once before
+  Family knows what they wear.
 - **Looks to learn and looks known, on Mists.** Two switches beside the Possessions search pick out
   the items whose look your account has not collected yet, and those whose look it already has and
   can be sold without losing it. On one character they dim everything else; with *Whole family* they

@@ -623,6 +623,14 @@ end
 -- - its level reaches the item's.
 --
 -- Only this family's own members: a linked family's collection is their account's.
+--
+-- **And two lists beside it**, so an absence that can change is not silent (Alberto, 2026-09-27,
+-- asking why plate greaves named his Death Knight and none of his Paladins): `later`, the right
+-- class below the item's level whose armour does not rule it out - armour only rises with level,
+-- so an item of a lower type than a member wears now never will be theirs, and one of the same or
+-- a higher type may be; not exact across the change at 40, where a mail-wearing Paladin can be
+-- listed for a mail item it will have outgrown - and `unread`, the right class whose armour has not
+-- been read yet, until they log in once.
 function Family:WhoCanLearn(item, itemID)
 	if self:LookOf(item, itemID) ~= "need" then return nil end
 	local collection = _G.C_TransmogCollection
@@ -645,7 +653,7 @@ function Family:WhoCanLearn(item, itemID)
 	local armourType = itemClass == ARMOUR and subclass and subclass >= 1 and subclass <= 4
 		and equipLoc ~= CLOAK and subclass or nil
 
-	local valid, who = {}, {}
+	local valid, who, later, unread = {}, {}, {}, {}
 	for key in pairs(self.Database:Members()) do
 		local meta = self.Database:Meta(key) or {}
 		local classID = meta.classFile and classIDOf(meta.classFile)
@@ -653,12 +661,18 @@ function Family:WhoCanLearn(item, itemID)
 			local sources = self:TryCall(forClass, appearance, classID)
 			valid[classID] = type(sources) == "table" and #sources > 0
 		end
-		if classID and valid[classID] and (tonumber(meta.level) or 0) >= minLevel
-			and (not armourType or meta.armour == armourType) then
-			who[#who + 1] = key
+		local level = tonumber(meta.level) or 0
+		if classID and valid[classID] then
+			if armourType and not meta.armour then
+				unread[#unread + 1] = key
+			elseif level >= minLevel then
+				if not armourType or meta.armour == armourType then who[#who + 1] = key end
+			elseif not armourType or armourType >= meta.armour then
+				later[#later + 1] = key
+			end
 		end
 	end
-	return who
+	return who, later, unread
 end
 
 -- A slot in one of this character's own containers.

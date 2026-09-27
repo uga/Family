@@ -679,6 +679,11 @@ local function build(frame)
 	status:SetPoint("TOPLEFT", picker, "BOTTOMLEFT", 2, -6)
 	status:SetPoint("RIGHT", -8, 0)
 	status:SetJustifyH("LEFT")
+	-- Two lines - when things were seen, then what they are worth - and at the font's own
+	-- spacing the descenders of the first touched the figures of the second (*ago* on the *0*
+	-- below it, Alberto's screenshot on Mists, 2026-09-27). Two pixels part them.
+	status:SetSpacing(2)
+	UI.__contentsStatus = status
 
 	local scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
 	scroll:SetPoint("TOPLEFT", status, "BOTTOMLEFT", -2, -6)

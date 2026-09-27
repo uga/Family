@@ -1,6 +1,8 @@
 name: the game's per-class answer is not asked
 file: addons/Family/Core.lua
 --- old
-		if classID and valid[classID] and (tonumber(meta.level) or 0) >= minLevel
+		if classID and valid[classID] then
+			if armourType and not meta.armour then
 --- new
-		if classID and (tonumber(meta.level) or 0) >= minLevel
+		if classID then
+			if armourType and not meta.armour then

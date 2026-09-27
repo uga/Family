@@ -1,6 +1,6 @@
 name: a member below the item's level is counted as able to learn its look
 file: addons/Family/Core.lua
 --- old
-		if classID and valid[classID] and (tonumber(meta.level) or 0) >= minLevel
+			elseif level >= minLevel then
 --- new
-		if classID and valid[classID]
+			elseif true then

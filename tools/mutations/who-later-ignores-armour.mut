@@ -1,0 +1,8 @@
+name: a member below the level is listed as later whatever armour it wears
+file: addons/Family/Core.lua
+--- old
+			elseif not armourType or armourType >= meta.armour then
+				later[#later + 1] = key
+--- new
+			else
+				later[#later + 1] = key

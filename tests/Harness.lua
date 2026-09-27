@@ -92,6 +92,8 @@ fontMeta.__index = function(_, key)
 	if key == "GetHeight" then return function(self) return self.__height or 100 end end
 	if key == "GetText" then return function(self) return self.__text end end
 	if key == "SetText" then return function(self, t) self.__text = t end end
+	-- The room between wrapped lines, kept so a check can ask for it.
+	if key == "SetSpacing" then return function(self, s) self.__spacing = s end end
 
 	-- The client measures a rendered string in pixels, and the panels now ask it to, so the
 	-- stub has to answer something. Characters rather than bytes, colour codes not counted,
@@ -36376,6 +36378,9 @@ print("looks to learn and looks known")
 	local buttons = Family.UI.__contentsLooks or {}
 	check("the two look switches are there on a client with a collection",
 		#buttons == 2 and buttons[1].__shown ~= false and buttons[2].__shown ~= false)
+	check("the possessions status parts its two lines by two pixels",
+		Family.UI.__contentsStatus and (Family.UI.__contentsStatus.__spacing or 0) >= 2)
+
 	-- Laid from the right, against *Whole family*, with the box ending at them: laid from the
 	-- box they ran under that button on Mists (2026-09-27).
 	local box = Family.UI.__contentsSearch
@@ -36431,11 +36436,15 @@ print("looks to learn and looks known")
 	caps.transmogrify = true
 	LOOKS[21004] = { 504, 9004, false }
 	LOOKS[21005] = { 505, 9005, false }
+	LOOKS[21006] = { 506, 9006, false }
+	ITEM_NAMES[21006] = "High Boots"
 	ITEM_NAMES[21004], ITEM_NAMES[21005] = "Grey Cloak", "Bound Helm"
 	local SHAPE = {
 		[21001] = { 10, "INVTYPE_CHEST", 4, 3, 2 },
 		[21004] = { 1, "INVTYPE_CLOAK", 4, 1, 2 },
 		[21005] = { 1, "INVTYPE_HEAD", 4, 3, 1 },
+		-- Mail again, at 55: above every Paladin here.
+		[21006] = { 55, "INVTYPE_FEET", 4, 3, 2 },
 	}
 	local plainInfo = GetItemInfo
 	GetItemInfo = function(key)
@@ -36474,7 +36483,8 @@ print("looks to learn and looks known")
 		for _, key in ipairs(list or {}) do out[key] = true end
 		return out
 	end
-	local tunicBy = set(Family:WhoCanLearn(nil, 21001))
+	local tunicWho, tunicLater, tunicUnread = Family:WhoCanLearn(nil, 21001)
+	local tunicBy = set(tunicWho)
 	check("a mail look is learnt by a Paladin who wears mail, at its level",
 		tunicBy["Mailed-Fire Maw"] and not tunicBy["Lowmail-Fire Maw"])
 	check("and not by one who wears plate, nor by a class it is not for",
@@ -36482,6 +36492,19 @@ print("looks to learn and looks known")
 	check("nor by a member whose armour has not been read yet", not tunicBy["Unread-Fire Maw"])
 	check("nor by a class the game says the look is not for, whatever its armour",
 		not tunicBy["Oddmage-Fire Maw"])
+	-- Each absence that can change is said (Alberto, 2026-09-27: plate greaves named the Death
+	-- Knight and no Paladin, silently): the right class below the item's level, where its armour
+	-- does not rule the item out, and the right class whose armour is not read yet.
+	local later, unread = set(tunicLater), set(tunicUnread)
+	check("a member below the item's level whose armour fits is listed as later",
+		later["Lowmail-Fire Maw"] and not later["Mailed-Fire Maw"])
+	local _, bootsLater = Family:WhoCanLearn(nil, 21006)
+	bootsLater = set(bootsLater)
+	check("but not one who wears a higher armour than the item now",
+		bootsLater["Mailed-Fire Maw"] and not bootsLater["Plated-Fire Maw"]
+			and not bootsLater["Clothy-Fire Maw"])
+	check("and a member of the right class whose armour is unread is listed to log in",
+		unread["Unread-Fire Maw"] and not unread["Mailed-Fire Maw"])
 	local cloakBy = set(Family:WhoCanLearn(nil, 21004))
 	check("a cloak's look goes by class alone", cloakBy["Plated-Fire Maw"] and cloakBy["Clothy-Fire Maw"])
 	check("an item that binds on pickup reaches nobody else, so names nobody",
@@ -36496,6 +36519,10 @@ print("looks to learn and looks known")
 	check("the tooltip names who can learn the look",
 		said:find(Family.L["|cff66bbffLook can be learnt by|r"], 1, true) ~= nil
 			and said:find("Mailed", 1, true) ~= nil and said:find("Plated", 1, true) == nil, said)
+	check("and says in grey who could once levelled, and who has to log in once",
+		said:find(string.format(Family.L["also, once level %d: %s"], 10, "Lowmail"), 1, true) ~= nil
+			and said:find(string.format(Family.L["log in once to check: %s"], "Unread"), 1, true)
+				~= nil, said)
 
 	-- The armour a member wears as its own, off its skill list.
 	local heldSkills = SKILL_LINES
