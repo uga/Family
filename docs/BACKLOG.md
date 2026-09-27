@@ -7428,6 +7428,12 @@ is one level of headings. So on Era a faction's inactive state is read with `IsF
 its own heading, when inactive, has to come from another member, as the design already says. Still
 wanted: Burning Crusade and Mists, every heading shut.
 
+**Burning Crusade read 2026-09-27**: seven headings, *Alliance* 469, *Alliance Forces* 891, *Outland* 980,
+*Shattrath City* 936, *Steamwheedle Cartel* 169, *Other* 0, *Inactive* 0 - Era's shape with two added.
+Still wanted: Mists, and on Burning Crusade one run with *Outland* open, to see whether anything is a
+child of it. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
+all-open list on Era came after a relog, and Alberto will retry it there.
+
 ---
 
 ## 106. The Auction line on a bound copy's tooltip says it is the unbound price — DONE 2026-09-27, not yet seen in game

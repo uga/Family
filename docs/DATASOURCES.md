@@ -5636,3 +5636,15 @@ Cartel* 169 (Booty Bay 21, Everlook 577, Gadgetzan 369, Ratchet 470), *Other* 0 
   carry standings with `hasRep` false, as before.
 - **An inactive faction's own heading is not in the list.** Argent Dawn sits under *Inactive*, and
   nothing says it belongs under *Other*.
+
+### The reputation list on Burning Crusade, every heading shut — read 2026-09-27
+
+Eccebombo, `2.5.6`, *reputation headings*, Argent Dawn set inactive. `GetNumFactions` 7, no
+`C_Reputation` list, every row a collapsed header, none a child, `IsFactionInactive` false on all
+seven. In order: *Alliance* 469, *Alliance Forces* 891, *Outland* 980, *Shattrath City* 936,
+*Steamwheedle Cartel* 169, *Other* 0, *Inactive* 0. The same shape as Era with two headings added,
+*Other* and *Inactive* both id 0 again, and *Alliance*, *Outland*, *Shattrath City* and *Steamwheedle
+Cartel* again carrying standings with `hasRep` false. Whether anything nests under *Outland* is not in
+this reading, which had every heading shut. **The headings were still collapsed after the probe and
+Family's own scan**, per Alberto, so the scan's put-back worked here; Era's all-open list followed a
+relog and is to be retried.
