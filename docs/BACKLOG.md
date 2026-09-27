@@ -7516,7 +7516,27 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, the collection is the account's, the shape goes back to Alberto
+## 108. Transmogrification on Mists — OPEN 2026-09-27, shape chosen: uncollected looks the family owns
+
+**Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
+whose look the account has not collected, marked on the Possessions panel, with who can learn them.
+
+**Proposed design, not yet agreed:**
+- **Checked by the item's own holder, at its scan.** Family does not know which game account a
+  character is on, and the collection answers only for the account logged in. So each character, when
+  its bags, bank and mail are scanned, asks `C_TransmogCollection.GetItemInfo(item)` for the source and
+  `PlayerHasTransmogItemModifiedAppearance(source)` for the look, and records the items whose look is
+  uncollected; and `PlayerCanCollectSource(source)` for whether that character itself can learn it. That
+  is right for every account in the family; it is stale when another character of the same account
+  collects the look, until the holder next logs in. The logged-in character's own items are re-asked live.
+- **Who can learn it, first slice: the holder, and nobody else by name.** Naming other members needs each
+  class's armour and weapon rules, which the client answers only for the character logged in; a
+  table of them would be a new data source (reserved). So the mark says *can learn it* or *cannot
+  learn it* for the holder.
+- **Shown** as a mark on the Possessions slot and a line on its tooltip (*look not collected*, then
+  whether the holder can learn it); a filter on the Possessions panel to show only such items.
+- **Items not yet cached** (`GetItemInfo` answering nothing) are asked again on
+  `TRANSMOG_SOURCE_COLLECTABILITY_UPDATE` or the next scan, never recorded as collected.
 
 **Settled 2026-09-27 (DATASOURCES)**: the collection is account-wide - a Paladin and a Druid of one
 account both answer *collected* to each other's worn looks. The per-character counts were the class
