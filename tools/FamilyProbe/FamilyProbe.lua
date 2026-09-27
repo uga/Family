@@ -565,6 +565,72 @@ local PROBES = {
         return table.concat(out, " | ")
     end },
 
+    -- **Backlog 105: the reputation list as the game has it, in order, with ids.** Read as it
+    -- stands and never changed: nothing here expands or collapses a heading or sets a faction
+    -- active. Run with every heading shut in the game's own Reputation window and this is the
+    -- list of headings, which is the order and the nesting the redesign needs - and it says
+    -- whether a Classic client's *Inactive* heading answers faction id 0, as Midnight's does.
+    { area = "reputations", name = "reputation headings", ask = function()
+        local out = {}
+        local count = there("GetNumFactions")
+        local info = there("GetFactionInfo")
+        if count and info then
+            local rows = tonumber((try(count))) or 0
+            out[#out + 1] = "GetNumFactions " .. rows
+            for index = 1, math.min(rows, 80) do
+                out[#out + 1] = "row " .. index .. ": " .. shape(callPacked(info, index))
+            end
+        else
+            out[#out + 1] = "GetNumFactions/GetFactionInfo absent"
+        end
+
+        local modernCount = inside("C_Reputation", "GetNumFactions")
+        local modernRow = inside("C_Reputation", "GetFactionDataByIndex")
+        if modernCount and modernRow then
+            local rows = tonumber((try(modernCount))) or 0
+            out[#out + 1] = "C_Reputation.GetNumFactions " .. rows
+            for index = 1, math.min(rows, 80) do
+                out[#out + 1] = "data " .. index .. ": " .. fields(try(modernRow, index))
+            end
+        else
+            out[#out + 1] = "C_Reputation list absent"
+        end
+        return table.concat(out, " | ")
+    end },
+
+    -- **Backlog 104: what Archaeology says beyond the fragments** - the project each race has in
+    -- progress and the artifacts it lists. Run once with the Archaeology window never opened this
+    -- session and once after opening it: whether these answer before the window has asked the
+    -- server is the first thing the scanner has to know. Nothing here selects an artifact or
+    -- asks the server anything.
+    { area = "archaeology", name = "archaeology projects", ask = function()
+        local out = {}
+        local races = there("GetNumArchaeologyRaces")
+        if not races then return "GetNumArchaeologyRaces absent" end
+        local count = tonumber((try(races))) or 0
+        out[#out + 1] = "GetNumArchaeologyRaces " .. count
+
+        local info = there("GetArchaeologyRaceInfo")
+        local active = there("GetActiveArtifactByRace")
+        local number = there("GetNumArtifactsByRace")
+        local artifact = there("GetArtifactInfoByRace")
+        out[#out + 1] = "calls: active " .. (active and "yes" or "absent")
+            .. ", count " .. (number and "yes" or "absent")
+            .. ", artifact " .. (artifact and "yes" or "absent")
+
+        for index = 1, count do
+            local line = "race " .. index .. ": " .. shape(callPacked(info, index))
+            if active then line = line .. " || active " .. shape(callPacked(active, index)) end
+            local listed = number and tonumber((try(number, index))) or nil
+            line = line .. " || listed " .. tostring(listed)
+            if artifact and listed and listed > 0 then
+                line = line .. " || first " .. shape(callPacked(artifact, index, 1))
+            end
+            out[#out + 1] = line
+        end
+        return table.concat(out, " | ")
+    end },
+
     { area = "pvp", name = "honor and conquest as currencies", ask = function()
         -- Honor and conquest by id, through whichever of the two currency calls this client
         -- carries. Ids because a name is one language (§2.1).

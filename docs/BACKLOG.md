@@ -7360,6 +7360,11 @@ currency list (the same entry), so the Currencies set will never show them and t
 **First step: a FamilyProbe entry** asking each of those calls on Luga, with the window closed and
 then open, before any scanner is written.
 
+**Settled by Alberto, 2026-09-27:** fragments, the project in progress and the solved artifacts;
+shown on a Summary set **and** on the Character panel; shared over Wide Family **under
+professions**. The probe is `/familyprobe apis`, entry *archaeology projects* - run on a Mists
+character with the Archaeology window not yet opened this session, then again after opening it.
+
 ---
 
 ## 105. The Reputations panel in the game's order, collapsed, with inactive per character
@@ -7401,6 +7406,10 @@ faction id 0.
 **First step: a FamilyProbe entry** on Era, Burning Crusade and Mists printing the headings in order
 with their ids, child flags and standings, to see whether the Classic clients' *Inactive* heading
 also answers 0 and how their nesting looks.
+
+**Probe written 2026-09-27:** `/familyprobe apis`, entry *reputation headings* - every row of the
+reputation list as it stands, and `C_Reputation`'s where present. Run with every heading shut in
+the game's own Reputation window, on Era, Burning Crusade and Mists.
 
 ---
 
