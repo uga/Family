@@ -4288,3 +4288,33 @@ the specialisation calls for a moment; named `pvpApi`, as it was, the list is ri
 
 **Seen on the PTR** (2026-09-27): Deiana's Pets page lists the Cat with its eight abilities and the
 Wolf, stabled and never read, with nothing under him - Alberto: *yes it does*.
+
+## 126. What is left, 2026-09-27
+
+Both items §114 left in scope are done: lockouts boss by boss (§121) and values the client keeps
+secret, settled with nothing to build (§123). Pets came in on the way (§124). What remains, read off
+the tree and this file rather than remembered:
+
+**Built and not yet seen in the game**
+1. A material's binding asked of the client, so a bind-on-pickup reagent is not priced as bought (§112).
+2. Deferred jobs to a budget a frame - a boss kill with adds and area loot, in combat (§122).
+3. Nodes named after what they give, beyond Ironwood Lumber (§104).
+
+**The fourth column, which the merge to `main` waits on.** Thirteen of `Capabilities.lua`'s rows
+have no Midnight entry and so answer false there (§13's seven checks said this would be so). Four of
+them switch something off today: `achievements` (the achievements scan and its page), `guildBank`
+(the bank scanner's guild tabs), `flying` (the Summary's riding answer) and `addonCasts` (the
+Professions panel's cast buttons). The rest - `dailyQuests`, `currencies`, `dualSpec`,
+`transmogrify`, `talentTrees`, `glyphs`, `keyring`, `ammoBags`, `weaponSkills` - gate nothing
+Family draws on Midnight, and still need an answer written, each from a reading.
+
+**The rest of the merge's conditions** (the branch's `CLAUDE.md`): a Midnight row in `docs/SMOKE.md`,
+which has none; the full `tools/mutate.py` run; and, before any beta, the check that
+`tools/release.sh` will tag outside `main`, which has not been done.
+
+**Questions for `main`, not this branch's:** Mists still draws the ranged slot (§110); whether Mists'
+older currency list has §116's shut-heading hole; whether a Mists auction post has §49's gap; and
+whether the per-frame budget of §122 goes to the Classic clients before 5.0.0.
+
+**Waiting for Forever** (§111, §114, §124): crafting orders, delves, the keystone a character holds,
+the Omnium Folio, the Skyriding tree, housing, profession specialisations.
