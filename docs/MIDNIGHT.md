@@ -4860,3 +4860,11 @@ gear grid, which draws the nineteen slots only.
 **Seen** (Alberto's screenshot, 2026-09-27): the Eventide Coif's *Sell Price (each)* now **4g 97s 29c**,
 the game's own - the tooltip's price by link works on live. The family's worth and the profession gear
 are not yet seen.
+
+**Seen, and a layout fault** (Alberto's screenshot, 2026-09-27, the skinner): the *Enchanting*, *Skinning*,
+*Fishing* and *Cooking* rows with the *Durable Pack* in Skinning's middle slot - the reading and the
+drawing work on live - but the rows stood 68 pixels apart and each name sat a little below its slots.
+`nextRow` steps the page's `y` by its own height, 32 here, and the row then stepped it again by a slot
+and a gap. Fixed: the row's top is taken before `nextRow`, the name and the slots share it, and the row
+steps once. The check now reads the anchors: a name level with its slots, the next profession 36 below;
+a mutation puts the double step back.

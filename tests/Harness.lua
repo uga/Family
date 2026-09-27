@@ -14561,13 +14561,20 @@ do
 	local caps = Family.Capabilities.can
 	local held = { caps.professionGear, _G.GetProfessions, _G.GetProfessionInfo, _G.C_TradeSkillUI }
 	caps.professionGear = true
-	_G.GetProfessions = function() return nil, 2 end
+	_G.GetProfessions = function() return nil, 2, nil, nil, 5 end
 	_G.GetProfessionInfo = function(index)
 		if index == 2 then return "Skinning", nil, 8, 100, 0, 0, 393 end
+		if index == 5 then return "Cooking", nil, 1, 100, 0, 0, 185 end
 	end
 	_G.C_TradeSkillUI = setmetatable({
-		GetProfessionInfoBySkillLineID = function(line) if line == 393 then return { profession = 11 } end end,
-		GetProfessionSlots = function(profession) if profession == 11 then return { 23, 24, 25 } end end,
+		GetProfessionInfoBySkillLineID = function(line)
+			if line == 393 then return { profession = 11 } end
+			if line == 185 then return { profession = 5 } end
+		end,
+		GetProfessionSlots = function(profession)
+			if profession == 11 then return { 23, 24, 25 } end
+			if profession == 5 then return { 26, 27 } end
+		end,
 	}, { __index = held[4] or {} })
 	local me = Family:CurrentMember()
 	caps.professionGear = nil
@@ -14591,6 +14598,19 @@ do
 	end
 	check("and the gear page draws the profession's row, its name and its three slots",
 		profession == 3 and visibleText("Skinning"), tostring(profession))
+	-- A name level with its slots, and the next profession one slot and a gap below.
+	local function top(f) return f and f.__offsets and f.__offsets.TOPLEFT and f.__offsets.TOPLEFT.y end
+	local skinSlot, cookSlot, skinName
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.slotName and f.itemID == 4023 then skinSlot = f end
+		if f.__shown == true and f.slotName and f.itemID == 4026 then cookSlot = f end
+		if f.__shown ~= false and f.middle and tostring(f.middle.__text):find("Skinning", 1, true) then
+			skinName = f
+		end
+	end
+	check("a profession's name is level with its slots, and the next row a slot and a gap below",
+		top(skinSlot) and top(skinSlot) == top(skinName) and top(cookSlot) == top(skinSlot) - 36,
+		tostring(top(skinSlot)) .. " / " .. tostring(top(skinName)) .. " / " .. tostring(top(cookSlot)))
 	caps.professionGear = nil
 	Family.Character:Scan()
 	gear = (Family.Database:Payload(me) or {}).equipment or {}

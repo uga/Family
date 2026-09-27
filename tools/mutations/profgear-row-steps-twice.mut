@@ -1,0 +1,7 @@
+name: a profession row steps twice, the row's and the slot's
+file: addons/Family_UI/Character.lua
+--- old
+				local r = nextRow()
+				y = top
+--- new
+				local r = nextRow()

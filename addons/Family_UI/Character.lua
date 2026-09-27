@@ -2137,9 +2137,13 @@ local function build(frame)
 			-- a profession, its name and then its slots in the game's order, empty ones drawn as
 			-- a bare frame since the game's own pictures for them cannot be probed.
 			for _, profession in ipairs(gear.professions or {}) do
+				-- `nextRow` steps `y` by its own height; the row's top is taken before it, and
+				-- the name and the slots share it.
+				local top = y
 				local r = nextRow()
+				y = top
 				r:ClearAllPoints()
-				r:SetPoint("TOPLEFT", leftX, -(y + (GEAR - ROW) / 2))
+				r:SetPoint("TOPLEFT", leftX, -y)
 				r:SetWidth(MIDDLE)
 				r.middle:ClearAllPoints()
 				r.middle:SetPoint("LEFT", 0, 0)
