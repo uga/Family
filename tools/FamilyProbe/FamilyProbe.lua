@@ -897,6 +897,71 @@ local function membersOf(value)
     return "(" .. #names .. ") " .. table.concat(names, " ")
 end
 
+-- **Backlog 108: what Mists Classic carries for transmogrification**, before anything is
+-- designed. Original Mists changed an item's look at a vendor and kept no collection; the
+-- modern wardrobe (`C_TransmogCollection`) came later, and a Classic build may carry either
+-- or both. So this names what is there, then asks it about what the character wears. Run it
+-- once away from a Transmogrifier and once with the window open, since the old calls may only
+-- answer there. Nothing here applies, buys or asks the server for anything.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog calls", ask = function()
+    local out = {}
+    for _, name in ipairs({ "GetTransmogrifySlotInfo", "GetTransmogrifyCost",
+        "CanTransmogrifyItemWithItem", "GetItemTransmogrifyInfo", "GetVoidItemInfo",
+        "CanUseVoidStorage", "IsVoidStorageReady" }) do
+        out[#out + 1] = name .. " " .. (there(name) and "yes" or "absent")
+    end
+    for _, namespace in ipairs({ "C_Transmog", "C_TransmogCollection", "C_TransmogSets",
+        "C_TransmogOutfitInfo" }) do
+        out[#out + 1] = namespace .. " " .. membersOf(_G[namespace])
+    end
+    return table.concat(out, " | ")
+end }
+
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog of what is worn", ask = function()
+    local out = {}
+    local link = there("GetInventoryItemLink")
+    local old = there("GetTransmogrifySlotInfo")
+    local itemInfo = inside("C_TransmogCollection", "GetItemInfo")
+    local has = inside("C_TransmogCollection", "PlayerHasTransmog")
+    local known = inside("C_TransmogCollection", "PlayerHasTransmogItemModifiedAppearance")
+    for slot = 1, 19 do
+        local worn = link and try(link, "player", slot) or nil
+        if worn then
+            local itemID = tonumber(tostring(worn):match("item:(%d+)"))
+            local line = "slot " .. slot .. " item " .. tostring(itemID)
+            if old then line = line .. " || old " .. shape(callPacked(old, slot)) end
+            if itemInfo then
+                local answer = callPacked(itemInfo, worn)
+                line = line .. " || GetItemInfo " .. shape(answer)
+                local source = tonumber(answer and answer[2])
+                if known and source then
+                    line = line .. " || has source " .. describe(try(known, source))
+                end
+            end
+            if has and itemID then line = line .. " || has " .. describe(try(has, itemID)) end
+            out[#out + 1] = line
+        end
+    end
+
+    -- How big the collection says it is, where there is one: per category, collected and
+    -- in all. Categories are numbered from 1 and a client that has none answers nil.
+    local collected = inside("C_TransmogCollection", "GetCategoryCollectedCount")
+    local total = inside("C_TransmogCollection", "GetCategoryTotal")
+    if collected then
+        local counts = {}
+        for category = 1, 40 do
+            local got = try(collected, category)
+            if got ~= nil then
+                counts[#counts + 1] = category .. "=" .. tostring(got) .. "/"
+                    .. tostring(total and try(total, category))
+            end
+        end
+        out[#out + 1] = "collected by category " .. table.concat(counts, " ")
+    end
+    if #out == 0 then return "nothing worn answered" end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end

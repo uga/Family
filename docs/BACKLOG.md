@@ -7515,3 +7515,33 @@ example Tailoring and Blacksmithing), plus Cooking, First Aid and Archaeology. O
 will be lines to show for Skinning, and maybe more. So the redesign is certain for the Midnight
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
+
+## 108. Transmogrification on Mists — OPEN 2026-09-27, probes written, not yet read
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
+*Transmog instead does exist in Mists, and that must be supported Family Mists. Then, its different
+version must also be supported by Fam Midnight.* Midnight's system is *very different from Mists*
+(Alberto), so under the branch rule `main` builds the Mists version first and the Midnight branch
+ports it afterwards, as it did archaeology and reputations.
+
+**Today:** Family records nothing about transmogrification on any client. The `transmogrify`
+capability in `Capabilities.lua` (Mists true) is a fact no code reads.
+
+**Not designed yet.** What *supported* means is open and is Alberto's to settle once the client has
+answered: which looks (the one applied to each worn item, or a collection of appearances known),
+per character or for the family, where it is shown, and whether it is shared on Wide Family.
+Original Mists changed an item's look at a vendor and kept no collection; the wardrobe collection
+(`C_TransmogCollection`) came with Legion, and a Classic build carries whichever Blizzard gave it,
+so nothing about the design can be assumed before the probe says which.
+
+**The probes, in `tools/FamilyProbe/FamilyProbe.lua`, area `transmog`**, run by `/familyprobe apis`:
+- *transmog calls*: whether the original calls (`GetTransmogrifySlotInfo`, `GetTransmogrifyCost`,
+  `CanTransmogrifyItemWithItem`, `GetItemTransmogrifyInfo`) and the void storage ones are present,
+  and the members of `C_Transmog`, `C_TransmogCollection`, `C_TransmogSets`, `C_TransmogOutfitInfo`.
+- *transmog of what is worn*: for each worn slot, the item, what `GetTransmogrifySlotInfo` says, what
+  `C_TransmogCollection.GetItemInfo` says (appearance and source) and whether the character has that
+  source and that item's look; then, where the collection exists, collected and total per category.
+
+**To run on Mists**, on a character wearing at least one transmogrified item: once away from a
+Transmogrifier, and once with its window open, since the original calls may answer only there. Then
+log out to write the file. Nothing in the probes applies a look, buys anything or asks the server.
