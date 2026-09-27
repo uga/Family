@@ -4571,3 +4571,6 @@ character Uga, Horde, whose guild *Già mi creo pagu* has three tabs, all holdin
 3, `GetCurrentGuildBankTab` 1, *Già mi creo pagu*, *Officer*, and all three stored with names (tab 3
 renamed *Terza* since) - right, and not the case in question. The guild *Uga* still holds tab 1 only,
 read 11:48 UTC. The reading that matters is at that guild's bank, by a character in it.
+
+**Seen** (Alberto, 2026-09-27): *clicking on profession button now opens the profession panel* - the
+game's own window, from Family's button, on Midnight. §132's route works on live.
