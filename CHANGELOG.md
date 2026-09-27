@@ -64,6 +64,8 @@ is a decision rather than an afternoon of archaeology.
   not opened yet is shown as *not opened yet*, and one you opened empty says *empty*. A tab read
   on an earlier visit keeps what it held until you open it again. Before, only the tabs holding
   something were recorded, and a visit that did not load a tab forgot what it had held.
+- **A guild bank tab is drawn at its full size**, with its free slots counted like a bag's. Before,
+  it stopped at the last item in it and looked like a much smaller tab.
 - **CTRL-ALT and a click on an item in a Possessions block now opens the family's list of it**, as
   its tooltip says. It did nothing on Family's own blocks; it worked only on the game's bags and
   links.
