@@ -7325,3 +7325,37 @@ the list to miss. The reading is taken the first time any Mists character earns 
 read as twelve values, none empty, id 515 last - the Burning Crusade shape. Family filed it by id and
 drew it on the Currencies set. Nothing to change (DATASOURCES, *On Mists the currency list is empty*).
 
+
+---
+
+## 104. Archaeology's contents: fragments by race, the project in progress, artifacts solved
+
+**Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
+Family does not read Archaeology's contents at all. Mists has Archaeology and so does Midnight, so
+under the branch rule `main` builds it first for Mists and the Midnight branch ports it and measures
+its own side when it lands.
+
+**Today:** Archaeology is a skill line with its rank and nothing more - `SkillLines.lua:611`, the
+profession list in `Scanners/Professions.lua`, and the guild share's `[794]` (`Guild.lua:229`).
+Nothing reads the races, their fragments, the project each race has in progress, or the artifacts
+solved.
+
+**What has been read, once, on Luga (`5.5.4`, 2026-09-23)** - DATASOURCES, *On Mists the currency
+list is empty*: `GetNumArchaeologyRaces` answered 13, and `GetArchaeologyRaceInfo(13)` answered
+`"Dwarf" 461831 52843 11 32 200`, the fourth value the fragments held and the sixth the cap.
+`C_CurrencyInfo.GetCurrencyInfo(384)` agreed: 11 of 200. Fragments are **not** in the client's
+currency list (the same entry), so the Currencies set will never show them and this is its own slice.
+
+**Open, and Alberto's to settle before building:**
+
+- **What is shown, and where.** Fragments per race are a figure per member per race: a Summary set,
+  a section on the Character panel, or both. The entry that found them left open whether they
+  should be shown at all.
+- **Projects and solved artifacts.** Unmeasured. Whether `GetActiveArtifactByRace`,
+  `GetArtifactInfoByRace` and `GetNumArtifactsByRace` answer without the Archaeology window having
+  been opened in the session is the first thing to probe, in the same shape as the professions'
+  window rule.
+- **Shared or not** over Wide Family, and in which category.
+
+**First step: a FamilyProbe entry** asking each of those calls on Luga, with the window closed and
+then open, before any scanner is written.
