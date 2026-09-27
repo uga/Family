@@ -7550,6 +7550,13 @@ own armour type only, and that needs the skill list or a rule, not this call.
 **Answered for armour the same evening:** Eccebombo wore a cloth robe and did not learn its look. So
 the list counts each member's own armour type at its level, from the skill list if it says so; the
 per-class call stays for weapons and class restrictions until a weapon is tried the same way.
+**The skill list answers it (Eccebombo, 2026-09-27)**: *[Armor Proficiencies]* lists Cloth, Leather,
+Mail and Plate Mail on a Paladin of 49, so a member's own type is the best line there, and *[Weapon
+Skills]* lists its weapons. The lines arrive in the character's language, so they are filed by skill line
+id, which `SkillLines.lua` does not carry for armour yet (generated from wago.tools, already adopted).
+**Seen in the game the same evening**: both switches work on one member and across the family, and a
+guild tab's item is marked; the switches ran under *Whole family* and were moved to sit against it.
+
 **And Death Knights** (Alberto): plate from the start, so the level-40 change of armour type that
 Warriors, Paladins, Hunters and Shamans go through does not apply to them - which the skill list should
 show on its own if it names each member's armour.

@@ -5810,6 +5810,18 @@ bind on equip), whose look the account has not collected: appearance 49402, sour
 - **Nor a mail look**, the same evening: *Sunblaze Coif* (mail, soulbound) on Eccebombo still reads *You
   haven't collected this appearance* (Alberto's screenshot). So a plate wearer learns plate looks only,
   though the per-class call counted Paladins valid for mail.
+- **The skill list names each character's armour** (Eccebombo, Paladin 49, *transmog skill list whole*):
+  headings *[Class Skills]*, *[Professions]*, *[Secondary Skills]*, *[Weapon Skills]* (Axes 166/245,
+  Polearms, Swords, Two-Handed Axes, Maces, Unarmed, Defense ...), **[Armor Proficiencies]: Cloth 1/1,
+  Leather 1/1, Mail 1/1, Plate Mail 1/1, Shield 1/1**, *[Languages]*. So a character's own armour type is
+  the best line under that heading, and its weapons are the lines under *Weapon Skills* - asked of each
+  character, in its own language, which is why they have to be filed by skill line id. Not yet read on a
+  character under 40.
+- **For cloth the per-class call names only the cloth wearers**: *Sage's Bracers of Intellect* (cloth,
+  item 6613) answers one source for 5, 8 and 9 (Priest, Mage, Warlock) and none for anybody else. For mail
+  it named Warrior, Paladin, Hunter, Death Knight and Shaman. So the call counts a class valid for a type it
+  wears as its own at some level (Warriors and Paladins below 40), which is not the level-aware rule the
+  game collects by.
 
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 

@@ -1,0 +1,12 @@
+name: the look switches are laid from the search box and run under Whole family
+file: addons/Family_UI/Contents.lua
+--- old
+			lookButtons[2]:SetPoint("RIGHT", everyone, "LEFT", -6, 0)
+			lookButtons[1]:ClearAllPoints()
+			lookButtons[1]:SetPoint("RIGHT", lookButtons[2], "LEFT", -4, 0)
+			search:SetPoint("RIGHT", lookButtons[1], "LEFT", -10, 0)
+--- new
+			lookButtons[1]:ClearAllPoints()
+			lookButtons[1]:SetPoint("LEFT", search, "RIGHT", 8, 0)
+			lookButtons[2]:SetPoint("LEFT", lookButtons[1], "RIGHT", 4, 0)
+			search:SetWidth(150)

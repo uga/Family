@@ -558,7 +558,6 @@ local function build(frame)
 		}) do
 			local button = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
 			button:SetSize(90, 20)
-			button:SetPoint("LEFT", previous, "RIGHT", previous == search and 8 or 4, 0)
 			button:SetText(entry.label)
 			UI:FitButton(button, 110)
 			button.lookID = entry.id
@@ -961,10 +960,25 @@ local function build(frame)
 		hint:SetWidth(math.min(math.ceil(hint:GetStringWidth() or 0) + 2, HINT_MAX))
 
 		-- The look switches, where there is a collection to ask (backlog 108).
+		--
+		-- **Placed from the right**, against *Whole family*, and the box takes what is left
+		-- between the caption and them. Placed from the box's right they ran under *Whole
+		-- family* on Mists (Alberto's screenshot, 2026-09-27): the row's width is the
+		-- panel's, and only the box can give.
 		local looks = Family.Capabilities:Has("transmogrify")
-		search:SetWidth(looks and 150 or 200)
 		for _, button in ipairs(lookButtons) do button:SetShown(looks) end
 		if not looks then lookFilter = nil end
+		search:ClearAllPoints()
+		search:SetPoint("LEFT", hint, "RIGHT", 10, 0)
+		if looks and lookButtons[2] then
+			lookButtons[2]:ClearAllPoints()
+			lookButtons[2]:SetPoint("RIGHT", everyone, "LEFT", -6, 0)
+			lookButtons[1]:ClearAllPoints()
+			lookButtons[1]:SetPoint("RIGHT", lookButtons[2], "LEFT", -4, 0)
+			search:SetPoint("RIGHT", lookButtons[1], "LEFT", -10, 0)
+		else
+			search:SetWidth(200)
+		end
 
 		local member = picker:Reconcile()
 

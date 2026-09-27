@@ -36372,6 +36372,14 @@ print("looks to learn and looks known")
 	local buttons = Family.UI.__contentsLooks or {}
 	check("the two look switches are there on a client with a collection",
 		#buttons == 2 and buttons[1].__shown ~= false and buttons[2].__shown ~= false)
+	-- Laid from the right, against *Whole family*, with the box ending at them: laid from the
+	-- box they ran under that button on Mists (2026-09-27).
+	local box = Family.UI.__contentsSearch
+	check("the switches sit against Whole family and the search box ends at them",
+		buttons[2] and buttons[2].__anchoredTo and contentsEveryone
+			and buttons[2].__anchoredTo[contentsEveryone]
+			and box and box.__anchoredTo and box.__anchoredTo[buttons[1]]
+			and box.__points and box.__points.RIGHT)
 	if buttons[1] then buttons[1].__scripts.OnClick(buttons[1]) end
 	local tunic, boots
 	for _, f in ipairs(frames) do
