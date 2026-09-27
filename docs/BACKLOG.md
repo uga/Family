@@ -7373,7 +7373,20 @@ character with the Archaeology window not yet opened this session, then again af
 
 ---
 
-## 105. The Reputations panel in the game's order, collapsed, with inactive per character
+## 105. The Reputations panel in the game's order, collapsed, with inactive per character — DONE 2026-09-27, not yet seen in game
+
+**Built 2026-09-27.** `Character:ReadReputations` now records, per faction, `category` and
+`categoryID` (the top-level heading, id kept only when not 0), `group` and `groupID` (the nested
+heading, from `isChild`), and `inactive` from `IsFactionInactive`; the list stays in the game's
+order. A header with a standing is recorded as a faction of the level above before it becomes the
+heading of what follows. In `Family_UI/Character.lua`: one character's page draws the game's tree,
+headings shut until clicked (`UI.__repOpen`, cleared with the panel's fold), a filter opening
+everything; the whole-family page merges every member's order (`mergeOrder`), files a faction by
+whoever has it active and falls back to its inactive heading only when nobody does, and writes
+*inactive* before the standing of whoever set it. Records written before this draw in their old
+single-heading shape until the character logs in. **Not looked at:** whether the scan's expand and
+put-back left Era's headings open after a relog; Burning Crusade and Mists kept them shut.
+
 
 **Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word,
 designed from Eccebombo's Reputations page beside the game's window. For every client; `main` builds
@@ -7472,3 +7485,14 @@ On another member's copy the tooltip has only a link, so no mark there.
 checks (`Tooltip.lua:704-730`), `Family:BoundIn(bag, slot, itemID)` and `Family:BindingWorn(slot)`
 (`Core.lua:530`, `:563`). The guess must be checked against the item before it is used, as
 `bagCount` does: a wrong slot has to cost a missing mark, never a wrong one.
+
+---
+
+## 107. The Professions window, for more than four professions with something to show
+
+**Asked by Alberto 2026-09-27.** A character now has more professions with something to show than
+the window was laid out for. On Mists: two primary professions, possibly both with recipes (for
+example Tailoring and Blacksmithing), plus Cooking, First Aid and Archaeology. On Midnight there
+will be lines to show for Skinning, and maybe more. So the redesign is certain for the Midnight
+branch and likely for Mists. Not designed yet; the first step is to read the current layout
+(`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.

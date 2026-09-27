@@ -2287,6 +2287,10 @@ for _, file in ipairs(UI_FILES) do
 	load("addons/Family_UI/" .. file, "Family_UI", UIPrivate)
 end
 fire("ADDON_LOADED", "Family_UI")
+-- Reputation headings open, for the checks written before they folded (backlog 105). The
+-- checks of the folding itself set it back to false while they run; the second load of
+-- Character.lua below resets it, and it is set again there.
+Family.UI.REPUTATIONS_START_OPEN = true
 
 -- **The shipped fold caps, checked here and then driven down to three.**
 --
@@ -11137,7 +11141,9 @@ check("and hovering a quest opens the quest tooltip",
 clickButton("Reputations")
 shownAs, lineCount = hoverRow(function(f) return f.fallback ~= nil end)
 check("a faction, which the game will not describe, shows what Family knows instead",
-	shownAs == nil and lineCount > 0, tostring(lineCount))
+	shownAs == nil and lineCount > 0,
+	tostring(shownAs and shownAs.kind) .. " " .. tostring(shownAs and shownAs.id) .. " "
+		.. tostring(lineCount))
 
 -- Matched by the id itself rather than by "has one". Rows are pooled per panel and only
 -- hidden when spare, so a row belonging to a panel nobody is looking at is still a shown
@@ -14615,6 +14621,7 @@ GetBuildInfo = function() return "5.5.4", "69078", "Aug 2026", 50504 end
 Family.Capabilities:Detect()
 
 load("addons/Family_UI/Character.lua", "Family_UI", UIPrivate)
+Family.UI.REPUTATIONS_START_OPEN = true
 Family.UI:ShowTab("character")
 
 -- Said out loud, at the place it happens, because of what it does to every check written
@@ -34755,10 +34762,13 @@ print("the family's reputations, as factions rather than as members")
 		-- the end of the block: other panels put frames in between.
 		for index = at + 1, #page do
 			local f = page[index]
+			-- A hidden row is stepped over too: rows made after the pool ran out sit after
+			-- other panels' hidden rows in this list (backlog 105 put the headings in the
+			-- game's order, and a faction drawn last on the page is then the pool's last).
 			if type(f.left) == "table" and type(f.middle) == "table"
-				and type(f.right) == "table" then
+				and type(f.right) == "table" and f.__shown ~= false then
 				local left = f.left.__text
-				if f.__shown == false or type(left) ~= "string" or left ~= "" then
+				if type(left) ~= "string" or left ~= "" then
 					break
 				end
 				out[#out + 1] = f
@@ -35891,6 +35901,164 @@ print("rested experience worked forward from the reading")
 	check("the column says it is an estimate", src:find('L["Rest XP est."]', 1, true) ~= nil)
 	check("and the cell draws the worked figure",
 		src:find("Family.Identity:RestedNow(meta) or meta.rested", 1, true) ~= nil)
+end)()
+
+print()
+print("reputations in the game's order, headings shut, inactive per character")
+
+-- Backlog 105, from the readings of 2026-09-27: `isChild` nests a heading and its factions on
+-- Mists, *Inactive* and *Other* both answer id 0, and `IsFactionInactive` says it per faction.
+;(function()
+	local list = {
+		{ "Guild", true, false, 1169 },
+		{ "Uga", false, false, 1234 },
+		{ "Classic", true, false, 1118 },
+		{ "Argent Dawn", false, false, 529 },
+		{ "Alliance", true, true, 469 },
+		{ "Stormwind", false, true, 72 },
+		{ "Inactive", true, false, 0 },
+		{ "Zandalar Tribe", false, false, 270, inactive = true },
+	}
+	local heldNum, heldInfo, heldInactive = GetNumFactions, GetFactionInfo, IsFactionInactive
+	GetNumFactions = function() return #list end
+	GetFactionInfo = function(index)
+		local f = list[index]
+		if not f then return nil end
+		return f[1], "", 5, 0, 3000, 1500, false, false, f[2], false, false, false, f[3], f[4]
+	end
+	IsFactionInactive = function(index) return list[index] and list[index].inactive == true end
+
+	local reps = Family.Character:ReadReputations() or {}
+	local byName = {}
+	for index, faction in ipairs(reps) do byName[faction.name] = faction; faction.at = index end
+	check("a faction directly under a top-level heading is filed there, with the heading's id",
+		byName["Argent Dawn"] and byName["Argent Dawn"].category == "Classic"
+			and byName["Argent Dawn"].categoryID == 1118 and byName["Argent Dawn"].group == nil)
+	check("and one inside a nested heading carries both levels",
+		byName["Stormwind"] and byName["Stormwind"].category == "Classic"
+			and byName["Stormwind"].group == "Alliance" and byName["Stormwind"].groupID == 469)
+	check("an inactive faction says so itself, and *Inactive*'s id 0 is not kept",
+		byName["Zandalar Tribe"] and byName["Zandalar Tribe"].inactive == true
+			and byName["Zandalar Tribe"].category == "Inactive"
+			and byName["Zandalar Tribe"].categoryID == nil)
+	check("the list keeps the game's order",
+		byName["Uga"] and byName["Stormwind"] and byName["Uga"].at < byName["Argent Dawn"].at
+			and byName["Argent Dawn"].at < byName["Stormwind"].at)
+	GetNumFactions, GetFactionInfo, IsFactionInactive = heldNum, heldInfo, heldInactive
+
+	-- The family page merges each member's order: a heading only a later member has goes where
+	-- that member's game put it, not at the end.
+	local merged = { "Classic", "Inactive" }
+	Family.UI.__mergeRepOrder(merged, { "Guild", "Classic" })
+	Family.UI.__mergeRepOrder(merged, { "Classic", "The Burning Crusade", "Inactive" })
+	check("members' orders merge into one that none of them contradicts",
+		table.concat(merged, ",") == "Guild,Classic,The Burning Crusade,Inactive",
+		table.concat(merged, ","))
+
+	-- **One character's page: headings shut until clicked.**
+	local who = Family:CurrentMember()
+	local payload = Family.Database:Payload(who) or {}
+	local heldReps = payload.reputations
+	payload.reputations = reps
+	Family.Database:SetPayload(who, payload, { "reputations" })
+
+	Family.UI.REPUTATIONS_START_OPEN = false
+	Family.UI:FoldEverything()
+	Family.UI:Show()
+	Family.UI:ShowTab("character")
+	clickButton("Reputations")
+	Family.UI:Refresh()
+	if visibleText("Faraway") or visibleText("Tinta") then
+		clickButton("Whole family")
+		Family.UI:Refresh()
+	end
+
+	local function headingRow(name)
+		for _, f in ipairs(frames) do
+			local left = type(f.left) == "table" and f.left.__text
+			if f.__shown ~= false and f.toggleHeading and type(left) == "string"
+				and left:find(name, 1, true) then
+				return f
+			end
+		end
+	end
+
+	check("a character's headings are drawn in the game's order, shut",
+		headingRow("Guild") ~= nil and headingRow("Classic") ~= nil
+			and not visibleText("Argent Dawn"))
+	local classic = headingRow("Classic")
+	check("a shut heading says so with a plus",
+		classic and classic.left.__text:find("+ Classic", 1, true) ~= nil,
+		classic and classic.left.__text)
+	if classic then classic.__scripts.OnClick(classic) end
+	classic = headingRow("Classic")
+	check("and an open one with a minus",
+		classic and classic.left.__text:find("- Classic", 1, true) ~= nil,
+		classic and classic.left.__text)
+	check("clicking one opens it: its own factions and its nested heading, still shut",
+		visibleText("Argent Dawn") and headingRow("Alliance") ~= nil
+			and not visibleText("Stormwind"))
+	local alliance = headingRow("Alliance")
+	if alliance then alliance.__scripts.OnClick(alliance) end
+	check("and the nested heading opens on its own click", visibleText("Stormwind"))
+	check("while this character's page keeps the game's Inactive heading",
+		headingRow("Inactive") ~= nil)
+
+	-- Put back first: this character's list above has a faction nobody has active, which is
+	-- rightly under *Inactive* on the family page too.
+	payload.reputations = heldReps
+	Family.Database:SetPayload(who, payload, { "reputations" })
+
+	-- **The whole family: an inactive faction under its own heading, marked per member.**
+	local roster = {
+		-- The inactive copy first, whichever order the roster is read in: named so, and put
+		-- first here, so that taking the first copy's heading would file it under Inactive.
+		{ key = "Abshelver-Fire Maw", name = "Abshelver", inactive = true,
+			category = "Inactive" },
+		{ key = "Zactor-Fire Maw", name = "Zactor", inactive = nil, category = "Classic",
+			categoryID = 1118 },
+	}
+	for _, member in ipairs(roster) do
+		Family.Database:SetMeta(member.key, { name = member.name, realm = "Fire Maw",
+			level = 60, classFile = "MAGE", faction = "Alliance" })
+		Family.Database:SetPayload(member.key, { reputations = {
+			{ id = 2701, name = "Silver Harbour", category = member.category,
+				categoryID = member.categoryID, inactive = member.inactive, standing = 5,
+				value = 100, maximum = 1000 },
+		} })
+	end
+	Family.UI.REPUTATIONS_START_OPEN = true
+	clickButton("Whole family")
+	Family.UI:Refresh()
+	if not visibleText("Abshelver") then
+		clickButton("Whole family")
+		Family.UI:Refresh()
+	end
+
+	local shelverRow, heading
+	for _, f in ipairs(frames) do
+		local middle = type(f.middle) == "table" and f.middle.__text
+		if f.__shown ~= false and type(middle) == "string"
+			and middle:find("Abshelver", 1, true) then
+			shelverRow = f
+		end
+	end
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.toggleHeading
+			and tostring(f.left and f.left.__text):find("Inactive", 1, true) then
+			heading = f
+		end
+	end
+	check("the whole family files an inactive faction where another member has it active",
+		shelverRow ~= nil and heading == nil and visibleText("Silver Harbour"))
+	check("and writes inactive before the progress of whoever set it so",
+		shelverRow and tostring(shelverRow.right.__text):find(Family.L["inactive"], 1, true) ~= nil,
+		shelverRow and shelverRow.right.__text)
+
+	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.UI.REPUTATIONS_START_OPEN = true
+	Family.UI:Refresh()
+	Family.UI:Hide()
 end)()
 
 print()

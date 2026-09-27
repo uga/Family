@@ -1035,4 +1035,5 @@ Family.locales.esES = {
 	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888PE desc. est. se calcula desde la última lectura: 5%% de un nivel cada 8 horas donde el personaje descansaba, cada 32 horas en otro sitio, hasta un nivel y medio. Los pandaren, el doble de todo.|r",
 	["not known"] = "desconocido",
 	["(unbound)"] = "(sin ligar)",
+	["inactive"] = "inactiva",
 }

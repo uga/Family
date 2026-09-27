@@ -1,0 +1,6 @@
+name: an inactive copy decides where the whole family files a faction
+file: addons/Family_UI/Character.lua
+--- old
+							if not faction.inactive and not row.activePlace then
+--- new
+							if not row.activePlace then

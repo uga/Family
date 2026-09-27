@@ -36,6 +36,17 @@ is a decision rather than an afternoon of archaeology.
   time, the longest-waiting first, instead of all in the same moment. On Mists this showed as
   *error in deferred character*.
 
+### Reputations
+
+- **Reputations are listed the way the game lists them**: under the game's own headings, in the
+  game's order, with a second level of headings on Mists of Pandaria. Every heading starts closed;
+  click one to open it. Typing in the filter opens whatever matches. Before, headings were sorted
+  alphabetically and every faction was always shown.
+- **An inactive faction is filed where it belongs on the whole-family page.** A character's own
+  page keeps the game's *Inactive* heading. On the whole-family page the faction sits under its
+  real heading, and the characters who set it inactive have *inactive* written before their
+  standing. Before, it could be listed under *Inactive* for everybody.
+
 ### Item tooltips
 
 - **On an item that is bound to you, the Auction line says *(unbound)*.** The auction price is

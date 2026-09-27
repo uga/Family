@@ -1,0 +1,6 @@
+name: the whole family does not say who set a faction inactive
+file: addons/Family_UI/Character.lua
+--- old
+					local put = person.inactive
+--- new
+					local put = false

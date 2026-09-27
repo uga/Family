@@ -1,0 +1,6 @@
+name: a heading only a later member has goes to the end of the family's order
+file: addons/Family_UI/Character.lua
+--- old
+			table.insert(list, place, key)
+--- new
+			table.insert(list, key)
