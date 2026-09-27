@@ -1,0 +1,5 @@
+name: clicking an archaeology race does not open its history
+file: addons/Family_UI/Professions.lua
+--- old
+					if #artifacts > 0 then heading.toggleRace = race.race end
+--- new
