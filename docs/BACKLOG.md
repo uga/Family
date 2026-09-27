@@ -7516,7 +7516,13 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, shape chosen: uncollected looks the family owns
+## 108. Transmogrification on Mists — OPEN 2026-09-27, reshaped: who in the family can learn a look
+
+**Reshaped by Alberto the same evening** (DECISIONS): the game's own tooltip already says *You haven't
+collected this appearance* whoever looks. What it cannot say is which of the family could learn it. So
+the goal is a tooltip line - *appearance can be learnt by* and the members who can wear or wield it at
+their level - leaving out bind-on-pickup items and respecting class restrictions. The holder-only
+design below was dropped before it was committed. Probe *transmog who can learn* asks what that needs.
 
 **Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
 whose look the account has not collected, marked on the Possessions panel, with who can learn them.

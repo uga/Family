@@ -1105,6 +1105,81 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog collection: account 
     return table.concat(out, " | ")
 end }
 
+-- **Backlog 108: who in the family could learn a look.** Alberto, 2026-09-27: the game already
+-- says *You haven't collected this appearance* whoever is looking; what nothing says is which of
+-- his characters could learn it. Three questions for that, each asked of the client:
+-- - which armour and weapon skills this character knows, by the proficiency spells, whose ids
+--   here are a guess the answers will confirm or not (a known one answers true for the class);
+-- - whether `GetValidAppearanceSourcesForClass` answers for *other* classes, which would let any
+--   character judge a look for every class, class-restricted items included;
+-- - for the first uncollected look in the bags, what the collectability calls say.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog who can learn", ask = function()
+    local out = {}
+    local known = there("IsSpellKnown") or there("IsPlayerSpell")
+    local name = there("GetSpellInfo")
+    local spells = { { "Cloth", 9078 }, { "Leather", 9077 }, { "Mail", 8737 }, { "Plate", 750 },
+        { "Shield", 9116 }, { "1H Axe", 196 }, { "2H Axe", 197 }, { "1H Mace", 198 },
+        { "2H Mace", 199 }, { "Polearm", 200 }, { "1H Sword", 201 }, { "2H Sword", 202 },
+        { "Staff", 227 }, { "Dagger", 1180 }, { "Fist", 15590 }, { "Bow", 264 }, { "Gun", 266 },
+        { "Crossbow", 5011 }, { "Wand", 5009 }, { "Thrown", 2567 } }
+    local said = {}
+    for _, pair in ipairs(spells) do
+        said[#said + 1] = pair[1] .. " " .. pair[2] .. "=" .. describe(known and try(known, pair[2]))
+            .. "(" .. tostring(name and try(name, pair[2])) .. ")"
+    end
+    out[#out + 1] = "proficiencies " .. table.concat(said, " ")
+
+    local collection = _G.C_TransmogCollection
+    local itemInfo = inside("C_TransmogCollection", "GetItemInfo")
+    local forClass = inside("C_TransmogCollection", "GetValidAppearanceSourcesForClass")
+    local bySource = inside("C_TransmogCollection", "GetAppearanceInfoBySource")
+    local has = inside("C_TransmogCollection", "PlayerHasTransmogItemModifiedAppearance")
+    local slotLink = (_G.C_Container and _G.C_Container.GetContainerItemLink)
+        or there("GetContainerItemLink")
+    local found
+    if itemInfo and has and slotLink then
+        for bag = 0, 4 do
+            for slot = 1, 36 do
+                local link = try(slotLink, bag, slot)
+                if link and not found then
+                    local appearance, source = try(itemInfo, link)
+                    if tonumber(source) and try(has, source) == false then
+                        found = { link = link, appearance = appearance, source = source }
+                    end
+                end
+            end
+        end
+    end
+    if not found then
+        out[#out + 1] = "no uncollected look in the bags - carry one and ask again"
+        return table.concat(out, " | ")
+    end
+    out[#out + 1] = "uncollected " .. tostring(found.link):gsub("|", "!") .. " appearance "
+        .. tostring(found.appearance) .. " source " .. tostring(found.source)
+    -- Packed, not `try`: that hands back eight values and the bind type is the fourteenth.
+    local item = callPacked(there("GetItemInfo"), found.link)
+    out[#out + 1] = "bind type " .. tostring(item and item[14])
+    if bySource then
+        local info = try(bySource, found.source)
+        out[#out + 1] = "by source " .. (type(info) == "table" and fields(info) or describe(info))
+    end
+    for _, name in ipairs({ "PlayerCanCollectSource", "AccountCanCollectSource" }) do
+        local fn = collection and collection[name]
+        out[#out + 1] = name .. " " .. (type(fn) == "function"
+            and shape(callPacked(fn, found.source)) or "absent")
+    end
+    if forClass then
+        local classes = {}
+        for classID = 1, 11 do
+            local sources = try(forClass, found.appearance, classID)
+            local count = type(sources) == "table" and #sources or describe(sources)
+            classes[#classes + 1] = classID .. "=" .. tostring(count)
+        end
+        out[#out + 1] = "valid sources by class " .. table.concat(classes, " ")
+    end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end
