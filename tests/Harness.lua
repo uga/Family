@@ -7367,6 +7367,27 @@ do
 	check("a tab read on an earlier visit keeps what it held when this visit does not load it",
 		tabs[1] and tabs[1].slots[1] and tabs[1].slots[1].id == 2589)
 	check("and the tab this visit shows is now read, and empty", tabs[3].seen ~= nil)
+
+	-- **Tabs clicked through faster than the scan's wait** (Midnight event trace, 2026-09-27):
+	-- each switch sends the event with the new tab current, and the scan runs once, after the
+	-- last. Every tab shown in between counts as read.
+	FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs[2] = { slots = {}, name = "Spare" }
+	FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs[3] = { slots = {}, name = "Raid" }
+	for _, tab in ipairs { 2, 3 } do
+		GetCurrentGuildBankTab = function() return tab end
+		fire("GUILDBANKBAGSLOTS_CHANGED")
+	end
+	GetCurrentGuildBankTab = function() return 1 end
+	fire("GUILDBANKBAGSLOTS_CHANGED")
+	-- A whole minute, not the two seconds the wait needs: a part of a minute moves every later
+	-- minute-rounded deadline (L-125).
+	advance(60)
+	tabs = FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs
+	check("every tab shown during the visit counts as read, not only the last",
+		tabs[2].seen ~= nil and tabs[3].seen ~= nil,
+		tostring(tabs[2].seen) .. " " .. tostring(tabs[3].seen))
+	check("and the next visit starts from its own tabs", Family.Bank.tabsShown == nil)
+
 	GetGuildBankItemLink = realLink
 	GetCurrentGuildBankTab = nil
 

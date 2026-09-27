@@ -1,6 +1,6 @@
-name: an empty guild bank tab on screen is not recorded
+name: only the tab on screen when the scan runs counts as read
 file: addons/Family/Scanners/Bank.lua
 --- old
 		if seen or tab == onScreen or shown[tab] then
 --- new
-		if seen or shown[tab] then
+		if seen or tab == onScreen then

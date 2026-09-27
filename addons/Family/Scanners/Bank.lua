@@ -372,6 +372,7 @@ function Bank:ScanGuildBank()
 	FamilyDB.guilds = FamilyDB.guilds or {}
 	local before = (FamilyDB.guilds[guild .. "-" .. realm] or {}).tabs or {}
 	local onScreen = tonumber((Family:TryCall(_G.GetCurrentGuildBankTab)))
+	local shown = self.tabsShown or {}
 
 	local contents = {}
 	local known = 0
@@ -422,7 +423,7 @@ function Bank:ScanGuildBank()
 			end
 		end
 
-		if seen or tab == onScreen then
+		if seen or tab == onScreen or shown[tab] then
 			known = known + 1
 			contents[tab] = { slots = slots, seen = time() }
 		elseif before[tab] then
@@ -441,6 +442,9 @@ function Bank:ScanGuildBank()
 		Family:Debug("guild bank tab %d is called %s", tab, tostring(name))
 		if type(name) == "string" and name ~= "" then contents[tab].name = name end
 	end
+
+	-- Counted now, so forgotten now: the next visit starts from its own tabs.
+	self.tabsShown = nil
 
 	if known == 0 then return end
 
@@ -509,8 +513,18 @@ Family:OnDatabaseReady("bank", function()
 		isOpen = false
 	end)
 
+	-- **Every tab put on screen, noted as it happens.** Read on Midnight 2026-09-27 (Alberto's
+	-- event trace): each tab switch sends `GUILDBANKBAGSLOTS_CHANGED` once, with the new tab
+	-- already current - and the scan runs a second after the last event, so tabs clicked through
+	-- faster than that collapsed into the last one and stayed *not opened yet*. A tab the game
+	-- showed has been loaded, empty or not, so the scan counts every one noted here as read.
 	for _, event in ipairs { "GUILDBANKFRAME_OPENED", "GUILDBANKBAGSLOTS_CHANGED" } do
 		Family:RegisterEvent(event, "bank", function()
+			local tab = tonumber((Family:TryCall(_G.GetCurrentGuildBankTab)))
+			if tab then
+				Bank.tabsShown = Bank.tabsShown or {}
+				Bank.tabsShown[tab] = true
+			end
 			Family:After(1, "bank.guild", function() Bank:ScanGuildBank() end)
 		end)
 	end
