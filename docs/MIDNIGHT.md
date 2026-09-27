@@ -4856,3 +4856,7 @@ empty one as a bare frame, since the game's pictures for them cannot be probed. 
 mutations; the surface list gains `GetProfessionInfoBySkillLineID` and `GetProfessionSlots`. **Not yet
 seen.** Not done: the *(unbound)* mark on the profession window's own slots (above); the whole-family
 gear grid, which draws the nineteen slots only.
+
+**Seen** (Alberto's screenshot, 2026-09-27): the Eventide Coif's *Sell Price (each)* now **4g 97s 29c**,
+the game's own - the tooltip's price by link works on live. The family's worth and the profession gear
+are not yet seen.
