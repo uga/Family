@@ -4446,3 +4446,20 @@ not counted in any member's worth. Fourteen checks, fourteen mutations. `Enum.Ba
 **Sent to `main` the same afternoon**, at Alberto's word: Archaeology's contents (§126's aside), the
 Reputations redesign of §129, which is every client's and not Midnight's, and the *(unbound)* mark
 on a bound copy's Auction line, which Alberto chose (option 1) and then saw is every client's too.
+
+**Seen** (Alberto, 2026-09-27): *Warband block seen working* - Quasimoda's Possessions page draws the
+Warband tab after her own blocks, and a Polished Pet Charm's tooltip lists *Warband Bank 169* under
+the members' copies and in the Inventory block. The same screenshots raised three things:
+
+1. **CTRL-ALT and a click on a slot of any Possessions block does nothing**, though its tooltip
+   offers it. The slot buttons are Family's own and their `OnClick` only opens the container
+   (`Family_UI/Contents.lua`); the gesture is heard only through the client's
+   `HandleModifiedItemClick` (`Family_UI/ItemClick.lua`), which a Family button never calls. `main`'s
+   `Contents.lua` has the same `OnClick`, so this is every client's.
+2. **The character bank's six tabs are titled *Character Bank Tab Bag (DNT)***: the block takes its
+   name from the item in the container slot, and on Midnight that is the client's internal
+   placeholder item for a bank tab. The tabs' own names, which the player sets, are not read.
+3. **The guild and Warband tabs are titled by number.** The Warband tabs' names were never read
+   (above). A guild tab's name is read on every client since `main`'s backlog 86, and answered
+   *Res mistae* on Midnight (§127) - so why it is not drawn is to be read from what was stored,
+   not guessed.
