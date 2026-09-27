@@ -7431,7 +7431,12 @@ wanted: Burning Crusade and Mists, every heading shut.
 **Burning Crusade read 2026-09-27**: seven headings, *Alliance* 469, *Alliance Forces* 891, *Outland* 980,
 *Shattrath City* 936, *Steamwheedle Cartel* 169, *Other* 0, *Inactive* 0 - Era's shape with two added.
 *Outland* opened on its own lists five factions, none a child, and *Shattrath City* is a heading of its
-own beside it: **one level on Burning Crusade, as on Era**. Still wanted: Mists. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
+own beside it: **one level on Burning Crusade, as on Era**.
+
+**Mists read 2026-09-27**: *Guild* 1169, *Classic* 1118, *Inactive* 0, no *Other*. **Two levels**, from
+Alberto's screenshot: *Classic* holds factions and a nested *Alliance* heading. Alberto: *we should
+mimic them inside Family*. Still wanted: Mists with *Classic* open, to read what `isChild` says for the
+nested heading and its factions. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
 all-open list on Era came after a relog, and Alberto will retry it there.
 
 ---

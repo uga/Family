@@ -5653,3 +5653,18 @@ relog and is to be retried.
 Hold 946, Kurenai 978, Sporeggar 970, The Consortium 933 - every one `isChild` false, and *Shattrath
 City* 936 follows as a top-level heading of its own, not under *Outland*. **So Burning Crusade has one
 level of headings, as Era does**; the nesting the Midnight branch reads does not appear on either.
+
+### The reputation list on Mists, every heading shut — read 2026-09-27
+
+Eccebombo, `5.5.4`, *reputation headings*. `GetNumFactions` 3, no `C_Reputation` list: *Guild* 1169, *Classic*
+1118, *Inactive* 0 - all collapsed headers, none a child, `IsFactionInactive` false. **No *Other*
+heading**, and the headings are Midnight's kind (by expansion, then *Guild* and *Inactive*), not Era's.
+Alberto's screenshot of the game's window, *Classic* open: factions directly under *Classic* (Argent
+Dawn, Bloodsail Buccaneers, Thorium Brotherhood, Zandalar Tribe) and **a heading nested inside it**,
+*Alliance*, with Darnassus, Exodar, Gilneas, Gnomeregan, Ironforge, Stormwind and Tushui Pandaren
+under that. So Mists has two levels. What `isChild` says for *Alliance* and its factions is not yet read.
+
+**The archaeology entry on the same character** reads nothing useful: Eccebombo has no Archaeology.
+Thirteen races (race 1 named *UNUSED*), every fragment count 0, `GetActiveArtifactByRace` no returns and
+`GetNumArtifactsByRace` 0 for all. The reading backlog 104 needs is on a character with the skill,
+such as Luga.
