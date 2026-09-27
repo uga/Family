@@ -1,0 +1,6 @@
+name: Midnight's daily quests are left unseen
+file: addons/Family/Capabilities.lua
+--- old
+	dailyQuests  = { [MIDNIGHT] = true },
+--- new
+	dailyQuests  = { },

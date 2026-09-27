@@ -1,0 +1,6 @@
+name: Midnight is told it has a keyring
+file: addons/Family/Capabilities.lua
+--- old
+	keyring      = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false, [MIDNIGHT] = false },
+--- new
+	keyring      = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false, [MIDNIGHT] = true },

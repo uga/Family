@@ -1,0 +1,6 @@
+name: Midnight is told it has no currencies
+file: addons/Family/Capabilities.lua
+--- old
+	currencies   = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
+--- new
+	currencies   = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },

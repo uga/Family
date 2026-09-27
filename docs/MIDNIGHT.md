@@ -4694,3 +4694,17 @@ decision of 2026-09-23.
 before the standing of each member who set it so. **Inactive is per character on Midnight**: Gulliver
 and Vtucc, on Ahia's realm, hold *Argent Crusade* active beside six who set it inactive, and Ulula has
 *Argent Crusade* inactive and *Argent Dawn* not. Reputations on Midnight are done.
+
+**The fourth column, written whole.** Alberto's last line, 2026-09-27: `INVSLOT_AMMO` 0 and
+`GetInventorySlotInfo("AmmoSlot")` answering `true 0 136520 false` - the client still defines the
+slot, which says nothing about ammunition; `C_Item.GetItemInfoInstant(184937)` answering **nothing**,
+so the Chronoboon Displacer is not in Midnight's item data; `C_Transmog` and `C_TransmogCollection`
+tables. So every row of `Capabilities.lua` now has a Midnight answer: yes for daily quests, currencies
+and transmog; no for dual specialisation, Classic trees, glyphs, keyring, ammunition bags and weapon
+skills - all seen in the game but **`ammoBags`**, expected until Alberto says whether Midnight has an
+ammunition slot; and `chronoboon` confirmed. Nothing Family draws changes.
+
+The fourth-client checks that stood on rows with no answer now say what is true: every row answers,
+no row disagrees with the client, and the one row not yet seen is `ammoBags` - a live list, which the
+merge wants empty. The diagnostics' behaviour on a client with no column, which Midnight can no
+longer show, is held on a pretend interface 13. Seven mutations, and step 2's own re-proved.

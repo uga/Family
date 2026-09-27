@@ -2525,8 +2525,10 @@ end)()
 
 	check("Midnight is not mistaken for one of the three Classic clients",
 		Family.Capabilities.name == "interface 12", Family.Capabilities.name)
-	check("and a row with no Midnight answer claims nothing there",
-		Family.Capabilities:Has("currencies") == false
+	-- Every row has its Midnight answer since 2026-09-27 (`docs/MIDNIGHT.md` §133): currencies on,
+	-- one specialisation group read as no dual specialisation.
+	check("and every row answers there now, currencies on and dual specialisation off",
+		Family.Capabilities:Has("currencies") == true
 			and Family.Capabilities:Has("dualSpec") == false)
 	-- The guild bank's and achievements' fourth column landed 2026-09-27 (`docs/MIDNIGHT.md` §127).
 	check("while the ones that have their answer - the guild bank, achievements - are on",
@@ -2535,19 +2537,38 @@ end)()
 	check("and archaeology, which answers there as it does on Mists (§131)",
 		Family.Capabilities:Has("archaeology") == true)
 
-	-- The ones the table is wrong about, and the diagnostics say so by name. This is step 3's
-	-- list of work, written as checks rather than as a paragraph: as the fourth column lands,
-	-- these stop disagreeing, and this check is what says so - two have.
+	-- Step 3's list of work, written as checks rather than as a paragraph. The diagnostics named
+	-- every row whose symbol was on the client with no answer; as the fourth column landed they
+	-- stopped, and now none does. What is still to do is a row answered but not yet seen in the
+	-- game, and this check names them: the merge to `main` asks for none.
 	local reported = {}
 	for _, entry in ipairs(Family.Capabilities:Report()) do reported[entry.feature] = entry end
-	check("while the diagnostics name the one whose symbol is on the client and has no answer",
-		reported.currencies.disagrees ~= nil, tostring(reported.currencies.disagrees))
+	local disagreeing, unseen = {}, {}
+	for _, entry in ipairs(Family.Capabilities:Report()) do
+		if entry.disagrees then disagreeing[#disagreeing + 1] = entry.feature end
+		if entry.source ~= "seen in game" then unseen[#unseen + 1] = entry.feature end
+	end
+	check("while no row disagrees with the client any more",
+		#disagreeing == 0, table.concat(disagreeing, ", "))
 	check("and the guild bank and achievements, answered, no longer disagree",
 		reported.guildBank.disagrees == nil and reported.achievements.disagrees == nil,
 		tostring(reported.guildBank.disagrees) .. " / " .. tostring(reported.achievements.disagrees))
-	check("and say the symbol is there, not that the feature is",
-		reported.currencies.disagrees == "client has the symbol",
-		tostring(reported.currencies.disagrees))
+	check("and the one row not yet seen in the game is the ammunition bags",
+		table.concat(unseen, ", ") == "ammoBags", table.concat(unseen, ", "))
+
+	-- **And a client after this one**, which no row has a column for: the diagnostics still name a
+	-- row whose symbol is there, as they named Midnight's before its column existed. Midnight's
+	-- symbols, a later interface number.
+	_G.GetBuildInfo = function() return "13.0.0", "1", "Jan 1 2027", 130000 end
+	Family.Capabilities:Detect()
+	local later = {}
+	for _, entry in ipairs(Family.Capabilities:Report()) do later[entry.feature] = entry end
+	check("a client with no column still has a row whose symbol is there named",
+		later.currencies.disagrees == "client has the symbol"
+			and Family.Capabilities:Has("currencies") == false,
+		tostring(later.currencies.disagrees))
+	_G.GetBuildInfo = function() return "12.1.0", "69875", "Sep 15 2026", 120100 end
+	Family.Capabilities:Detect()
 
 	-- And the two the table gets right for the right reason: the symbols are gone as well.
 	check("a feature whose symbols are absent too is quietly right",

@@ -86,7 +86,13 @@ local EXPECTED = {
 	-- the bank scanner already waits on; `GUILDBANKFRAME_OPENED` was not among what it sent
 	-- (`docs/MIDNIGHT.md` §127).
 	guildBank    = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
-	dailyQuests  = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
+	-- Midnight's column for this block and `weaponSkills` below, from readings (`docs/MIDNIGHT.md`
+	-- §133): daily quests and transmog are in the game, Alberto's word, with `C_Transmog` and
+	-- `C_TransmogCollection` answering tables; currencies answer 49 through `C_CurrencyInfo`; one
+	-- specialisation group, `GetNumSpecGroups` 1; the Classic tree calls, the three glyph calls and
+	-- `KEYRING_CONTAINER` are all absent; no ammunition, expected - the client still defines an
+	-- *AmmoSlot*, which says nothing about ammunition.
+	dailyQuests  = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
 	-- Burning Crusade is the one people correct us on, and the table is right: Blizzard
 	-- builds all of these from one codebase, so Anniversary ships the whole achievement API
 	-- and the game behind it has no achievements. The client carrying the call is a fact
@@ -94,13 +100,13 @@ local EXPECTED = {
 	-- Midnight: 169 categories and 5,087 achievements answered on Ahia, 2026-09-27; the walk
 	-- steps by a time budget there, since one category took 446 ms (`docs/MIDNIGHT.md` §127).
 	achievements = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },
-	currencies   = { [VANILLA] = false, [TBC] = true,  [MISTS] = true  },
-	dualSpec     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
-	talentTrees  = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
-	glyphs       = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
-	keyring      = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
-	ammoBags     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
-	transmogrify = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
+	currencies   = { [VANILLA] = false, [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },
+	dualSpec     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
+	talentTrees  = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false, [MIDNIGHT] = false },
+	glyphs       = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = false },
+	keyring      = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false, [MIDNIGHT] = false },
+	ammoBags     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false, [MIDNIGHT] = false },
+	transmogrify = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },
 
 	-- Whether a character can leave the ground at all. Not an API question and not researched
 	-- from anywhere but the client's own tables: `SpellEffect` on Classic Era has **no spell**
@@ -130,7 +136,7 @@ local EXPECTED = {
 	-- it looked like was not this one. The API still hands ranks back on Mists (`Axes 166/245`
 	-- on a paladin) and they govern nothing and are shown nowhere, which is why the answer
 	-- there is no.
-	weaponSkills = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
+	weaponSkills = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false, [MIDNIGHT] = false },
 
 	-- Whether an addon may ask the client to cast a spell by its name, out of combat and from a
 	-- click. Family does it for one thing: opening a profession's window from its button, because
@@ -223,15 +229,15 @@ local EXPECTED = {
 -- Checked in the game. 2026-08-08 unless noted.
 local CONFIRMED = {
 	achievements = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
-	currencies   = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
-	dualSpec     = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
+	currencies   = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
+	dualSpec     = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
 	guildBank    = {                   [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
-	keyring      = { [VANILLA] = true, [TBC] = true                 },
-	glyphs       = {                                 [MISTS] = true },
+	keyring      = { [VANILLA] = true, [TBC] = true,               [MIDNIGHT] = true },
+	glyphs       = {                                 [MISTS] = true, [MIDNIGHT] = true },
 	-- 2026-09-06, from Alberto: the skill sheet photographed on Era and on Burning Crusade
 	-- with its three headings and a Weapon Skills rank under the last of them, and Mists
 	-- opened on a death knight to find no skill sheet at all.
-	weaponSkills = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
+	weaponSkills = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },
 	-- 2026-09-11, Burning Crusade: *cast Leatherworking, callWorked true, windowNow
 	-- Leatherworking*, measured from inside the click (Family_UI/Professions.lua).
 	-- Midnight 2026-09-24: the dialog and `ADDON_ACTION_FORBIDDEN` on that click (§54).
@@ -249,6 +255,12 @@ local CONFIRMED = {
 	bankTabs     = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-26: slot 18 answered nil to `GetInventoryItemID` on Ahia (§110).
 	rangedSlot   = { [MIDNIGHT] = true },
+	-- Midnight 2026-09-27 (§133): Alberto's word for dailies and transmog, the item data for the
+	-- Chronoboon (184937 not there), the old tree calls absent.
+	dailyQuests  = { [MIDNIGHT] = true },
+	transmogrify = { [MIDNIGHT] = true },
+	talentTrees  = { [MIDNIGHT] = true },
+	chronoboon   = { [MIDNIGHT] = true },
 	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
 	-- Midnight 2026-09-27, on live: Drust, 153 of 200 fragments, its project and seven artifacts.
 	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },

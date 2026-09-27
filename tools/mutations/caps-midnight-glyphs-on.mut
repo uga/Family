@@ -1,0 +1,6 @@
+name: Midnight is told it has glyphs
+file: addons/Family/Capabilities.lua
+--- old
+	glyphs       = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = false },
+--- new
+	glyphs       = { [VANILLA] = false, [TBC] = false, [MISTS] = true, [MIDNIGHT] = true },

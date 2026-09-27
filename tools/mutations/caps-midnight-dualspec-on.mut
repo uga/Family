@@ -1,0 +1,6 @@
+name: Midnight is told it has dual specialisation
+file: addons/Family/Capabilities.lua
+--- old
+	dualSpec     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
+--- new
+	dualSpec     = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },

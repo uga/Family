@@ -1,0 +1,6 @@
+name: Midnight's transmog is left unseen
+file: addons/Family/Capabilities.lua
+--- old
+	transmogrify = { [MIDNIGHT] = true },
+--- new
+	transmogrify = { },
