@@ -5613,3 +5613,11 @@ Expanded, Verysolid's *Other* lists Argent Dawn, Bloodsail Buccaneers, Cenarion 
 Gelkis Clan Centaur, Hydraxian Waterlords, Magram Clan Centaur, Shen'dralar, Thorium Brotherhood,
 Timbermaw Hold and Wildhammer Clan. Whether each of those was set inactive by the player or is filed
 there by the game is what `IsFactionInactive(index)` answers per row, now asked by the probe.
+
+**And taken back by Alberto the same hour, with screenshots:** *OTHER is "other". There is also an
+"Inactive" category, that comes up only if you do inactivate something.* With Argent Dawn moved to
+inactive, Verysolid's list shows *Alliance*, *Alliance Forces*, *Steamwheedle Cartel*, *Other* and a new
+*Inactive* heading holding Argent Dawn. So the first paragraph stands: on Era *Other* is an ordinary
+heading and answers id 0, and *Inactive* is a heading of its own that exists only while something is
+inactive. What id *Inactive* answers on Era is not yet read, and it cannot be 0 as a way of telling
+the two apart if *Other* already is.
