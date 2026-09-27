@@ -13081,7 +13081,7 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 		end
 		check("an empty or unread tab's heading has no count under it", not zeroUnder)
 		-- **A tab with one thing in it is drawn at the whole tab's size**, not stopped at its
-		-- last filled slot (seen on Mists 2026-09-27).
+		-- last filled slot (seen on Midnight 2026-09-27).
 		check("a guild tab with one thing in it is drawn at the whole tab, 97 of 98 free",
 			matsCount == string.format(Family.L["|cff888888%d of %d free|r"], 97, 98),
 			tostring(matsCount))

@@ -276,7 +276,7 @@ local function containersOf(payload, meta)
 
 			-- A tab with anything in it is drawn at the whole of the tab, as a bag is: sized by
 			-- its highest filled slot it stopped at the last thing in it, and looked like a
-			-- tab of five (seen on Mists 2026-09-27).
+			-- tab of five (seen on Midnight 2026-09-27).
 			local size = held > 0 and (_G.MAX_GUILDBANK_SLOTS_PER_TAB or 98) or 0
 
 			-- A tab never read is kept, with its name, so the guild's bank is drawn whole;
