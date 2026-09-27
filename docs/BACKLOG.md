@@ -7516,7 +7516,10 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — BUILT 2026-09-27, the filters seen in game, *can be learnt by* not yet
+## 108. Transmogrification on Mists — BUILT 2026-09-27, both halves seen working in the game
+
+**Seen in the game 2026-09-27** (Alberto, *working*): *Traveler's Bracers* (leather, level 51, bind on
+equip) held by Duecalzini, whose look the account lacks, reads *Look can be learnt by: Luga, Uga*.
 
 **Built 2026-09-27: *can be learnt by*.** `Family:WhoCanLearn` (`Core.lua`) names this family's members
 who could learn an uncollected look: the class the game says it is for (`GetValidAppearanceSourcesForClass`,
