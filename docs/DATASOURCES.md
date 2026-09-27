@@ -5621,3 +5621,18 @@ inactive, Verysolid's list shows *Alliance*, *Alliance Forces*, *Steamwheedle Ca
 heading and answers id 0, and *Inactive* is a heading of its own that exists only while something is
 inactive. What id *Inactive* answers on Era is not yet read, and it cannot be 0 as a way of telling
 the two apart if *Other* already is.
+
+**Read again the same day, every heading open, Argent Dawn set inactive** (Verysolid, `1.15.9`, 27 rows).
+In order: *Alliance* 469 (Darnassus 69, Gnomeregan Exiles 54, Ironforge 47, Stormwind 72), *Alliance
+Forces* 891 (Silverwing Sentinels 890, Stormpike Guard 730, The League of Arathor 509), *Steamwheedle
+Cartel* 169 (Booty Bay 21, Everlook 577, Gadgetzan 369, Ratchet 470), *Other* 0 (ten factions),
+*Inactive* 0 (Argent Dawn 529).
+
+- **Both *Other* and *Inactive* answer id 0**, and both answer 14 values with 7, 8 and 11-13 nil. On Era
+  id 0 means a heading that is not itself a faction; it does not identify *Inactive*.
+- **`IsFactionInactive(index)` answers per row**: true for Argent Dawn and false for every other row,
+  headings included. This is the Era route to *inactive*, whatever heading a faction is under.
+- **One level only**: `isChild` (13) is false on every faction row. *Alliance* and *Steamwheedle Cartel*
+  carry standings with `hasRep` false, as before.
+- **An inactive faction's own heading is not in the list.** Argent Dawn sits under *Inactive*, and
+  nothing says it belongs under *Other*.

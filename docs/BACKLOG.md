@@ -7422,6 +7422,12 @@ does not carry over as a way of recognising it on Era. The probe asks `IsFaction
 row, which says it of each faction whatever its heading. Still wanted: Era with a faction inactive
 and every heading shut, then Burning Crusade and Mists.
 
+**Era settled, 2026-09-27** (DATASOURCES, *The reputation list on Era*): *Other* and *Inactive* both
+answer id 0, `IsFactionInactive` is true for the inactive faction and false everywhere else, and there
+is one level of headings. So on Era a faction's inactive state is read with `IsFactionInactive`, and
+its own heading, when inactive, has to come from another member, as the design already says. Still
+wanted: Burning Crusade and Mists, every heading shut.
+
 ---
 
 ## 106. The Auction line on a bound copy's tooltip says it is the unbound price — DONE 2026-09-27, not yet seen in game
