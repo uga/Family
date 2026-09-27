@@ -4612,3 +4612,6 @@ which left 6 and 7 *not opened yet*, ran on a build without `647bcdc`.
 
 Merged since: `main`'s `8f7c9ad`, a guild tab with anything in it drawn at its full 98 slots with
 *N of 98 free* under its heading, from Alberto's short tab on Monaca. Not yet seen on Midnight.
+
+**Seen** (Alberto, 2026-09-27): a guild tab drawn at its full 98 slots, and *N of 98 free* on its
+tabard's tooltip - `main`'s `8f7c9ad` works on Midnight. The guild bank is done here.
