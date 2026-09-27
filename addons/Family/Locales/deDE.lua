@@ -1036,4 +1036,7 @@ Family.locales.deDE = {
 	["not known"] = "nicht bekannt",
 	["(unbound)"] = "(ungebunden)",
 	["inactive"] = "inaktiv",
+	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dDieser Charakter hat noch nichts ausgegraben.|r",
+	["%d races, %d artifacts solved"] = "%d Völker, %d Artefakte gelöst",
+	["first solved %s"] = "zuerst gelöst %s",
 }

@@ -1036,4 +1036,7 @@ Family.locales.ruRU = {
 	["not known"] = "неизвестно",
 	["(unbound)"] = "(непривязанный)",
 	["inactive"] = "неактивна",
+	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dЭтот персонаж ещё ничего не раскопал.|r",
+	["%d races, %d artifacts solved"] = "Рас: %d, решено артефактов: %d",
+	["first solved %s"] = "впервые решён %s",
 }

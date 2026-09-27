@@ -1,0 +1,6 @@
+name: every archaeology race is recorded, those with nothing in them too
+file: addons/Family/Scanners/Archaeology.lua
+--- old
+		if type(name) == "string" and (fragments > 0 or project or done > 0) then
+--- new
+		if type(name) == "string" then

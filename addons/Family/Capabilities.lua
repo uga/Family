@@ -121,6 +121,10 @@ local EXPECTED = {
 	-- on a paladin) and they govern nothing and are shown nowhere, which is why the answer
 	-- there is no.
 	weaponSkills = { [VANILLA] = true,  [TBC] = true,  [MISTS] = false },
+
+	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
+	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104).
+	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -135,6 +139,8 @@ local CONFIRMED = {
 	-- with its three headings and a Weapon Skills rank under the last of them, and Mists
 	-- opened on a death knight to find no skill sheet at all.
 	weaponSkills = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
+	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
+	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 }
 
 --------------------------------------------------------------------------------------------

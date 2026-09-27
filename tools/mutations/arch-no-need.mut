@@ -1,0 +1,6 @@
+name: the project's cost is not kept
+file: addons/Family/Scanners/Archaeology.lua
+--- old
+				need = project and need > 0 and need or nil,
+--- new
+				need = nil,

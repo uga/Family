@@ -2123,6 +2123,7 @@ for _, file in ipairs {
 	"Scanners/QuestHistory.lua",
 	"Scanners/Currencies.lua",
 	"Scanners/Instances.lua",
+	"Scanners/Archaeology.lua",
 	"Scanners/Pets.lua",
 	"Scanners/Merchant.lua",
 	"Wide.lua",
@@ -36059,6 +36060,134 @@ print("reputations in the game's order, headings shut, inactive per character")
 	Family.UI.REPUTATIONS_START_OPEN = true
 	Family.UI:Refresh()
 	Family.UI:Hide()
+end)()
+
+print()
+print("archaeology: fragments, the project and the artifacts solved")
+
+-- Backlog 104, from Luga's readings of 2026-09-27: a race with nothing is not recorded, the
+-- artifact list holds the solved ones and the project, and a solved one has a count above nought.
+;(function()
+	local caps = Family.Capabilities.can
+	local heldCan = caps.archaeology
+	caps.archaeology = true
+	local held = {}
+	for _, name in ipairs { "GetNumArchaeologyRaces", "GetArchaeologyRaceInfo",
+		"GetActiveArtifactByRace", "GetNumArtifactsByRace", "GetArtifactInfoByRace" } do
+		held[name] = _G[name]
+	end
+	GetNumArchaeologyRaces = function() return 2 end
+	GetArchaeologyRaceInfo = function(i)
+		if i == 1 then return "UNUSED", 839111, 95373, 0, 0, 0 end
+		return "Dwarf", 461831, 52843, 11, 32, 200
+	end
+	GetActiveArtifactByRace = function(i)
+		if i == 2 then return "Bone Gaming Dice", "d", 0, 237285, "f", 0, 461832, 86866 end
+	end
+	GetNumArtifactsByRace = function(i) return i == 2 and 2 or 0 end
+	GetArtifactInfoByRace = function(i, j)
+		if i ~= 2 then return end
+		if j == 1 then
+			return "Worn Hunting Knife", "d", 0, 135292, "", 0, 461832, 86865, 1790189489, 1
+		end
+		return "Bone Gaming Dice", "d", 0, 237285, "", 0, 461832, 86866, 0, 0
+	end
+
+	local who = Family:CurrentMember()
+	Family.Archaeology:Scan()
+	local meta = Family.Database:Meta(who) or {}
+	local races = meta.archaeology or {}
+	check("a race with nothing in it is not recorded, one with fragments is",
+		#races == 1 and races[1].name == "Dwarf", tostring(#races))
+	local dwarf = races[1] or {}
+	check("with its fragments, the project's cost and the project",
+		dwarf.fragments == 11 and dwarf.need == 32 and dwarf.cap == 200
+			and dwarf.project == "Bone Gaming Dice")
+	check("and a count of solved artifacts that leaves the project in progress out",
+		dwarf.solved == 1, tostring(dwarf.solved))
+	local solved = (Family.Database:Payload(who) or {}).archaeologySolved or {}
+	check("the solved artifact is kept with when and how often",
+		#solved == 1 and solved[1].name == "Worn Hunting Knife"
+			and solved[1].firstAt == 1790189489 and solved[1].count == 1, tostring(#solved))
+
+	-- **The Summary keeps its Archaeology rank only** (Alberto, 2026-09-27: *under Summary /
+	-- Professions we list Archaeology level only, as we do already today*).
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	-- The set's own button: "Professions" is also a tab, and a click by name finds that one.
+	fireClick(Family.UI.__summarySets.professions)
+	Family.UI:Refresh()
+	local extra = false
+	for _, c in ipairs(Family.UI.__summaryColumns or {}) do
+		if c.key == "arch" then extra = true end
+	end
+	check("the Summary's Professions page adds no archaeology column", not extra)
+	check("and says nothing of fragments there", not visibleText("11 / 32"))
+	fireClick(Family.UI.__summarySets.overview)
+
+	-- Shared under professions.
+	local link = { name = "Arch", grants = { [who] = { professions = true } } }
+	local heldWide = FamilyDB.wide
+	if Family.Wide and Family.Wide.Offering then
+		FamilyDB.wide = FamilyDB.wide or { links = {} }
+		local sent = Family.Wide:Offering(link)[who]
+		check("archaeology crosses a link under the professions grant",
+			sent and sent.meta and sent.meta.archaeology ~= nil)
+	end
+	FamilyDB.wide = heldWide
+
+	-- **The details are on the Professions panel** (Alberto: *a list of races, and under each
+	-- race the ongoing project and the complete artifacts history*).
+	local heldSkills = meta.skills
+	local skills = {}
+	for k, v in pairs(heldSkills or {}) do skills[k] = v end
+	-- Skills are kept under their skill line's id.
+	skills[794] = { rank = 12, maxRank = 75, secondary = true }
+	Family.Database:SetMeta(who, { skills = skills })
+
+	-- On this character, and the panel put back afterwards as it was found: which character
+	-- it showed, or the whole family, which the checks after this one rely on.
+	Family.UI:ShowTab("professions")
+	local wasShowing = Family.UI.__professionsShowing
+	Family.UI:ShowProfessionFor(who, 794)
+	Family.UI:Refresh()
+	local button
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(f.__text) == "string"
+			and f.__text:find("Archaeology", 1, true) and f.__scripts.PostClick then
+			button = f
+		end
+	end
+	check("the Professions panel offers Archaeology beside the professions with recipes",
+		button ~= nil)
+	if button then button.__scripts.PostClick(button) end
+	Family.UI:Refresh()
+	check("chosen, it lists the race, its project and the artifact solved",
+		visibleText("Dwarf") and visibleText("Bone Gaming Dice")
+			and visibleText("Worn Hunting Knife") and visibleText("11 / 32"))
+	-- Put back before leaving, and the panel drawn once more so that it lets go of
+	-- Archaeology: the checks after this one expect it on a profession with recipes.
+	Family.Database:SetMeta(who, { skills = heldSkills or Family.CLEAR,
+		archaeology = Family.CLEAR, archaeologySeen = Family.CLEAR })
+	if wasShowing then
+		Family.UI:ShowProfessionFor(wasShowing)
+	else
+		local everyone
+		for _, f in ipairs(frames) do
+			if f.__name == "FamilyProfessionsEveryone" then everyone = f end
+		end
+		if everyone then everyone.__scripts.OnClick(everyone) end
+	end
+	Family.UI:Refresh()
+	Family.UI:Hide()
+
+
+	Family.Database:SetMeta(who, { archaeology = Family.CLEAR, archaeologySeen = Family.CLEAR })
+	local payload = Family.Database:Payload(who) or {}
+	payload.archaeologySolved = nil
+	Family.Database:SetPayload(who, payload, { "archaeologySolved" })
+	for name, fn in pairs(held) do _G[name] = fn end
+	caps.archaeology = heldCan
 end)()
 
 print()

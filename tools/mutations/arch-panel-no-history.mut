@@ -1,0 +1,6 @@
+name: the Archaeology page leaves the artifacts solved out
+file: addons/Family_UI/Professions.lua
+--- old
+				solvedBy[artifact.race] = solvedBy[artifact.race] or {}
+				table.insert(solvedBy[artifact.race], artifact)
+--- new

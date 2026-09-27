@@ -1036,4 +1036,7 @@ Family.locales.esES = {
 	["not known"] = "desconocido",
 	["(unbound)"] = "(sin ligar)",
 	["inactive"] = "inactiva",
+	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dEste personaje aún no ha desenterrado nada.|r",
+	["%d races, %d artifacts solved"] = "%d razas, %d artefactos resueltos",
+	["first solved %s"] = "resuelto por primera vez %s",
 }

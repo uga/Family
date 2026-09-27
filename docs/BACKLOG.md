@@ -7328,7 +7328,20 @@ drew it on the Currencies set. Nothing to change (DATASOURCES, *On Mists the cur
 
 ---
 
-## 104. Archaeology's contents: fragments by race, the project in progress, artifacts solved
+## 104. Archaeology's contents: fragments by race, the project in progress, artifacts solved — DONE 2026-09-27, not yet seen in game
+
+**Built 2026-09-27.** `Scanners/Archaeology.lua`, on the new `archaeology` capability (Mists): each
+race with anything in it goes to meta `archaeology` (fragments, the project's cost, the cap, the
+project and its icon, the number solved) with `archaeologySeen`, and the solved artifacts to the
+payload's `archaeologySolved` (name, icon, first solved, count). Read at login and on the
+currency and artifact events. **Shown on the Professions panel**, as an Archaeology button beside
+the professions with recipes: per race a line, the project under it, then the artifacts solved.
+Shared under *Professions*. **Placement changed twice the same afternoon, by Alberto**: first a
+column on the Summary's Professions page (the set buttons being full), then *Summary / Professions
+lists the Archaeology level only, as today; the details go under the Professions panel*, with
+*a list of races, and under each race the ongoing project and the complete artifacts history*. The
+column and a Character-panel section built in between were removed before commit.
+
 
 **Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
 Family does not read Archaeology's contents at all. Mists has Archaeology and so does Midnight, so
