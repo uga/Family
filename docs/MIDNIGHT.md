@@ -4688,3 +4688,9 @@ storage* row is wrong on that half, sent to `main` to correct. On Midnight it is
 tabs, *Void Storage 1* and *2*, already read (§130). Daily quests: in the game on Midnight, Alberto's
 word; Family follows a daily as any quest in the log, with no history, as on every client by his
 decision of 2026-09-23.
+
+**Seen, the whole-family view right** (Alberto's screenshot, 2026-09-27, after logging in the five):
+*Argent Crusade* under *Wrath of the Lich King (1)*, *Argent Dawn* under *Classic (1)*, and *inactive*
+before the standing of each member who set it so. **Inactive is per character on Midnight**: Gulliver
+and Vtucc, on Ahia's realm, hold *Argent Crusade* active beside six who set it inactive, and Ulula has
+*Argent Crusade* inactive and *Argent Dawn* not. Reputations on Midnight are done.
