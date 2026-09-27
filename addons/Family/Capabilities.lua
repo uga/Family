@@ -150,8 +150,10 @@ local EXPECTED = {
 	-- **The Chronoboon Displacer**, which banks world buffs, and the Chrono column that counts
 	-- them. Measured on Era (DATASOURCES §3). On Burning Crusade and Mists the column is drawn
 	-- today and this keeps it so: whether the item is had there is `main`'s question, not this
-	-- branch's. Midnight has no world buffs to bank, so no column there, and the answer is no.
-	chronoboon   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+	-- branch's. Midnight has no world buffs to bank, so no column there, and the answer is no:
+	-- written in its column, and expected only - §93 saw the column empty on every row, which says
+	-- nobody holds one, not that the game has none (`docs/MIDNIGHT.md` §133).
+	chronoboon   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
 
 	-- **Talents as a tree of nodes**, Midnight's: a class side, a specialisation side and hero
 	-- talents, with loadouts. Seen on the PTR, 12.1.5, 2026-09-26, on Ahia: the game's window, and
@@ -169,7 +171,7 @@ local EXPECTED = {
 	-- `INVSLOT_RANGED` there and answered nothing on Ahia, a rogue, while Family drew it beside the
 	-- two weapons (`docs/MIDNIGHT.md` §110). Mists took the slot away too; it is true there only to
 	-- keep drawing what Mists draws today, which is `main`'s to change.
-	rangedSlot   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true  },
+	rangedSlot   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
 
 	-- **A quest log whose size is asked, not taken from `MAX_QUESTS`.** Midnight's holds 35:
 	-- `C_QuestLog.GetMaxNumQuestsCanAccept()` answered 35 there, while `MAX_QUESTS` still says 25
@@ -245,6 +247,8 @@ local CONFIRMED = {
 	achievementsWarband = { [MIDNIGHT] = true },
 	warbandBank = { [MIDNIGHT] = true },
 	bankTabs     = { [MIDNIGHT] = true },
+	-- Midnight 2026-09-26: slot 18 answered nil to `GetInventoryItemID` on Ahia (§110).
+	rangedSlot   = { [MIDNIGHT] = true },
 	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
 	-- Midnight 2026-09-27, on live: Drust, 153 of 200 fragments, its project and seven artifacts.
 	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true, [MIDNIGHT] = true },

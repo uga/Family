@@ -1,0 +1,6 @@
+name: Midnight is told it has a ranged slot
+file: addons/Family/Capabilities.lua
+--- old
+	rangedSlot   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = false },
+--- new
+	rangedSlot   = { [VANILLA] = true,  [TBC] = true,  [MISTS] = true, [MIDNIGHT] = true },

@@ -4615,3 +4615,22 @@ Merged since: `main`'s `8f7c9ad`, a guild tab with anything in it drawn at its f
 
 **Seen** (Alberto, 2026-09-27): a guild tab drawn at its full 98 slots, and *N of 98 free* on its
 tabard's tooltip - `main`'s `8f7c9ad` works on Midnight. The guild bank is done here.
+
+## 133. What is left before the merge, and two answers written in (2026-09-27)
+
+Asked by Alberto, *what's left*, and read off the files: eleven rows of `Capabilities.lua` had no
+Midnight entry; `docs/SMOKE.md` has no Midnight row; the full mutation run and the check that
+`tools/release.sh` tags outside `main` have not been done.
+
+**Two of the eleven had their answer already**, and fell to *no* only for want of an entry. Now
+written in Midnight's column: **`rangedSlot` false**, and confirmed - slot 18 answered nil to
+`GetInventoryItemID` on Ahia (§110); **`chronoboon` false**, expected only - §93 saw the Chrono column
+empty on every row, which says nobody holds a Displacer and not that Midnight has none; a probe will
+confirm it. Nothing Family draws changes. Two mutations, each caught by the section that already
+drew Midnight without the column or the slot.
+
+**Still without a Midnight answer**, each to be read: `dailyQuests`, `currencies`, `dualSpec`,
+`talentTrees`, `glyphs`, `keyring`, `ammoBags`, `transmogrify`, `weaponSkills`.
+
+**Reputations** next: `main`'s backlog 105 records a faction `inactive` from `IsFactionInactive`, which
+Midnight lacks; `C_Reputation.IsFactionActive` is listed there (§129) and has not been read.
