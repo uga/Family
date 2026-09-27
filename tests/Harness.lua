@@ -4593,6 +4593,31 @@ do
 		FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs[1].name == nil,
 		tostring(FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs[1].name))
 
+	-- **Every tab, empty or unread, and nothing read before thrown away** (found on the
+	-- Midnight branch 2026-09-27: seven named tabs, six empty, and only tab 1 was recorded).
+	local names = { "Mats", "Spare", "Raid" }
+	GetNumGuildBankTabs = function() return 3 end
+	GetGuildBankTabInfo = function(tab) return names[tab], "icon", true, true, 0, 0 end
+	GetCurrentGuildBankTab = function() return 2 end
+	Family.Bank:ScanGuildBank()
+	local tabs = FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs
+	check("the tab on screen is recorded as read and empty, with its name",
+		tabs[2] and tabs[2].seen ~= nil and next(tabs[2].slots) == nil and tabs[2].name == "Spare")
+	check("a tab never read is kept with its name and nothing claimed about its contents",
+		tabs[3] and tabs[3].seen == nil and tabs[3].name == "Raid")
+
+	-- The next visit loads another tab and not the first: what the first held stays.
+	local realLink = GetGuildBankItemLink
+	GetGuildBankItemLink = function() return nil end
+	GetCurrentGuildBankTab = function() return 3 end
+	Family.Bank:ScanGuildBank()
+	tabs = FamilyDB.guilds["Late Night Raiders-Fire Maw"].tabs
+	check("a tab read on an earlier visit keeps what it held when this visit does not load it",
+		tabs[1] and tabs[1].slots[1] and tabs[1].slots[1].id == 2589)
+	check("and the tab this visit shows is now read, and empty", tabs[3].seen ~= nil)
+	GetGuildBankItemLink = realLink
+	GetCurrentGuildBankTab = nil
+
 	Family.Capabilities.Has = realHas
 	IsInGuild, GetGuildInfo = realInGuild, realGuildInfo
 	GetNumGuildBankTabs, GetGuildBankItemLink, GetGuildBankItemInfo = nil, nil, nil
@@ -13005,8 +13030,11 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 		local heldGuild, heldGuilds = meta.guild, FamilyDB.guilds
 		meta.guild = "Late Night Raiders"
 		FamilyDB.guilds = { ["Late Night Raiders-" .. tostring(meta.realm)] = { tabs = {
-			[1] = { slots = { [1] = { id = 2589, count = 1 } }, name = "Mats" },
-			[2] = { slots = { [1] = { id = 2589, count = 1 } } },
+			[1] = { slots = { [1] = { id = 2589, count = 1 } }, name = "Mats", seen = 1 },
+			[2] = { slots = { [1] = { id = 2589, count = 1 } }, seen = 1 },
+			-- Read and empty, and never read (found on the Midnight branch 2026-09-27).
+			[3] = { slots = {}, name = "Spare", seen = 1 },
+			[4] = { slots = {}, name = "Raid" },
 		} } }
 		Family.UI:ShowContentsFor(me)
 		local titles = {}
@@ -13019,6 +13047,10 @@ print("Possessions: the carried bags as one block and the bank as another (backl
 		check("a guild bank tab is titled by its own name, and one with none by its number",
 			titles:find("|cff888888Mats|r", 1, true) ~= nil and titles:find("tab 2", 1, true) ~= nil,
 			titles)
+		check("an empty tab says so, and one never opened says that",
+			titles:find("Spare|r  " .. Family.L["|cff888888empty|r"], 1, true) ~= nil
+				and titles:find("Raid|r  " .. Family.L["|cff888888not opened yet|r"], 1, true)
+					~= nil, titles)
 		meta.guild, FamilyDB.guilds = heldGuild, heldGuilds
 	end
 

@@ -1,0 +1,8 @@
+name: a guild bank tab read on an earlier visit is wiped by a visit that does not load it
+file: addons/Family/Scanners/Bank.lua
+--- old
+		elseif before[tab] then
+			contents[tab] = before[tab]
+		else
+--- new
+		else

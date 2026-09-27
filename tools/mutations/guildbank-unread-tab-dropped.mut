@@ -1,0 +1,8 @@
+name: a guild bank tab never read is left out
+file: addons/Family/Scanners/Bank.lua
+--- old
+		else
+			contents[tab] = { slots = {} }
+		end
+--- new
+		end

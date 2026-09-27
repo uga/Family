@@ -1039,4 +1039,6 @@ Family.locales.esES = {
 	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dEste personaje aún no ha desenterrado nada.|r",
 	["%d races, %d artifacts solved"] = "%d razas, %d artefactos resueltos",
 	["first solved %s"] = "resuelto por primera vez %s",
+	["|cff888888not opened yet|r"] = "|cff888888aún no abierta|r",
+	["|cff888888empty|r"] = "|cff888888vacía|r",
 }

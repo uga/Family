@@ -276,8 +276,11 @@ local function containersOf(payload, meta)
 				if slot > size then size = slot end
 			end
 
+			-- A tab never read is kept, with its name, so the guild's bank is drawn whole;
+			-- one read and empty is kept too, and they say which on the heading.
 			blocks[#blocks + 1] = { where = "guild", bag = tab, size = size,
-				free = 0, slots = contents.slots or {}, name = contents.name }
+				free = 0, slots = contents.slots or {}, name = contents.name,
+				unseen = not contents.seen or nil, empty = contents.seen and size == 0 or nil }
 		end
 	end
 
@@ -1339,6 +1342,11 @@ local function build(frame)
 				else
 					title = string.format(L["%s |cff888888tab %d|r"], LABEL.guild,
 						container.bag or 0)
+				end
+				if container.unseen then
+					title = title .. "  " .. L["|cff888888not opened yet|r"]
+				elseif container.empty then
+					title = title .. "  " .. L["|cff888888empty|r"]
 				end
 			elseif container.merged then
 				title = container.where == "bank" and (_G.BANK or L["Bank"]) or L["Bags"]

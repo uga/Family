@@ -281,6 +281,21 @@ function Bank:ScanGuildBank()
 
 	self.waitingForName = nil
 
+	-- **Every tab, by name, and what is known of each** - found on the Midnight branch
+	-- 2026-09-27: a guild with seven named tabs, six of them empty, recorded tab 1 alone, and the
+	-- scan wrote the whole list anew each time, so a tab read on an earlier visit was dropped by
+	-- the next visit that did not happen to load it. Now:
+	--
+	--   a tab whose slots answer        recorded as seen now, as before
+	--   the tab on screen, empty        recorded as seen now and empty: the client has it loaded
+	--   any other tab that says nothing kept as it was last recorded, with that visit's date
+	--   a tab never read at all         kept with its name and no contents, and drawn as such
+	--
+	-- Nothing is asked of the server: the tabs the player did not open are not opened for them.
+	FamilyDB.guilds = FamilyDB.guilds or {}
+	local before = (FamilyDB.guilds[guild .. "-" .. realm] or {}).tabs or {}
+	local onScreen = tonumber((Family:TryCall(_G.GetCurrentGuildBankTab)))
+
 	local contents = {}
 	local known = 0
 
@@ -330,26 +345,30 @@ function Bank:ScanGuildBank()
 			end
 		end
 
-		if seen then
+		if seen or tab == onScreen then
 			known = known + 1
 			contents[tab] = { slots = slots, seen = time() }
-
-			-- **The tab's own name** (backlog 86, reported 2026-09-15: *we are currently failing
-			-- to read the Guild bank slot name*). Nothing asked for it, so every tab was drawn
-			-- by its number. Asked of the client when the tab's slots are, and kept only when it
-			-- answers with a name: an empty answer is not a name, and the number is still there
-			-- to draw. Narrated, so a debug run on a real bank says what the client gave.
-			local name = Family:TryCall(GetGuildBankTabInfo, tab)
-			Family:Debug("guild bank tab %d is called %s", tab, tostring(name))
-			if type(name) == "string" and name ~= "" then contents[tab].name = name end
+		elseif before[tab] then
+			contents[tab] = before[tab]
+		else
+			contents[tab] = { slots = {} }
 		end
+
+		-- **The tab's own name** (backlog 86, reported 2026-09-15: *we are currently failing
+		-- to read the Guild bank slot name*). Nothing asked for it, so every tab was drawn by
+		-- its number. Asked of every tab now, since the tabs' names come with the bank and not
+		-- with their slots, and kept only when it answers with a name: an empty answer is not
+		-- a name, and the number is still there to draw. Narrated, so a debug run on a real
+		-- bank says what the client gave.
+		local name = Family:TryCall(GetGuildBankTabInfo, tab)
+		Family:Debug("guild bank tab %d is called %s", tab, tostring(name))
+		if type(name) == "string" and name ~= "" then contents[tab].name = name end
 	end
 
 	if known == 0 then return end
 
 	-- Filed under the guild rather than the member: it belongs to the guild, and every
 	-- member in it would otherwise store their own copy of the same thing.
-	FamilyDB.guilds = FamilyDB.guilds or {}
 	local guildKey = guild .. "-" .. realm
 
 	FamilyDB.guilds[guildKey] = FamilyDB.guilds[guildKey] or {}
