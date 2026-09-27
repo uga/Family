@@ -1,0 +1,8 @@
+name: the armour spells are asked before the skill list
+file: addons/Family/Scanners/Professions.lua
+--- old
+	if not armour then
+		for _, spell in ipairs(ARMOUR_SPELLS) do
+--- new
+	if true then
+		for _, spell in ipairs(ARMOUR_SPELLS) do

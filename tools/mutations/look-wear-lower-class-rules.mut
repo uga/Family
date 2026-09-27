@@ -1,0 +1,6 @@
+name: the class answer rules out a wearer where wearing collects
+file: addons/Family/Core.lua
+--- old
+		if classID and (valid[classID] or byWearing) then
+--- new
+		if classID and valid[classID] then

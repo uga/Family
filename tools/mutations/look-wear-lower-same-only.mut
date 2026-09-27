@@ -1,0 +1,6 @@
+name: a look worn lower is learnt only in the same armour
+file: addons/Family/Core.lua
+--- old
+				if meta.armour >= armourType then
+--- new
+				if meta.armour == armourType then

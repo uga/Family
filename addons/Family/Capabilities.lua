@@ -218,6 +218,13 @@ local EXPECTED = {
 	-- a block lives here.
 	bankTabs     = { [MIDNIGHT] = true },
 
+	-- **A look learnt by wearing a lower armour type.** On Midnight a Warrior who put on the
+	-- uncollected cloth *Master's Leggings* and took them off had collected the look, while the
+	-- game's class answer for it named Priest, Mage and Warlock alone (`docs/MIDNIGHT.md` §134). On
+	-- Mists a plate Paladin learns nothing from mail or cloth (`main`, backlog 108). So there the
+	-- class answer says who may **use** a look, and who can **learn** it is whoever can wear it.
+	transmogWearLower = { [MIDNIGHT] = true },
+
 	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
 	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104). Midnight answers 20, and
 	-- each of the four calls the scanner makes in the shape Mists does: a race's six values, the
@@ -253,6 +260,8 @@ local CONFIRMED = {
 	achievementsWarband = { [MIDNIGHT] = true },
 	warbandBank = { [MIDNIGHT] = true },
 	bankTabs     = { [MIDNIGHT] = true },
+	-- Midnight 2026-09-27: the Warrior and the cloth leggings (§134).
+	transmogWearLower = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-26: slot 18 answered nil to `GetInventoryItemID` on Ahia (§110).
 	rangedSlot   = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-27 (§133): Alberto's word for dailies and transmog, the item data for the

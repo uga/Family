@@ -1,0 +1,6 @@
+name: Midnight's looks are learnt only in the member's own armour
+file: addons/Family/Core.lua
+--- old
+	local byWearing = armourType and self.Capabilities:Has("transmogWearLower")
+--- new
+	local byWearing = false

@@ -1,7 +1,7 @@
 name: the game's per-class answer is not asked
 file: addons/Family/Core.lua
 --- old
-		if classID and valid[classID] then
+		if classID and (valid[classID] or byWearing) then
 			if armourType and not meta.armour then
 --- new
 		if classID then

@@ -4756,3 +4756,17 @@ names the type, Plate here; whether that holds for the other types is read next,
 On a Warlock the same four answered `IsPlayerSpell` true for *Cloth* alone. So on Midnight the best
 armour spell a character has names its type, read at its own scan: the route for `meta.armour` where
 the skill list answers nothing.
+
+**Built** (Alberto chose, 2026-09-27: the tooltip names **who can collect** a look on Midnight). A new
+capability, **`transmogWearLower`**, Midnight's alone and seen: where it holds, `Family:WhoCanLearn`
+takes an armour item as anybody's whose own armour is its type or above, whatever the class answer,
+and a member below the item's level as *later*; cloaks and weapons keep the class answer, and Mists
+keeps `main`'s rule. `meta.armour`, where the skill list names no armour, is the best armour spell
+`IsPlayerSpell` knows - 750 *Plate Mail*, 8737 *Mail*, 9077 *Leather*, 9078 *Cloth* - asked after the
+skill list, so the Classic clients keep their route. The Warband bank's slots now carry their look as
+every other slot does. Seven checks, seven mutations; `main`'s `who-class-ignored` re-anchored to the
+widened line. **Not yet seen in the game.**
+
+What is not settled: whether a class-restricted piece (a tier set's *Classes:* line) can be worn by
+another class on Midnight - the class answer is set aside for armour here, so such a piece could name a
+member who cannot put it on.

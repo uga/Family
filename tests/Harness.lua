@@ -4559,6 +4559,8 @@ print("the Warband bank on the fourth pretend client")
 	midnight.After = function() end
 	midnight.Debug = function() end
 	midnight.BoundIn = function() return false end
+	-- Whether the account has each look: the copper ore's it has, the tin's not.
+	midnight.LookOf = function(_, _, itemID) return itemID == 2592 and "need" or "have" end
 	midnight.Database = {
 		Payload = function(_, k) return stored.payload[k] end,
 		SetPayload = function(_, k, p) stored.payload[k] = p end,
@@ -4573,6 +4575,9 @@ print("the Warband bank on the fourth pretend client")
 		tabs and tabs[1] and tostring(tabs[1].free))
 	check("and only the tabs bought, which are the ones that answer",
 		tabs and tabs[2] == nil and asked[16] == true)
+	check("a Warband slot keeps whether the account has its look, as every other slot does",
+		tabs and tabs[1] and tabs[1].slots[3].look == "need" and tabs[1].slots[1].look == "have",
+		tabs and tabs[1] and tostring(tabs[1].slots[3].look))
 	check("a Warband tab keeps the name the player gave it",
 		tabs and tabs[1] and tabs[1].name == "Primo", tabs and tabs[1] and tostring(tabs[1].name))
 
@@ -40008,8 +40013,34 @@ print("looks to learn and looks known")
 			and said:find(string.format(Family.L["log in once to check: %s"], "Unread"), 1, true)
 				~= nil, said)
 
+	-- **Where a look is learnt by wearing a lower type** (Midnight, `docs/MIDNIGHT.md` §134): the
+	-- mail tunic is anybody's whose armour is mail or above, the class answer aside, and the boots
+	-- at 55 wait only on level.
+	caps.transmogWearLower = true
+	local wornWho, wornLater, wornUnread = Family:WhoCanLearn(nil, 21001)
+	local wornBy = set(wornWho)
+	check("where wearing a lower type collects a look, a plate wearer learns a mail one",
+		wornBy["Plated-Fire Maw"] and wornBy["Mailed-Fire Maw"] and not wornBy["Clothy-Fire Maw"],
+		table.concat(wornWho or {}, ", "))
+	check("and the class answer, which there says who may use it, rules nobody out",
+		wornBy["Oddmage-Fire Maw"] == true)
+	check("while a member below its level is later, and one unread still has to log in",
+		set(wornLater)["Lowmail-Fire Maw"] and set(wornUnread)["Unread-Fire Maw"]
+			and not wornBy["Lowmail-Fire Maw"])
+	local _, wornBootsLater = Family:WhoCanLearn(nil, 21006)
+	wornBootsLater = set(wornBootsLater)
+	check("and armour that does not change with level leaves a plate wearer later, not out",
+		wornBootsLater["Plated-Fire Maw"] and wornBootsLater["Mailed-Fire Maw"]
+			and not wornBootsLater["Clothy-Fire Maw"])
+	check("a cloak still goes by the class answer there",
+		set(Family:WhoCanLearn(nil, 21004))["Plated-Fire Maw"] == true)
+	caps.transmogWearLower = nil
+
 	-- The armour a member wears as its own, off its skill list.
 	local heldSkills = SKILL_LINES
+	-- And the armour spells, which answer leather here: the skill list is asked first.
+	local heldPlayerSpell = _G.IsPlayerSpell
+	_G.IsPlayerSpell = function(spell) return spell == 9077 or spell == 9078 end
 	SKILL_LINES = {}
 	for _, line in ipairs(heldSkills) do SKILL_LINES[#SKILL_LINES + 1] = line end
 	SKILL_LINES[#SKILL_LINES + 1] = { name = "Armor Proficiencies", header = true, expanded = true }
@@ -40025,6 +40056,12 @@ print("looks to learn and looks known")
 	check("and files none of the armour lines as a profession",
 		professions[415] == nil and professions[293] == nil and professions["Mail"] == nil)
 	SKILL_LINES = heldSkills
+	-- **Where the list names no armour, the best armour spell** (Midnight, §134).
+	Family.Professions:Scan()
+	check("with no armour on the skill list, the best armour spell known is the member's own",
+		(Family.Database:Meta(who) or {}).armour == 2,
+		tostring((Family.Database:Meta(who) or {}).armour))
+	_G.IsPlayerSpell = heldPlayerSpell
 
 	for _, member in ipairs(cast) do Family.Database:Forget(member[1]) end
 	_G.C_CreatureInfo = heldCreature

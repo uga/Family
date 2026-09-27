@@ -1,0 +1,6 @@
+name: a wearer below the item's level is dropped rather than later
+file: addons/Family/Core.lua
+--- old
+					if level >= minLevel then who[#who + 1] = key else later[#later + 1] = key end
+--- new
+					if level >= minLevel then who[#who + 1] = key end

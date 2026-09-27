@@ -713,6 +713,11 @@ function Family:WhoCanLearn(item, itemID)
 	local armourType = itemClass == ARMOUR and subclass and subclass >= 1 and subclass <= 4
 		and equipLoc ~= CLOAK and subclass or nil
 
+	-- **Where a look is learnt by wearing a lower type** (Midnight, `transmogWearLower`): an armour
+	-- item is anybody's whose own armour is its type or above, whatever the class answer, which
+	-- there says who may use the look and not who can collect it (`docs/MIDNIGHT.md` §134). Armour
+	-- does not change with level there, so *later* is the level alone.
+	local byWearing = armourType and self.Capabilities:Has("transmogWearLower")
 	local valid, who, later, unread = {}, {}, {}, {}
 	for key in pairs(self.Database:Members()) do
 		local meta = self.Database:Meta(key) or {}
@@ -722,9 +727,13 @@ function Family:WhoCanLearn(item, itemID)
 			valid[classID] = type(sources) == "table" and #sources > 0
 		end
 		local level = tonumber(meta.level) or 0
-		if classID and valid[classID] then
+		if classID and (valid[classID] or byWearing) then
 			if armourType and not meta.armour then
 				unread[#unread + 1] = key
+			elseif byWearing then
+				if meta.armour >= armourType then
+					if level >= minLevel then who[#who + 1] = key else later[#later + 1] = key end
+				end
 			elseif level >= minLevel then
 				if not armourType or meta.armour == armourType then who[#who + 1] = key end
 			elseif not armourType or armourType >= meta.armour then

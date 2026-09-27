@@ -1191,6 +1191,10 @@ function Professions:Scan(includeRecipes)
 	if not ok then error(err, 0) end
 end
 
+-- The armour spells, best first, with the item subclass each stands for: *Plate Mail*, *Mail*,
+-- *Leather*, *Cloth*, read on Midnight 2026-09-27 (`docs/MIDNIGHT.md` §134).
+local ARMOUR_SPELLS = { { 750, 4 }, { 8737, 3 }, { 9077, 2 }, { 9078, 1 } }
+
 function Professions:ScanNow(includeRecipes)
 	local key = Family:CurrentMember()
 
@@ -1209,6 +1213,15 @@ function Professions:ScanNow(includeRecipes)
 	for name in pairs(everything) do
 		local line = Family.SkillLines[Family:SkillLineFor(name) or 0]
 		if line and line.armour and line.armour > (armour or 0) then armour = line.armour end
+	end
+	-- **Where the skill list names none, the armour spells.** Midnight has no skill list; there
+	-- `IsPlayerSpell` knows a character's armour spells - a Warrior *Cloth*, *Leather* and *Plate
+	-- Mail*, a Warlock *Cloth* alone (`docs/MIDNIGHT.md` §134) - and the best of them is its type.
+	-- A Warrior answered no to 8737 *Mail*, so the best is what counts, not the whole ladder.
+	if not armour then
+		for _, spell in ipairs(ARMOUR_SPELLS) do
+			if Family:TryCall(_G.IsPlayerSpell, spell[1]) == true then armour = spell[2] break end
+		end
 	end
 	if armour then Family.Database:SetMeta(key, { armour = armour }) end
 

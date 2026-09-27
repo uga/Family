@@ -111,7 +111,10 @@ function Bank:ReadWarband()
 			for slot = 1, size do
 				local itemID, count, worth = slotContents(bag, slot)
 				if itemID then
-					entry.slots[slot] = { id = itemID, count = count, item = worth }
+					-- With its look, as every other container's slot (`main`'s backlog 108): the
+					-- collection is the account's, and so is this bank.
+					entry.slots[slot] = { id = itemID, count = count, item = worth,
+						look = Family:LookOf(worth, itemID) or nil }
 					used = used + 1
 				end
 			end

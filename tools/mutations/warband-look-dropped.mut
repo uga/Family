@@ -1,0 +1,6 @@
+name: a Warband slot forgets its look
+file: addons/Family/Scanners/Bank.lua
+--- old
+						look = Family:LookOf(worth, itemID) or nil }
+--- new
+						}
