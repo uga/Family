@@ -1,0 +1,6 @@
+name: the gear page draws no profession row
+file: addons/Family_UI/Character.lua
+--- old
+			for _, profession in ipairs(gear.professions or {}) do
+--- new
+			for _, profession in ipairs({}) do

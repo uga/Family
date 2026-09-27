@@ -4843,3 +4843,16 @@ then `C_TradeSkillUI.GetProfessionInfoBySkillLineID(line).profession`, then `Get
 *Enchanting* 333 → 9 → **20, 21, 22**; *Skinning* 393 → 11 → **23, 24, 25**; *Cooking* 185 → 5 → **26, 27**;
 *Fishing* 356 → 10 → **28, 29, 30**; *Archaeology* 794 → 14 → none. A tool and two accessories for a
 primary profession, two slots for Cooking, three for Fishing - each asked of the game, none written here.
+
+**Built.** A capability, **`professionGear`** (Midnight, seen). `Character:ReadProfessionGear` asks
+each of the character's professions for its slots - `GetProfessions`, the seventh value of
+`GetProfessionInfo`, `GetProfessionInfoBySkillLineID(line).profession`, `GetProfessionSlots` - and records
+what is worn there into the equipment's `worn` table, each piece with its profession, its binding and
+the vendor price its link answers; the list of professions and their slots goes beside it as
+`equipment.professions`. Being worn, the pieces are counted by the index - *who has one*, the family's
+worth, the soulbound lane - with nothing else changed, and they stay out of the average item level. One
+member's *Equipped gear* page draws a row a profession under the sheet: its name, then its slots, an
+empty one as a bare frame, since the game's pictures for them cannot be probed. Four checks, four
+mutations; the surface list gains `GetProfessionInfoBySkillLineID` and `GetProfessionSlots`. **Not yet
+seen.** Not done: the *(unbound)* mark on the profession window's own slots (above); the whole-family
+gear grid, which draws the nineteen slots only.

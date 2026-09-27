@@ -1,0 +1,6 @@
+name: a profession tool forgets which profession it is for
+file: addons/Family/Scanners/Character.lua
+--- old
+						sell = Family:VendorPriceOf(link), profession = tonumber(line) }
+--- new
+						sell = Family:VendorPriceOf(link) }

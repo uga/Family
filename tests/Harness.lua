@@ -14555,6 +14555,52 @@ do
 	Family.UI:Refresh()
 end
 
+-- **The profession tools and accessories** (Midnight, `docs/MIDNIGHT.md` §135): Skinning's three
+-- slots as the game answered them, 23 to 25, asked of the game, and a row of them under the sheet.
+do
+	local caps = Family.Capabilities.can
+	local held = { caps.professionGear, _G.GetProfessions, _G.GetProfessionInfo, _G.C_TradeSkillUI }
+	caps.professionGear = true
+	_G.GetProfessions = function() return nil, 2 end
+	_G.GetProfessionInfo = function(index)
+		if index == 2 then return "Skinning", nil, 8, 100, 0, 0, 393 end
+	end
+	_G.C_TradeSkillUI = setmetatable({
+		GetProfessionInfoBySkillLineID = function(line) if line == 393 then return { profession = 11 } end end,
+		GetProfessionSlots = function(profession) if profession == 11 then return { 23, 24, 25 } end end,
+	}, { __index = held[4] or {} })
+	local me = Family:CurrentMember()
+	caps.professionGear = nil
+	Family.Character:Scan()
+	local before = ((Family.Database:Payload(me) or {}).equipment or {}).counted
+	caps.professionGear = true
+	Family.Character:Scan()
+	local gear = (Family.Database:Payload(me) or {}).equipment or {}
+	check("a profession's tool and accessories are recorded as worn, by the slots the game names",
+		gear.worn and gear.worn[24] and gear.worn[24].id == 4024 and gear.worn[24].profession == 393
+			and gear.professions and gear.professions[1] and gear.professions[1].line == 393
+			and #gear.professions[1].slots == 3,
+		gear.worn and gear.worn[24] and tostring(gear.worn[24].profession))
+	check("and the pieces the average item level counts are not moved by them",
+		gear.counted == before, tostring(gear.counted) .. " / " .. tostring(before))
+	Family.UI:Refresh()
+	local profession = 0
+	for _, f in ipairs(frames) do
+		if f.__shown == true and f.slotName and (f.itemID == 4023 or f.itemID == 4024
+			or f.itemID == 4025) then profession = profession + 1 end
+	end
+	check("and the gear page draws the profession's row, its name and its three slots",
+		profession == 3 and visibleText("Skinning"), tostring(profession))
+	caps.professionGear = nil
+	Family.Character:Scan()
+	gear = (Family.Database:Payload(me) or {}).equipment or {}
+	check("while a client without profession gear records none",
+		gear.professions == nil and gear.worn[24] == nil)
+	caps.professionGear, _G.GetProfessions, _G.GetProfessionInfo, _G.C_TradeSkillUI =
+		held[1], held[2], held[3], held[4]
+	Family.UI:Refresh()
+end
+
 -- The middle says who they are, because there is no model of somebody who is not logged in
 -- and a blank space says less than a name does.
 check("and the middle names the member, their class, their race and their side",

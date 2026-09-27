@@ -2066,8 +2066,8 @@ local function build(frame)
 						button.border:SetColorTexture(1, 1, 1, 0.15)
 					end
 				else
-					button.icon:SetTexture(
-						"Interface\\PaperDoll\\UI-PaperDoll-Slot-" .. entry[3])
+					button.icon:SetTexture(entry[3] ~= ""
+						and ("Interface\\PaperDoll\\UI-PaperDoll-Slot-" .. entry[3]) or nil)
 					if button.icon.SetDesaturated then
 						button.icon:SetDesaturated(true)
 					end
@@ -2132,6 +2132,24 @@ local function build(frame)
 			end
 
 			y = bottomY + GEAR + 8
+
+			-- **The profession tools and accessories** (Midnight, `docs/MIDNIGHT.md` §135): a row
+			-- a profession, its name and then its slots in the game's order, empty ones drawn as
+			-- a bare frame since the game's own pictures for them cannot be probed.
+			for _, profession in ipairs(gear.professions or {}) do
+				local r = nextRow()
+				r:ClearAllPoints()
+				r:SetPoint("TOPLEFT", leftX, -(y + (GEAR - ROW) / 2))
+				r:SetWidth(MIDDLE)
+				r.middle:ClearAllPoints()
+				r.middle:SetPoint("LEFT", 0, 0)
+				r.middle:SetWidth(MIDDLE)
+				r.middle:SetText("|cffdddddd" .. tostring(Family:ProfessionName(profession.line)) .. "|r")
+				for index, slot in ipairs(profession.slots or {}) do
+					place({ slot, "", "" }, leftX + MIDDLE / 2 + (index - 1) * (GEAR + GEAR_GAP), y)
+				end
+				y = y + GEAR + GEAR_GAP
+			end
 			return finish()
 		end
 

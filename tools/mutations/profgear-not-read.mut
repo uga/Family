@@ -1,0 +1,6 @@
+name: the profession gear is never read
+file: addons/Family/Scanners/Character.lua
+--- old
+		professions = self:ReadProfessionGear(worn) }
+--- new
+		professions = nil }

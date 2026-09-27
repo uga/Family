@@ -857,12 +857,48 @@ function Character:Scan()
 	if not ok then error(err, 0) end
 end
 
+-- **The profession tools and accessories** (Midnight, `professionGear`), into the same `worn` table,
+-- so the family's count, its worth and the binding treat them as the rest of what is worn. Which
+-- slots each profession has is asked of the game - `GetProfessionSlots` of the profession its skill
+-- line names (`docs/MIDNIGHT.md` §135) - and answered as a list, each with its slots, so an empty
+-- slot is known to be there. Left out of the average item level, which is the character's gear.
+function Character:ReadProfessionGear(worn)
+	if not Family.Capabilities:Has("professionGear") then return nil end
+	local trade = _G.C_TradeSkillUI or {}
+	local indexes = { Family:TryCall(_G.GetProfessions) }
+	local professions = {}
+
+	for position = 1, 6 do
+		local index = indexes[position]
+		local line = index and select(7, Family:TryCall(_G.GetProfessionInfo, index))
+		local info = line and Family:TryCall(trade.GetProfessionInfoBySkillLineID, line)
+		local slots = type(info) == "table"
+			and Family:TryCall(trade.GetProfessionSlots, info.profession)
+		if type(slots) == "table" and #slots > 0 then
+			professions[#professions + 1] = { line = tonumber(line), slots = slots }
+			for _, slot in ipairs(slots) do
+				local id = Family:TryCall(GetInventoryItemID, "player", slot)
+				if id then
+					local link = Family:TryCall(GetInventoryItemLink, "player", slot)
+					worn[slot] = { id = id, itemLevel = itemLevelOf(link),
+						item = type(link) == "string" and link:match("|H(item[%-%d:]+)|h") or nil,
+						sell = Family:VendorPriceOf(link), profession = tonumber(line) }
+					if Family:BoundWorn(slot, id) then worn[slot].bound = true end
+				end
+			end
+		end
+	end
+
+	return professions
+end
+
 function Character:ScanNow()
 	local key = Family:CurrentMember()
 	local payload = Family.Database:Payload(key) or {}
 
 	local worn, average, counted = self:ReadEquipment()
-	payload.equipment = { worn = worn, itemLevel = average, counted = counted }
+	payload.equipment = { worn = worn, itemLevel = average, counted = counted,
+		professions = self:ReadProfessionGear(worn) }
 
 	local factions = self:ReadReputations()
 	if factions and #factions > 0 then payload.reputations = factions end
