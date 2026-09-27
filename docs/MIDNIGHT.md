@@ -4753,3 +4753,6 @@ spells 9078 *Cloth*, 9077 *Leather*, 8737 *Mail* and 750 *Plate Mail*, `IsSpellK
 for all four** and `IsPlayerSpell` **true for Cloth, Leather and Plate Mail, false for Mail** - so 8737
 is not the mail spell a Warrior carries, if it carries one. The best of the four `IsPlayerSpell` knows
 names the type, Plate here; whether that holds for the other types is read next, on a cloth wearer.
+On a Warlock the same four answered `IsPlayerSpell` true for *Cloth* alone. So on Midnight the best
+armour spell a character has names its type, read at its own scan: the route for `meta.armour` where
+the skill list answers nothing.
