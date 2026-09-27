@@ -172,6 +172,7 @@ UI:OnFold("character", function()
 	UI.__openQuest = nil
 	UI.__currencyHeads = {}
 	UI.__openCurrency = nil
+	UI.__repOpen = {}
 end)
 
 -- Which currency headings are open, by their path; nil means the default below.
@@ -352,6 +353,98 @@ local STANDING_COLOUR = {
 	[1] = "|cffcc2222", [2] = "|cffff4400", [3] = "|cffee6622", [4] = "|cffffff00",
 	[5] = "|cff00ff88", [6] = "|cff00ff88", [7] = "|cff00ff88", [8] = "|cff00ffcc",
 }
+
+--------------------------------------------------------------------------------------------
+-- Reputation headings
+--
+-- Backlog 105, Alberto's design (2026-09-27): the game's headings in the game's order, a second
+-- level where the build has one (Mists), and every heading shut until it is clicked. Typing in
+-- the filter opens whatever matches, since a match hidden under a shut heading is no answer.
+-- The harness sets `REPUTATIONS_START_OPEN` for the checks written before headings folded.
+--------------------------------------------------------------------------------------------
+
+UI.REPUTATIONS_START_OPEN = false
+
+local function repHeadingKey(id, name)
+	if id then return "id:" .. tostring(id) end
+	return "n:" .. tostring(name)
+end
+
+-- `seq`'s keys added to `list`, each new one after the key before it in `seq`: several members'
+-- lists merged into one order that none of them contradicts where they agree.
+local function mergeOrder(list, seq)
+	local previous
+	for _, key in ipairs(seq) do
+		local found
+		for index, held in ipairs(list) do
+			if held == key then found = index break end
+		end
+		if not found then
+			local place = 1
+			if previous then
+				for index, held in ipairs(list) do
+					if held == previous then place = index + 1 break end
+				end
+			end
+			table.insert(list, place, key)
+		end
+		previous = key
+	end
+end
+
+-- Whether a heading is open: clicked open, or everything while the filter holds text.
+local function repIsOpen(key, filtering)
+	UI.__repOpen = UI.__repOpen or {}
+	return filtering or UI.REPUTATIONS_START_OPEN or UI.__repOpen[key] == true
+end
+
+-- For the harness: the order merge, asked directly.
+UI.__mergeRepOrder = function(list, seq) mergeOrder(list, seq) end
+
+-- One member's factions as the game groups them: top-level headings in order, each holding its
+-- own factions and its sub-headings in the order they came.
+local function repTree(reps, keep)
+	local tops, byTop = {}, {}
+	for _, faction in ipairs(reps) do
+		if keep(faction) then
+			local topKey = repHeadingKey(faction.categoryID, faction.category)
+			local top = byTop[topKey]
+			if not top then
+				top = { key = topKey, name = faction.category or L["|cff888888Other|r"],
+					items = {}, subs = {}, count = 0 }
+				byTop[topKey] = top
+				tops[#tops + 1] = top
+			end
+			top.count = top.count + 1
+			if faction.group then
+				local subKey = topKey .. "/" .. repHeadingKey(faction.groupID, faction.group)
+				local sub = top.subs[subKey]
+				if not sub then
+					sub = { key = subKey, name = faction.group, factions = {} }
+					top.subs[subKey] = sub
+					top.items[#top.items + 1] = { sub = sub }
+				end
+				sub.factions[#sub.factions + 1] = faction
+			else
+				top.items[#top.items + 1] = { faction = faction }
+			end
+		end
+	end
+	return tops
+end
+
+-- A heading's row: a plus or minus, the name, and how many factions are under it. Clicked, it
+-- opens or shuts; the state is on the panel, so a pooled row carries none of it.
+local function repHeadingRow(row, name, count, key, depth, open)
+	row.left:SetText(string.format("%s|cff%s%s %s|r |cff888888(%d)|r",
+		string.rep("  ", depth), depth == 0 and "88bbff" or "6fa0d8",
+		open and "-" or "+", name, count))
+	row.left:SetWidth(260)
+	row.middle:SetText("")
+	row.right:SetText("")
+	row.toggleHeading = key
+	row.highlight:Show()
+end
 
 --------------------------------------------------------------------------------------------
 
@@ -804,6 +897,13 @@ local function build(frame)
 			-- unfolding the professions search does for a recipe more of the family can
 			-- make than a line will hold, and kept on the panel rather than in the row so
 			-- that a pooled row cannot carry it into whatever is drawn next.
+			if self.toggleHeading then
+				UI.__repOpen = UI.__repOpen or {}
+				UI.__repOpen[self.toggleHeading] = not UI.__repOpen[self.toggleHeading] or nil
+				frame:Refresh()
+				return
+			end
+
 			if self.expandFaction then
 				UI.__openFaction = (UI.__openFaction ~= self.expandFaction)
 					and self.expandFaction or nil
@@ -943,7 +1043,7 @@ local function build(frame)
 			-- And the right one, for the same reason: the family reputations section
 			-- widens it to hold a standing and a score together.
 			r.right:SetWidth(140)
-			r.expandFaction, r.expandQuest = nil, nil
+			r.expandFaction, r.expandQuest, r.toggleHeading = nil, nil, nil
 			r.expandCurrency, r.expandCurrencyRow = nil, nil
 			r.currencyKey = nil
 			r.itemID, r.spellID, r.questID = nil, nil, nil
@@ -1261,13 +1361,17 @@ local function build(frame)
 		if section == "Reputations" and familyView then
 			local byFaction, order = {}, {}
 			local people = 0
+			local listed = {}
 
 			for _, group in ipairs(gearRoster()) do
 				for _, entry in ipairs(group.members) do
 					local meta = entry.meta or {}
 					if filters:Passes(meta) then
 						local reps = (UI:Payload(entry.key) or {}).reputations
-						if reps and #reps > 0 then people = people + 1 end
+						if reps and #reps > 0 then
+							people = people + 1
+							listed[#listed + 1] = reps
+						end
 
 						for _, faction in ipairs(reps or {}) do
 							local id = faction.id and ("id:" .. faction.id)
@@ -1275,8 +1379,7 @@ local function build(frame)
 							local row = byFaction[id]
 
 							if not row then
-								row = { id = id, name = faction.name,
-									category = faction.category, people = {} }
+								row = { id = id, name = faction.name, people = {} }
 								byFaction[id] = row
 								order[#order + 1] = row
 							end
@@ -1293,29 +1396,36 @@ local function build(frame)
 								standing = faction.standing,
 								value = faction.value,
 								maximum = faction.maximum,
+								inactive = faction.inactive,
 							}
 
-							-- A faction only some of them have met is still that faction.
-							-- Its category comes from whoever had one, because a record
-							-- from a client that never expanded that header carries none.
-							row.category = row.category or faction.category
+							-- **Where the faction is filed: its own heading, from whoever
+							-- has it active** (backlog 105, Alberto's option 2). The game
+							-- files an inactive faction under *Inactive* and nothing names
+							-- the heading it came from, so one character's inactive copy says
+							-- nothing about where the faction belongs. Their heading is kept
+							-- only while nobody has it active.
+							if not faction.inactive and not row.activePlace then
+								row.activePlace = faction
+							end
+							row.inactivePlace = row.inactivePlace or faction
 							row.name = row.name or faction.name
 						end
 					end
 				end
 			end
 
-			local byCategory, categories, shown = {}, {}, 0
+			-- Each row's heading, and whether the filter keeps it.
+			local shown = 0
 			for _, row in ipairs(order) do
-				if matches(row.name) or matches(row.category) then
-					local group = row.category or L["|cff888888Other|r"]
-					if not byCategory[group] then
-						byCategory[group] = {}
-						categories[#categories + 1] = group
-					end
-					table.insert(byCategory[group], row)
-					shown = shown + 1
-				end
+				local place = row.activePlace or row.inactivePlace or {}
+				row.category, row.categoryID = place.category, place.categoryID
+				row.group, row.groupID = place.group, place.groupID
+				row.topKey = repHeadingKey(row.categoryID, row.category)
+				row.subKey = row.group
+					and (row.topKey .. "/" .. repHeadingKey(row.groupID, row.group)) or nil
+				row.keep = matches(row.name) or matches(row.category) or matches(row.group)
+				if row.keep then shown = shown + 1 end
 			end
 
 			if shown == 0 then
@@ -1324,109 +1434,175 @@ local function build(frame)
 					or L["|cffffaa00Nothing matches those filters.|r"])
 			end
 
-			table.sort(categories)
+			-- **The game's order, merged across the family.** Each member's list is in the
+			-- order their game gave it, and those orders agree where they overlap; merging
+			-- them keeps every one of them, and puts what only one member has where that
+			-- member's game put it.
+			local topOrder, itemOrder, subOrder = {}, {}, {}
+			local tops = {}
+			for _, reps in ipairs(listed) do
+				local topSeq, itemSeqs, subSeqs, seen = {}, {}, {}, {}
+				for _, faction in ipairs(reps) do
+					local id = faction.id and ("id:" .. faction.id)
+						or ("name:" .. tostring(faction.name))
+					local row = byFaction[id]
+					if row and row.keep and not seen[id] then
+						seen[id] = true
+						local top = row.topKey
+						if not itemSeqs[top] then
+							itemSeqs[top] = {}
+							topSeq[#topSeq + 1] = top
+						end
+						tops[top] = tops[top] or { key = top, name = row.category
+							or L["|cff888888Other|r"], count = 0, subs = {} }
+						if row.subKey then
+							local subs = subSeqs[row.subKey]
+							if not subs then
+								subs = {}
+								subSeqs[row.subKey] = subs
+								table.insert(itemSeqs[top], "sub:" .. row.subKey)
+							end
+							subs[#subs + 1] = id
+							tops[top].subs[row.subKey] = tops[top].subs[row.subKey]
+								or { key = row.subKey, name = row.group, count = 0 }
+						else
+							table.insert(itemSeqs[top], id)
+						end
+					end
+				end
+				mergeOrder(topOrder, topSeq)
+				for top, seq in pairs(itemSeqs) do
+					itemOrder[top] = itemOrder[top] or {}
+					mergeOrder(itemOrder[top], seq)
+				end
+				for sub, seq in pairs(subSeqs) do
+					subOrder[sub] = subOrder[sub] or {}
+					mergeOrder(subOrder[sub], seq)
+				end
+			end
+			for _, row in ipairs(order) do
+				if row.keep then
+					tops[row.topKey].count = tops[row.topKey].count + 1
+					if row.subKey then
+						local sub = tops[row.topKey].subs[row.subKey]
+						sub.count = sub.count + 1
+					end
+				end
+			end
+
+			local filtering = (search:GetText() or "") ~= ""
+			local function isOpen(key) return repIsOpen(key, filtering) end
 
 			-- **How deep this page folds** (backlog 64): one depth for every faction on it,
 			-- counted with a heading row for each category.
 			local sizes = {}
-			for _, group in ipairs(categories) do
-				for _, row in ipairs(byCategory[group]) do sizes[#sizes + 1] = #row.people end
+			for _, row in ipairs(order) do
+				if row.keep then sizes[#sizes + 1] = #row.people end
 			end
-			local cap = UI:FoldDepth(sizes, #categories, UI:RowsThatFit(scroll, height),
+			local cap = UI:FoldDepth(sizes, #topOrder, UI:RowsThatFit(scroll, height),
 				UI.FACTION_PEOPLE)
 
 			-- Whose name goes on a line: the realm where they are not on ours, and the
 			-- family where they are not ours, exactly as every other panel says it.
-			for _, group in ipairs(categories) do
-				local heading = nextRow()
-				-- How many factions or quests are filed under this heading, beside the
-				-- heading. It used to sit in the right-hand column, which is headed
-				-- *Standing* on one of these sections and *Progress* on the other - so a
-				-- category of five read as a reputation of five, and the question *what
-				-- is that 5?* came back from play 2026-09-05. A count belongs next to
-				-- what it counts; the bracketed grey is the form the quest list's own
-				-- zone headings already use.
-				heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
-					group, #byCategory[group]))
-				heading.left:SetWidth(220)
-				-- Cleared rather than left: rows are pooled, and a heading handed out
-				-- again would keep whatever standing the last row put there.
-				heading.right:SetText("")
-
-				table.sort(byCategory[group], function(a, b)
-					return (a.name or "") < (b.name or "")
+			local function factionRows(row, heading, depth)
+				-- Furthest first, and a name to settle the rest.
+				--
+				-- The single-holder version said outright that a name is never the
+				-- tie-break, because two people at the same point is a tie the panel
+				-- has no business inventing an order for. That was right about
+				-- *picking a winner* and is wrong about drawing a list: an order that
+				-- stops at its keys leaves the rest to `table.sort`'s own
+				-- arrangement, and two draws of one page then disagree.
+				table.sort(row.people, function(a, b)
+					if a.standing ~= b.standing then
+						return a.standing > b.standing
+					end
+					if (a.value or 0) ~= (b.value or 0) then
+						return (a.value or 0) > (b.value or 0)
+					end
+					return tostring((a.entry.meta or {}).name)
+						< tostring((b.entry.meta or {}).name)
 				end)
 
-				for _, row in ipairs(byCategory[group]) do
-					-- Furthest first, and a name to settle the rest.
-					--
-					-- The single-holder version said outright that a name is never the
-					-- tie-break, because two people at the same point is a tie the panel
-					-- has no business inventing an order for. That was right about
-					-- *picking a winner* and is wrong about drawing a list: an order that
-					-- stops at its keys leaves the rest to `table.sort`'s own
-					-- arrangement, and two draws of one page then disagree.
-					table.sort(row.people, function(a, b)
-						if a.standing ~= b.standing then
-							return a.standing > b.standing
-						end
-						if (a.value or 0) ~= (b.value or 0) then
-							return (a.value or 0) > (b.value or 0)
-						end
-						return tostring((a.entry.meta or {}).name)
-							< tostring((b.entry.meta or {}).name)
-					end)
+				local open = UI.__openFaction == row.id
+				local foldable = cap ~= nil and UI:ShowAtMost(#row.people, cap) < #row.people
+				-- The cap applies only where the list is really being contracted. Read
+				-- the other way round it drew the cap and no *and 1 more* line, which
+				-- silently loses whoever was one over it.
+				local limit = (foldable and not open) and cap or #row.people
 
-					local open = UI.__openFaction == row.id
-					local foldable = cap ~= nil and UI:ShowAtMost(#row.people, cap) < #row.people
-					-- The cap applies only where the list is really being contracted. Read
-					-- the other way round it drew the cap and no *and 1 more* line, which
-					-- silently loses whoever was one over it.
-					local limit = (foldable and not open) and cap or #row.people
+				for index = 1, limit do
+					local person = row.people[index]
+					local r = nextRow()
+					r.memberKey = person.entry.key
+					r.left:SetWidth(260)
+					r.right:SetWidth(FACTION_RIGHT)
 
-					for index = 1, limit do
-						local person = row.people[index]
-						local r = nextRow()
-						r.memberKey = person.entry.key
-						r.left:SetWidth(220)
-						r.right:SetWidth(FACTION_RIGHT)
+					-- The faction is written once, against its first person. Said
+					-- again on every line it would read as a different faction each
+					-- time, which is what a column of repeated words does.
+					r.left:SetText(index == 1
+						and (string.rep("  ", depth) .. (row.name or "?")) or "")
+					r.middle:SetText(personLabel(person.entry))
 
-						-- The faction is written once, against its first person. Said
-						-- again on every line it would read as a different faction each
-						-- time, which is what a column of repeated words does.
-						r.left:SetText(index == 1 and ("  " .. (row.name or "?")) or "")
-						r.middle:SetText(personLabel(person.entry))
+					local progress = person.maximum and person.maximum > 0
+						and string.format(" |cff888888%d / %d|r", person.value or 0,
+							person.maximum) or ""
+					-- Before the figures, for whoever set it inactive: the faction is
+					-- filed where the rest of the family has it, and this is the one
+					-- thing that says this character has put it away.
+					local put = person.inactive
+						and ("|cff888888" .. L["inactive"] .. "|r ") or ""
+					r.right:SetText(put .. (STANDING_COLOUR[person.standing] or "|cffdddddd")
+						.. standingLabel(person.standing) .. "|r" .. progress)
 
-						local progress = person.maximum and person.maximum > 0
-							and string.format(" |cff888888%d / %d|r", person.value or 0,
-								person.maximum) or ""
-						r.right:SetText((STANDING_COLOUR[person.standing] or "|cffdddddd")
-							.. standingLabel(person.standing) .. "|r" .. progress)
+					r.fallback = {
+						{ row.name or "?" },
+						{ heading },
+						{ personLabel(person.entry),
+							(person.inactive and (L["inactive"] .. " ") or "")
+								.. standingLabel(person.standing) },
+					}
 
-						r.fallback = {
-							{ row.name or "?" },
-							{ group },
-							{ personLabel(person.entry),
-								standingLabel(person.standing) },
-						}
-
-						-- The faction's own line opens and closes the rest of it, which
-						-- is where a click about the whole faction belongs.
-						if foldable and index == 1 then
-							r.expandFaction = row.id
-							r.highlight:Show()
-						end
-					end
-
-					if foldable then
-						local r = nextRow()
-						r.left:SetWidth(220)
-						r.right:SetWidth(FACTION_RIGHT)
-						r.middle:SetText(open and L["|cff888888fewer|r"]
-							or string.format(L["|cff888888and %d more|r"],
-								#row.people - limit))
+					-- The faction's own line opens and closes the rest of it, which
+					-- is where a click about the whole faction belongs.
+					if foldable and index == 1 then
 						r.expandFaction = row.id
 						r.highlight:Show()
+					end
+				end
+
+				if foldable then
+					local r = nextRow()
+					r.left:SetWidth(260)
+					r.right:SetWidth(FACTION_RIGHT)
+					r.middle:SetText(open and L["|cff888888fewer|r"]
+						or string.format(L["|cff888888and %d more|r"],
+							#row.people - limit))
+					r.expandFaction = row.id
+					r.highlight:Show()
+				end
+			end
+
+			for _, topKey in ipairs(topOrder) do
+				local top = tops[topKey]
+				local open = isOpen(topKey)
+				repHeadingRow(nextRow(), top.name, top.count, topKey, 0, open)
+				if open then
+					for _, item in ipairs(itemOrder[topKey] or {}) do
+						local subKey = item:match("^sub:(.+)$")
+						if subKey then
+							local sub = top.subs[subKey]
+							local subOpen = isOpen(subKey)
+							repHeadingRow(nextRow(), sub.name, sub.count, subKey, 1, subOpen)
+							if subOpen then
+								for _, id in ipairs(subOrder[subKey] or {}) do
+									factionRows(byFaction[id], sub.name, 2)
+								end
+							end
+						else
+							factionRows(byFaction[item], top.name, 1)
+						end
 					end
 				end
 			end
@@ -1949,62 +2125,65 @@ local function build(frame)
 				return finish(L["|cffffaa00Nothing recorded for this member.|r"])
 			end
 
-			-- Grouped under the game's own headings rather than one flat list, and inside
-			-- each, highest standing first. A category with nothing left after the filter
-			-- is not drawn at all.
-			local byCategory, categories = {}, {}
+			-- **The game's headings, in the game's order, shut until clicked** (backlog 105).
+			-- *Inactive* stays a heading of its own here, as it is in the game's window: this
+			-- is one character's list. A filter keeps what matches and opens it.
+			local filtering = (search:GetText() or "") ~= ""
 			local shown = 0
+			local tops = repTree(reps, function(faction)
+				local keep = matches(faction.name) or matches(faction.category)
+					or matches(faction.group)
+				if keep then shown = shown + 1 end
+				return keep
+			end)
 
-			for _, faction in ipairs(reps) do
-				if matches(faction.name) or matches(faction.category) then
-					local group = faction.category or L["|cff888888Other|r"]
-					if not byCategory[group] then
-						byCategory[group] = {}
-						categories[#categories + 1] = group
-					end
-					table.insert(byCategory[group], faction)
-					shown = shown + 1
-				end
+			status:SetText(string.format(L["%d of %d factions"], shown, #reps))
+			local function isOpen(key) return repIsOpen(key, filtering) end
+
+			local function factionRow(faction, group, depth)
+				local r = nextRow()
+
+				-- The game has no tooltip for a faction, so this is Family's own:
+				-- the standing and the numbers behind it, which the row shows
+				-- abbreviated and which are worth reading in full.
+				r.fallback = {
+					{ faction.name or ("#" .. tostring(faction.id)) },
+					{ group },
+					{ standingLabel(faction.standing),
+						faction.maximum and faction.maximum > 0
+							and string.format("%d / %d", faction.value,
+								faction.maximum) or "" },
+				}
+
+				r.left:SetText(string.rep("  ", depth)
+					.. (faction.name or ("#" .. tostring(faction.id))))
+				r.left:SetWidth(260)
+				r.middle:SetText((STANDING_COLOUR[faction.standing] or "|cffdddddd")
+					.. standingLabel(faction.standing) .. "|r")
+				r.right:SetText(faction.maximum and faction.maximum > 0
+					and string.format("|cff888888%d / %d|r",
+						faction.value, faction.maximum) or "")
 			end
 
-			table.sort(categories)
-			status:SetText(string.format(L["%d of %d factions"], shown, #reps))
-
-			for _, group in ipairs(categories) do
-				local heading = nextRow()
-				heading.left:SetText(string.format("|cff88bbff%s|r |cff888888(%d)|r",
-					group, #byCategory[group]))
-				heading.left:SetWidth(220)
-				heading.middle:SetText("")
-				heading.right:SetText("")
-
-				table.sort(byCategory[group], function(a, b)
-					if a.standing ~= b.standing then return a.standing > b.standing end
-					return (a.name or "") < (b.name or "")
-				end)
-
-				for _, faction in ipairs(byCategory[group]) do
-					local r = nextRow()
-
-					-- The game has no tooltip for a faction, so this is Family's own:
-					-- the standing and the numbers behind it, which the row shows
-					-- abbreviated and which are worth reading in full.
-					r.fallback = {
-						{ faction.name or ("#" .. tostring(faction.id)) },
-						{ group },
-						{ standingLabel(faction.standing),
-							faction.maximum and faction.maximum > 0
-								and string.format("%d / %d", faction.value,
-									faction.maximum) or "" },
-					}
-
-					r.left:SetText("  " .. (faction.name or ("#" .. tostring(faction.id))))
-					r.left:SetWidth(220)
-					r.middle:SetText((STANDING_COLOUR[faction.standing] or "|cffdddddd")
-						.. standingLabel(faction.standing) .. "|r")
-					r.right:SetText(faction.maximum and faction.maximum > 0
-						and string.format("|cff888888%d / %d|r",
-							faction.value, faction.maximum) or "")
+			for _, top in ipairs(tops) do
+				local open = isOpen(top.key)
+				repHeadingRow(nextRow(), top.name, top.count, top.key, 0, open)
+				if open then
+					for _, item in ipairs(top.items) do
+						if item.faction then
+							factionRow(item.faction, top.name, 1)
+						else
+							local sub = item.sub
+							local subOpen = isOpen(sub.key)
+							repHeadingRow(nextRow(), sub.name, #sub.factions, sub.key, 1,
+								subOpen)
+							if subOpen then
+								for _, faction in ipairs(sub.factions) do
+									factionRow(faction, sub.name, 2)
+								end
+							end
+						end
+					end
 				end
 			end
 			return finish()

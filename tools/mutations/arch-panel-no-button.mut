@@ -1,0 +1,6 @@
+name: the Professions panel offers no Archaeology button
+file: addons/Family_UI/Professions.lua
+--- old
+			elseif id == ARCHAEOLOGY and member.meta and member.meta.archaeologySeen then
+--- new
+			elseif false then

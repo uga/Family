@@ -1,0 +1,6 @@
+name: archaeology does not cross a link under professions
+file: addons/Family/Wide.lua
+--- old
+               "archaeology", "archaeologySeen" } },
+--- new
+               } },

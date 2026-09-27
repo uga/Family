@@ -1057,4 +1057,8 @@ Family.locales.frFR = {
 	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888XP repos est. est calculé depuis la dernière lecture : 5%% d'un niveau toutes les 8 heures là où le personnage se reposait, toutes les 32 heures ailleurs, jusqu'à un niveau et demi. Le double de tout cela pour les Pandarens.|r",
 	["not known"] = "inconnu",
 	["(unbound)"] = "(non lié)",
+	["inactive"] = "inactive",
+	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dCe personnage n'a encore rien déterré.|r",
+	["%d races, %d artifacts solved"] = "%d races, %d objets résolus",
+	["first solved %s"] = "résolu la première fois %s",
 }

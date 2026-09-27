@@ -1,0 +1,6 @@
+name: a heading's id 0 is kept, so Other and Inactive are one heading
+file: addons/Family/Scanners/Character.lua
+--- old
+		if id and id > 0 then return id end
+--- new
+		if id then return id end

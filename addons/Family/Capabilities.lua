@@ -199,6 +199,10 @@ local EXPECTED = {
 	-- client's `Enum.BagIndex`, read on Ahia at a bank 2026-09-27 (`docs/MIDNIGHT.md` §128). Read in
 	-- Midnight's first release by Alberto's exception to §111.
 	warbandBank = { [MIDNIGHT] = true },
+
+	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
+	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104).
+	archaeology  = { [VANILLA] = false, [TBC] = false, [MISTS] = true  },
 }
 
 -- Checked in the game. 2026-08-08 unless noted.
@@ -224,6 +228,8 @@ local CONFIRMED = {
 	petGuidGeneric = { [MIDNIGHT] = true },
 	achievementsWarband = { [MIDNIGHT] = true },
 	warbandBank = { [MIDNIGHT] = true },
+	-- 2026-09-27, FamilyProbe on all three: absent on Era and Burning Crusade, 13 races on Mists.
+	archaeology  = { [VANILLA] = true, [TBC] = true, [MISTS] = true },
 }
 
 --------------------------------------------------------------------------------------------

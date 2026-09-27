@@ -82,6 +82,7 @@ Scanners\Quests.lua
 Scanners\QuestHistory.lua
 Scanners\Currencies.lua
 Scanners\Instances.lua
+Scanners\Archaeology.lua
 Scanners\Pets.lua
 Scanners\Merchant.lua
 Wide.lua

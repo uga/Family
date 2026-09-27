@@ -5621,3 +5621,126 @@ name of a refused place. Herbs and ores came out byte-identical on all three bui
 **What was wrong with the paragraph above** is the word *superset*, reasoned rather than run. A
 rule change that moves the runner-up moves collisions in both directions, and *safe because too
 long* was only half of what the list was.
+
+### The reputation list on Era, every heading shut — read 2026-09-27
+
+Verysolid, `1.15.9`, `/familyprobe apis`, *reputation headings*, for backlog 105. `GetNumFactions` 4 and
+no `C_Reputation` list. `GetFactionInfo` rows, in order: *Alliance* id 469, *Alliance Forces* 891,
+*Steamwheedle Cartel* 169, *Other* 0 - all `isHeader` true and `isCollapsed` true, `isChild` false on the
+first three. *Alliance* carries a standing (6; 11549 of 9000-21000) with `hasRep` false. *Other*
+answers 14 values where the others answer 16, with `atWarWith`, `canToggleAtWar`, `hasRep`, `isWatched`
+and `isChild` nil. **The id-0 heading here is *Other*.** Midnight's *Inactive* is the id-0 heading
+(the Midnight branch's reading); on Era that cannot be how *Inactive* is recognised, and this
+character had nothing inactive to show what *Inactive* answers.
+
+**Corrected the same hour, by Alberto:** *on Era there is a Move to inactive option as on other clients,
+but the name of the Inactive category is "Other".* So the id-0 heading **is** the inactive heading on
+Era too, under another name - the rule holds, and the sentence above that says it does not is wrong.
+Expanded, Verysolid's *Other* lists Argent Dawn, Bloodsail Buccaneers, Cenarion Circle, Darkmoon Faire,
+Gelkis Clan Centaur, Hydraxian Waterlords, Magram Clan Centaur, Shen'dralar, Thorium Brotherhood,
+Timbermaw Hold and Wildhammer Clan. Whether each of those was set inactive by the player or is filed
+there by the game is what `IsFactionInactive(index)` answers per row, now asked by the probe.
+
+**And taken back by Alberto the same hour, with screenshots:** *OTHER is "other". There is also an
+"Inactive" category, that comes up only if you do inactivate something.* With Argent Dawn moved to
+inactive, Verysolid's list shows *Alliance*, *Alliance Forces*, *Steamwheedle Cartel*, *Other* and a new
+*Inactive* heading holding Argent Dawn. So the first paragraph stands: on Era *Other* is an ordinary
+heading and answers id 0, and *Inactive* is a heading of its own that exists only while something is
+inactive. What id *Inactive* answers on Era is not yet read, and it cannot be 0 as a way of telling
+the two apart if *Other* already is.
+
+**Read again the same day, every heading open, Argent Dawn set inactive** (Verysolid, `1.15.9`, 27 rows).
+In order: *Alliance* 469 (Darnassus 69, Gnomeregan Exiles 54, Ironforge 47, Stormwind 72), *Alliance
+Forces* 891 (Silverwing Sentinels 890, Stormpike Guard 730, The League of Arathor 509), *Steamwheedle
+Cartel* 169 (Booty Bay 21, Everlook 577, Gadgetzan 369, Ratchet 470), *Other* 0 (ten factions),
+*Inactive* 0 (Argent Dawn 529).
+
+- **Both *Other* and *Inactive* answer id 0**, and both answer 14 values with 7, 8 and 11-13 nil. On Era
+  id 0 means a heading that is not itself a faction; it does not identify *Inactive*.
+- **`IsFactionInactive(index)` answers per row**: true for Argent Dawn and false for every other row,
+  headings included. This is the Era route to *inactive*, whatever heading a faction is under.
+- **One level only**: `isChild` (13) is false on every faction row. *Alliance* and *Steamwheedle Cartel*
+  carry standings with `hasRep` false, as before.
+- **An inactive faction's own heading is not in the list.** Argent Dawn sits under *Inactive*, and
+  nothing says it belongs under *Other*.
+
+### The reputation list on Burning Crusade, every heading shut — read 2026-09-27
+
+Eccebombo, `2.5.6`, *reputation headings*, Argent Dawn set inactive. `GetNumFactions` 7, no
+`C_Reputation` list, every row a collapsed header, none a child, `IsFactionInactive` false on all
+seven. In order: *Alliance* 469, *Alliance Forces* 891, *Outland* 980, *Shattrath City* 936,
+*Steamwheedle Cartel* 169, *Other* 0, *Inactive* 0. The same shape as Era with two headings added,
+*Other* and *Inactive* both id 0 again, and *Alliance*, *Outland*, *Shattrath City* and *Steamwheedle
+Cartel* again carrying standings with `hasRep` false. Whether anything nests under *Outland* is not in
+this reading, which had every heading shut. **The headings were still collapsed after the probe and
+Family's own scan**, per Alberto, so the scan's put-back worked here; Era's all-open list followed a
+relog and is to be retried.
+
+**Read again with only *Outland* open**: twelve rows. Under *Outland* 980: Cenarion Expedition 942, Honor
+Hold 946, Kurenai 978, Sporeggar 970, The Consortium 933 - every one `isChild` false, and *Shattrath
+City* 936 follows as a top-level heading of its own, not under *Outland*. **So Burning Crusade has one
+level of headings, as Era does**; the nesting the Midnight branch reads does not appear on either.
+
+### The reputation list on Mists, every heading shut — read 2026-09-27
+
+Eccebombo, `5.5.4`, *reputation headings*. `GetNumFactions` 3, no `C_Reputation` list: *Guild* 1169, *Classic*
+1118, *Inactive* 0 - all collapsed headers, none a child, `IsFactionInactive` false. **No *Other*
+heading**, and the headings are Midnight's kind (by expansion, then *Guild* and *Inactive*), not Era's.
+Alberto's screenshot of the game's window, *Classic* open: factions directly under *Classic* (Argent
+Dawn, Bloodsail Buccaneers, Thorium Brotherhood, Zandalar Tribe) and **a heading nested inside it**,
+*Alliance*, with Darnassus, Exodar, Gilneas, Gnomeregan, Ironforge, Stormwind and Tushui Pandaren
+under that. So Mists has two levels. What `isChild` says for *Alliance* and its factions is not yet read.
+
+**The archaeology entry on the same character** reads nothing useful: Eccebombo has no Archaeology.
+Thirteen races (race 1 named *UNUSED*), every fragment count 0, `GetActiveArtifactByRace` no returns and
+`GetNumArtifactsByRace` 0 for all. The reading backlog 104 needs is on a character with the skill,
+such as Luga.
+
+**Read again with *Classic* and its *Alliance* open** (16 rows). `isChild` (13) carries the nesting:
+*Classic* 1118 is a header with `isChild` false; Argent Dawn 529, Bloodsail Buccaneers 87, Thorium
+Brotherhood 59 and Zandalar Tribe 270 follow with `isChild` **false** - they sit directly under *Classic*;
+then *Alliance* 469, a header with `isChild` **true**, and under it Darnassus 69, Exodar 930, Gilneas 1134,
+Gnomeregan 54, Ironforge 47, Stormwind 72 and Tushui Pandaren 1353, all `isChild` **true**; then
+*Steamwheedle Cartel* 169, a collapsed header with `isChild` **true**; then *Inactive* 0, `isChild` nil.
+
+**The rule this reads as:** a header with `isChild` false opens a top-level heading; a header with `isChild`
+true opens a sub-heading inside the current top-level one; a faction with `isChild` true belongs to the
+current sub-heading, and one with `isChild` false to the top-level heading. A top-level heading's own
+factions come before its sub-headings. Era and Burning Crusade answer `isChild` false everywhere, which
+the same rule reads as one level - so one reader serves all three.
+
+**And with *Classic* open and *Alliance* shut** (9 rows): *Alliance* and *Steamwheedle Cartel* are collapsed
+headers with `isChild` true, and *Classic*'s own four factions `isChild` false - so the flag does not
+depend on whether a heading is open, and the list can be read as the player left it. *Alliance* stayed
+shut through Family's own scan, as the Burning Crusade headings did.
+
+### Archaeology on Mists: projects and solved artifacts answer without the window — read 2026-09-27
+
+Luga, `5.5.4`, *archaeology projects*, read at login before anything was opened and again with the
+Archaeology window open. **The two readings are the same** except that the first artifact's fifth
+value (its flavour text) is `""` before the window and filled after. So nothing the scanner needs waits
+for the window.
+
+- `GetArchaeologyRaceInfo(13)`: `"Dwarf" 461831 52843 11 32 200` - name, two ids, **fragments held 11**,
+  **fragments the current project needs 32**, **cap 200**. The other twelve races answer 0 0 0; race 1 is
+  named *UNUSED* and race 11, *Fossil*, has a 0 in its third place.
+- `GetActiveArtifactByRace(13)`: `"Bone Gaming Dice"`, a description, `0`, icon 237285, flavour text, `0`,
+  461832, 86866 - the project in progress. Races with no project answer **no returns**.
+- `GetNumArtifactsByRace(13)`: **2**; every other race 0.
+- `GetArtifactInfoByRace(13, 1)`: `"Worn Hunting Knife"`, description, `0`, icon 135292, flavour, `0`,
+  461832, 86865, **1790189489**, **1** - the ninth reads as the moment it was first solved and the tenth
+  as how many times, on the one row read. What the second of the two listed is, and whether an
+  unsolved artifact is listed at all, is not read yet.
+
+Eccebombo, with no Archaeology, answered the same thirteen races with 0 everywhere and no project.
+
+**The second listed artifact, settled from Alberto's screenshot the same hour:** the game's Archaeology
+book for Dwarf shows one completed artifact, *Worn Hunting Knife*, with the skill at 12/75. So of the
+two `GetNumArtifactsByRace(13)` lists, the second is the project in progress, *Bone Gaming Dice*, not yet
+solved: **the list holds the solved artifacts and the current project, and a solved one is one whose
+tenth value (times solved) is above 0.**
+
+**And the two values confirmed against the game's own tooltip**: hovering *Worn Hunting Knife* in the book
+reads *First Completion: 23/9/2026 8:51 PM* and *Number of times completed: 1*. The ninth value,
+1790189489, is 20:51:29 CEST on 23 September 2026 - the same moment, as a Unix time - and the tenth is
+the count.

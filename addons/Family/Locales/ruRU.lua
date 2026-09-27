@@ -1057,4 +1057,8 @@ Family.locales.ruRU = {
 	["|cff888888Rest XP est. is worked out from the last reading: 5%% of a level every 8 hours where the character was resting, every 32 hours elsewhere, up to a level and a half. Pandaren twice all of that.|r"] = "|cff888888Отдых, оц. считается от последнего замера: 5%% уровня каждые 8 часов там, где персонаж отдыхал, каждые 32 часа в других местах, но не больше полутора уровней. Для пандаренов всё вдвое больше.|r",
 	["not known"] = "неизвестно",
 	["(unbound)"] = "(непривязанный)",
+	["inactive"] = "неактивна",
+	["|cff9d9d9dThis character has not dug anything up yet.|r"] = "|cff9d9d9dЭтот персонаж ещё ничего не раскопал.|r",
+	["%d races, %d artifacts solved"] = "Рас: %d, решено артефактов: %d",
+	["first solved %s"] = "впервые решён %s",
 }

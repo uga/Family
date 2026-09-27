@@ -1,0 +1,6 @@
+name: the project in progress is counted as a solved artifact
+file: addons/Family/Scanners/Archaeology.lua
+--- old
+				if type(a[1]) == "string" and times > 0 then
+--- new
+				if type(a[1]) == "string" then

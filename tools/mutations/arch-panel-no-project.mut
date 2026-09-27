@@ -1,0 +1,8 @@
+name: the Archaeology page leaves the project in progress out
+file: addons/Family_UI/Professions.lua
+--- old
+					if race.project then
+						line("  |cffffd700" .. race.project .. "|r",
+--- new
+					if false then
+						line("  |cffffd700" .. race.project .. "|r",

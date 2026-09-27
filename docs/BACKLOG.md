@@ -7328,7 +7328,20 @@ drew it on the Currencies set. Nothing to change (DATASOURCES, *On Mists the cur
 
 ---
 
-## 104. Archaeology's contents: fragments by race, the project in progress, artifacts solved
+## 104. Archaeology's contents: fragments by race, the project in progress, artifacts solved — DONE 2026-09-27, not yet seen in game
+
+**Built 2026-09-27.** `Scanners/Archaeology.lua`, on the new `archaeology` capability (Mists): each
+race with anything in it goes to meta `archaeology` (fragments, the project's cost, the cap, the
+project and its icon, the number solved) with `archaeologySeen`, and the solved artifacts to the
+payload's `archaeologySolved` (name, icon, first solved, count). Read at login and on the
+currency and artifact events. **Shown on the Professions panel**, as an Archaeology button beside
+the professions with recipes: per race a line, the project under it, then the artifacts solved.
+Shared under *Professions*. **Placement changed twice the same afternoon, by Alberto**: first a
+column on the Summary's Professions page (the set buttons being full), then *Summary / Professions
+lists the Archaeology level only, as today; the details go under the Professions panel*, with
+*a list of races, and under each race the ongoing project and the complete artifacts history*. The
+column and a Character-panel section built in between were removed before commit.
+
 
 **Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word:
 Family does not read Archaeology's contents at all. Mists has Archaeology and so does Midnight, so
@@ -7360,6 +7373,12 @@ currency list (the same entry), so the Currencies set will never show them and t
 **First step: a FamilyProbe entry** asking each of those calls on Luga, with the window closed and
 then open, before any scanner is written.
 
+**Read on Luga, 2026-09-27** (DATASOURCES, *Archaeology on Mists*): fragments, the project's cost, the
+project and the listed artifacts all answer at login with the window never opened; only an
+artifact's flavour text waits for it. `GetArtifactInfoByRace`'s ninth and tenth values read as first
+solved and times solved. Buildable. The list holds the solved artifacts **and** the project in progress
+(Alberto's screenshot of the book: one completed, two listed), so *solved* is times-solved above 0.
+
 **Settled by Alberto, 2026-09-27:** fragments, the project in progress and the solved artifacts;
 shown on a Summary set **and** on the Character panel; shared over Wide Family **under
 professions**. The probe is `/familyprobe apis`, entry *archaeology projects* - run on a Mists
@@ -7367,7 +7386,20 @@ character with the Archaeology window not yet opened this session, then again af
 
 ---
 
-## 105. The Reputations panel in the game's order, collapsed, with inactive per character
+## 105. The Reputations panel in the game's order, collapsed, with inactive per character — DONE 2026-09-27, not yet seen in game
+
+**Built 2026-09-27.** `Character:ReadReputations` now records, per faction, `category` and
+`categoryID` (the top-level heading, id kept only when not 0), `group` and `groupID` (the nested
+heading, from `isChild`), and `inactive` from `IsFactionInactive`; the list stays in the game's
+order. A header with a standing is recorded as a faction of the level above before it becomes the
+heading of what follows. In `Family_UI/Character.lua`: one character's page draws the game's tree,
+headings shut until clicked (`UI.__repOpen`, cleared with the panel's fold), a filter opening
+everything; the whole-family page merges every member's order (`mergeOrder`), files a faction by
+whoever has it active and falls back to its inactive heading only when nobody does, and writes
+*inactive* before the standing of whoever set it. Records written before this draw in their old
+single-heading shape until the character logs in. **Not looked at:** whether the scan's expand and
+put-back left Era's headings open after a relog; Burning Crusade and Mists kept them shut.
+
 
 **Asked by Alberto 2026-09-27**, relayed by the Midnight session (`family-retail-57`) at his word,
 designed from Eccebombo's Reputations page beside the game's window. For every client; `main` builds
@@ -7411,6 +7443,36 @@ also answers 0 and how their nesting looks.
 reputation list as it stands, and `C_Reputation`'s where present. Run with every heading shut in
 the game's own Reputation window, on Era, Burning Crusade and Mists.
 
+**Era read 2026-09-27** (Verysolid, level 60, `1.15.9`, every heading shut): `GetNumFactions` 4, all
+headers, all collapsed, no `C_Reputation` list. In order: *Alliance* 469, *Alliance Forces* 891,
+*Steamwheedle Cartel* 169, *Other* **0**. None a child. *Alliance* answers a standing (6, 11549 in
+9000-21000) with `hasRep` false; *Other* answers 14 values, not 16, with 7, 8, 11, 12 and 13 nil.
+**On Era the heading with id 0 is *Other*, an ordinary heading** (Alberto, with screenshots, after
+first saying *Other* was the inactive one and then taking it back): a separate *Inactive* heading
+appears only once a faction is moved there. So Midnight's rule that *Inactive* is the id-0 heading
+does not carry over as a way of recognising it on Era. The probe asks `IsFactionInactive(index)` per
+row, which says it of each faction whatever its heading. Still wanted: Era with a faction inactive
+and every heading shut, then Burning Crusade and Mists.
+
+**Era settled, 2026-09-27** (DATASOURCES, *The reputation list on Era*): *Other* and *Inactive* both
+answer id 0, `IsFactionInactive` is true for the inactive faction and false everywhere else, and there
+is one level of headings. So on Era a faction's inactive state is read with `IsFactionInactive`, and
+its own heading, when inactive, has to come from another member, as the design already says. Still
+wanted: Burning Crusade and Mists, every heading shut.
+
+**Burning Crusade read 2026-09-27**: seven headings, *Alliance* 469, *Alliance Forces* 891, *Outland* 980,
+*Shattrath City* 936, *Steamwheedle Cartel* 169, *Other* 0, *Inactive* 0 - Era's shape with two added.
+*Outland* opened on its own lists five factions, none a child, and *Shattrath City* is a heading of its
+own beside it: **one level on Burning Crusade, as on Era**.
+
+**Mists read 2026-09-27**: *Guild* 1169, *Classic* 1118, *Inactive* 0, no *Other*. **Two levels**, from
+Alberto's screenshot: *Classic* holds factions and a nested *Alliance* heading. Alberto: *we should
+mimic them inside Family*. **Read with *Classic* open the same day:** `isChild` true marks a sub-heading
+and the factions inside it; false marks a top-level heading and the factions directly under it
+(DATASOURCES, *The reputation list on Mists*). One rule reads all three builds. **The reading 105
+needs is complete**; what is left is the design of the stored shape and the panel. **Headings left open**: on Burning Crusade they stayed shut after Family's scan; the
+all-open list on Era came after a relog, and Alberto will retry it there.
+
 ---
 
 ## 106. The Auction line on a bound copy's tooltip says it is the unbound price — DONE 2026-09-27, not yet seen in game
@@ -7436,3 +7498,14 @@ On another member's copy the tooltip has only a link, so no mark there.
 checks (`Tooltip.lua:704-730`), `Family:BoundIn(bag, slot, itemID)` and `Family:BindingWorn(slot)`
 (`Core.lua:530`, `:563`). The guess must be checked against the item before it is used, as
 `bagCount` does: a wrong slot has to cost a missing mark, never a wrong one.
+
+---
+
+## 107. The Professions window, for more than four professions with something to show
+
+**Asked by Alberto 2026-09-27.** A character now has more professions with something to show than
+the window was laid out for. On Mists: two primary professions, possibly both with recipes (for
+example Tailoring and Blacksmithing), plus Cooking, First Aid and Archaeology. On Midnight there
+will be lines to show for Skinning, and maybe more. So the redesign is certain for the Midnight
+branch and likely for Mists. Not designed yet; the first step is to read the current layout
+(`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.

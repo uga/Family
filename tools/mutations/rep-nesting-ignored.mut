@@ -1,0 +1,8 @@
+name: a nested reputation heading is read as a top-level one
+file: addons/Family/Scanners/Character.lua
+--- old
+			if isChild == true then
+				group, groupID = name, heading(factionID)
+--- new
+			if false then
+				group, groupID = name, heading(factionID)

@@ -40,6 +40,10 @@ local SORT_ROW = 22
 
 local ROW = 32
 
+-- Archaeology's skill line. It makes nothing, so it has no recipes; what it has is races, each
+-- with a project in progress and a history of artifacts solved (backlog 104).
+local ARCHAEOLOGY = 794
+
 -- What the "who can make it" column gets in a whole-family search. Two hundred and fifty left
 -- a recipe eight characters know running off the right-hand edge mid-name, and the recipe's
 -- own name is a short line with room going spare beside it.
@@ -1777,6 +1781,11 @@ local function build(frame)
 			-- fixes. Reported from play 2026-09-06, from a screenshot of that line.
 			if skill.weapon or Family:IsRidingSkill(id) then
 				-- nothing here, on purpose
+			elseif id == ARCHAEOLOGY and member.meta and member.meta.archaeologySeen then
+				-- **Archaeology has lines of its own** (backlog 104, Alberto 2026-09-27: *the
+				-- details under the Professions panel*): the races, their fragments and
+				-- projects, and the artifacts solved, drawn where recipes would be.
+				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif record and record.recipes and #record.recipes > 0 then
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif skill.rank and not Family:ProfessionMakes(id) then
@@ -1971,6 +1980,86 @@ local function build(frame)
 				frame:Refresh()
 			end)
 			button:Show()
+		end
+
+		-- **Archaeology's page**: one line per race with anything in it - fragments against the
+		-- project's cost, and the project - and under it the artifacts solved, with when first
+		-- and how often. Read from the scan (`Scanners/Archaeology.lua`), not from any window.
+		if chosen == ARCHAEOLOGY then
+			local races = member.meta.archaeology or {}
+			local solvedBy, total = {}, 0
+			for _, artifact in ipairs((UI:Payload(member.key) or {}).archaeologySolved or {}) do
+				solvedBy[artifact.race] = solvedBy[artifact.race] or {}
+				table.insert(solvedBy[artifact.race], artifact)
+				total = total + 1
+			end
+			local archSkill = skills[chosen]
+			status:SetText(#races == 0
+				and L["|cff9d9d9dThis character has not dug anything up yet.|r"]
+				or string.format("|cffffd700%s|r %s   |cff888888|||r   %s",
+					Family:ProfessionName(chosen, archSkill.name), rankText(archSkill) or "",
+					string.format(L["%d races, %d artifacts solved"], #races, total)))
+
+			local needle = (search:GetText() or ""):lower()
+			local function wanted(text)
+				return needle == "" or (type(text) == "string"
+					and text:lower():find(needle, 1, true) ~= nil)
+			end
+
+			local used, y = 0, 0
+			list:SetWidth(UI:ListWidth(scroll))
+			local function line(text, note, icon)
+				used = used + 1
+				local r = row(used)
+				r:SetPoint("TOPLEFT", 0, -y)
+				r:SetPoint("TOPRIGHT", 0, -y)
+				r:Show()
+				y = y + ROW
+				r.text:SetText(text)
+				r.note:SetText(note or "")
+				showMaterials(r, {})
+				r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - ROW - 20
+					- MATERIAL_INSET_BARE - NOTE_ROOM - NOTE_GAP))
+				r.spellID, r.itemID = nil, nil
+				r.memberKey, r.profession, r.recipeName = member.key, chosen, nil
+				r.waiting:SetShown(false)
+				r.canOpen, r.announce = false, nil
+				r.fallback = { { text } }
+				r.icon:SetTexture(icon)
+				return r
+			end
+
+			for _, race in ipairs(races) do
+				local artifacts = solvedBy[race.race] or {}
+				local keep = wanted(race.name) or wanted(race.project)
+				for _, artifact in ipairs(artifacts) do
+					if wanted(artifact.name) then keep = true end
+				end
+				-- Alberto, 2026-09-27: *a list of races, and under each race the ongoing
+				-- project and the complete artifacts history*.
+				if keep then
+					line("|cff88bbff" .. tostring(race.name) .. "|r",
+						race.cap and string.format("|cff888888%d / %d|r", race.fragments,
+							race.cap) or tostring(race.fragments), race.icon)
+					if race.project then
+						line("  |cffffd700" .. race.project .. "|r",
+							race.need and string.format("%d / %d", race.fragments, race.need),
+							race.projectIcon)
+					end
+					for _, artifact in ipairs(artifacts) do
+						line("  " .. tostring(artifact.name),
+							artifact.count and artifact.count > 1
+								and ("|cff888888x" .. artifact.count .. "|r")
+								or (artifact.firstAt and ("|cff888888" .. string.format(
+									L["first solved %s"], UI:Ago(artifact.firstAt)) .. "|r")),
+							artifact.icon)
+					end
+				end
+			end
+
+			for index = used + 1, #rows do rows[index]:Hide() end
+			list:SetHeight(math.max(y, 1))
+			return
 		end
 
 		-- Whatever is chosen has recipes: that is what got it a button in the first place.

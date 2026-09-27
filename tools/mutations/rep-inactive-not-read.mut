@@ -1,0 +1,6 @@
+name: whether a faction is inactive is never asked
+file: addons/Family/Scanners/Character.lua
+--- old
+				inactive = (inactiveCall
+--- new
+				inactive = nil and (inactiveCall

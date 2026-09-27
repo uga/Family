@@ -57,9 +57,12 @@ local CATEGORIES = {
     -- it. The three fields go together or the panel half-works: `craftCooldowns` is the
     -- timer, `cooldownItems` says which profession an item's timer belongs to, and
     -- `itemCooldowns` is the timer that lives on a carried item like a salt shaker.
-    { id = "professions", label = L["Professions"], payload = { "professions" },
+    -- Archaeology beside the professions it is one of (backlog 104, Alberto: *shared under
+    -- professions*).
+    { id = "professions", label = L["Professions"], payload = { "professions", "archaeologySolved" },
       meta = { "skills", "specs", "specsSeen",
-               "craftCooldowns", "cooldownItems", "itemCooldowns" } },
+               "craftCooldowns", "cooldownItems", "itemCooldowns",
+               "archaeology", "archaeologySeen" } },
     { id = "talents",     label = L["Talents"],     payload = { "talents", "spells" } },
     { id = "quests",      label = L["Quests"],      payload = { "quests" },
       meta = { "questCount", "questMax" } },

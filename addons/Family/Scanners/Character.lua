@@ -161,17 +161,18 @@ local function factionAt(index, modern)
 			isHeader = row.isHeader and true or false,
 			isCollapsed = row.isCollapsed and true or false,
 			hasRep = row.isHeaderWithRep and true or false,
+			isChild = row.isChild and true or false,
 			factionID = row.factionID,
 		}
 	end
 
 	local name, _, standing, barMin, barMax, barValue, _, _, isHeader, isCollapsed, hasRep,
-		_, _, factionID = Family:TryCall(GetFactionInfo, index)
+		_, isChild, factionID = Family:TryCall(GetFactionInfo, index)
 	if not name then return nil end
 	return {
 		name = name, standing = standing, barMin = barMin, barMax = barMax,
 		barValue = barValue, isHeader = isHeader, isCollapsed = isCollapsed, hasRep = hasRep,
-		factionID = factionID,
+		isChild = isChild, factionID = factionID,
 	}
 end
 
@@ -243,28 +244,67 @@ function Character:ReadReputations()
 	-- Cartel, the expansion's factions - and it is what anybody would want to sort by. It is
 	-- only knowable by remembering what header was passed on the way down the list, so it is
 	-- carried along rather than looked up.
-	local category
+	--
+	-- **Two levels, where the build has them** (backlog 105, read on all three builds
+	-- 2026-09-27, DATASOURCES *The reputation list on Mists*). `isChild` says it: a header with
+	-- it false opens a top-level heading, one with it true a sub-heading inside that; a faction
+	-- with it true sits in the current sub-heading, and one with it false directly under the
+	-- top-level heading, whose own factions the game lists before its sub-headings. Era and
+	-- Burning Crusade answer false everywhere, which is one level. A heading's id is kept where
+	-- it is not 0 - *Other* and *Inactive* both answer 0 - so one heading read on two clients
+	-- in two languages is still one heading.
+	--
+	-- The list is kept in the game's order, which is the order the panel draws.
+	local category, categoryID, group, groupID
+	local inactiveCall = _G.IsFactionInactive
+
+	local function heading(id)
+		id = tonumber(id)
+		if id and id > 0 then return id end
+		return nil
+	end
 
 	for position = 1, count do
-		local row = factionAt(position, modern)
-
-		if row and row.isHeader and not row.hasRep then
-			category = row.name
-		end
+		-- By the route the count came from (`factionAt`), in the old call's terms.
+		local row = factionAt(position, modern) or {}
+		local name, standing, barMin, barMax, barValue = row.name, row.standing, row.barMin,
+			row.barMax, row.barValue
+		local isHeader, hasRep, isChild, factionID = row.isHeader, row.hasRep, row.isChild,
+			row.factionID
 
 		-- Not "hasRep and not isHeader". hasRep is false for ordinary factions - it marks
 		-- the unusual case of a *header* that itself has a standing, which is why the
 		-- game's own code asks `not isHeader or hasRep`. Getting it backwards excluded
 		-- every normal faction and left the panel empty on a fully played character.
-		if row and ((not row.isHeader) or row.hasRep) then
+		--
+		-- Such a header is a faction of the level above it, so it is recorded before it
+		-- becomes the heading of what follows.
+		if name and ((not isHeader) or hasRep) then
+			local child = isChild == true and not isHeader
 			factions[#factions + 1] = {
-				id = tonumber(row.factionID),
-				name = row.name,
-				category = category,
-				standing = tonumber(row.standing) or 0,
-				value = (tonumber(row.barValue) or 0) - (tonumber(row.barMin) or 0),
-				maximum = (tonumber(row.barMax) or 0) - (tonumber(row.barMin) or 0),
+				id = tonumber(factionID),
+				name = name,
+				category = category or (isHeader and name) or nil,
+				categoryID = categoryID,
+				group = child and group or nil,
+				groupID = child and groupID or nil,
+				-- Asked of the faction itself: on Era and Burning Crusade *Inactive* is a
+				-- heading with id 0 exactly as *Other* is, so the heading cannot say it.
+				inactive = (inactiveCall
+					and Family:TryCall(inactiveCall, position) == true) or nil,
+				standing = tonumber(standing) or 0,
+				value = (tonumber(barValue) or 0) - (tonumber(barMin) or 0),
+				maximum = (tonumber(barMax) or 0) - (tonumber(barMin) or 0),
 			}
+		end
+
+		if name and isHeader then
+			if isChild == true then
+				group, groupID = name, heading(factionID)
+			else
+				category, categoryID = name, heading(factionID)
+				group, groupID = nil, nil
+			end
 		end
 	end
 

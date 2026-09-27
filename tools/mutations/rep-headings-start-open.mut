@@ -1,0 +1,6 @@
+name: reputation headings start open
+file: addons/Family_UI/Character.lua
+--- old
+	return filtering or UI.REPUTATIONS_START_OPEN or UI.__repOpen[key] == true
+--- new
+	return true

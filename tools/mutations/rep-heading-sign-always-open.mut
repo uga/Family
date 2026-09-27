@@ -1,0 +1,6 @@
+name: a shut top-level reputation heading is drawn with the open sign
+file: addons/Family_UI/Character.lua
+--- old
+				repHeadingRow(nextRow(), top.name, top.count, top.key, 0, open)
+--- new
+				repHeadingRow(nextRow(), top.name, top.count, top.key, 0, true)
