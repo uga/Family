@@ -108,6 +108,15 @@ def measure(uses=None):
             for field in re.findall(r"\b%s\.(\w+)" % re.escape(alias), text):
                 members.add(space + "." + field)
                 uses[space + "." + field].add(where)
+        # `(_G.C_Reputation or {}).GetNumFactions`: the namespace asked for inline, with an empty
+        # table where the client has none. The two searches above both walk past it - the
+        # parenthesis stands between the name and its member, and there is no local - so the
+        # reputation reader's every call was missing, and the probe asked only whether the
+        # namespace was there (docs/MIDNIGHT.md §133).
+        for space, field in re.findall(
+                r"\(\s*(?:_G\.)?(C_\w+)\s+or\s*\{\s*\}\s*\)\.(\w+)", text):
+            members.add(space + "." + field)
+            uses[space + "." + field].add(where)
         for literal in re.findall(r"[\"']([A-Z][A-Z0-9_]{3,})[\"']", text):
             strings.add(literal)
             uses[literal].add(where)

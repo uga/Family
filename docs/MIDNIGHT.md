@@ -4657,3 +4657,12 @@ Noticed on the way: `tools/surface.py` lists `C_Reputation` but none of its memb
 reaches them as `(_G.C_Reputation or {}).Name`, a form the generator does not follow - so the probe
 asks whether the namespace is there and not the calls in it. The same holds for every call reached
 that way. Not changed here; written down for a slice of its own.
+
+**The generator, taught the inline form** (Alberto: *do it*). `tools/surface.py` now also follows
+`(_G.C_X or {}).Name`, and the list gains ten members it had been walking past:
+`C_QuestLog.GetAllCompletedQuestIDs`, `.GetInfo`, `.GetNumQuestLogEntries`;
+`C_Reputation.CollapseFactionHeader`, `.ExpandFactionHeader`, `.GetFactionDataByIndex`,
+`.GetNumFactions`, `.IsFactionActive`; `C_TradeSkillUI.GetRecipeSchematic`, `.OpenTradeSkill`. Every
+one has answered on Midnight in a reading already (§23, §39, §41, §57, and this section and §132);
+the probe will now ask them too. The generator has no check in the harness - its gate is
+`--check`, which now says the regenerated list is current - so no mutation records this.
