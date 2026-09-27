@@ -7540,6 +7540,10 @@ Eccebombo (Paladin): the probe with the Journeyman's Robe as the first uncollect
 this appearance* leaves its tooltip. If the call is looser than the game, the list counts each class's
 own armour type only, and that needs the skill list or a rule, not this call.
 
+**Answered for armour the same evening:** Eccebombo wore a cloth robe and did not learn its look. So
+the list counts each member's own armour type at its level, from the skill list if it says so; the
+per-class call stays for weapons and class restrictions until a weapon is tried the same way.
+
 **Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
 whose look the account has not collected, marked on the Possessions panel, with who can learn them.
 

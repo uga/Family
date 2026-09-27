@@ -5803,6 +5803,10 @@ bind on equip), whose look the account has not collected: appearance 49402, sour
   (*Cloth*, *Plate Mail*, *Staves* ...). So the ids are right and the call is the wrong question. The
   whole skill list is asked next (*transmog skill list whole*), for the level-40 armour rule.
 - The item's bind type reads 2 (bind on equip) through `GetItemInfo`'s fourteenth value.
+- **A plate wearer does not learn a cloth look by wearing it**, tried in the game by Alberto the same
+  evening: *Disciple's Robe of the Owl* (cloth) bought, worn by Eccebombo (Paladin, 49), taken off - its
+  tooltip still reads *You haven't collected this appearance*. So for armour the per-class call's *valid*
+  is looser than the game's rule for collecting, which is each class's own armour type. Weapons not tried.
 
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 
