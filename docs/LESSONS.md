@@ -3576,6 +3576,23 @@ of the same figure. Mutation `icon-sheet-coins-white-left-gold` drops the white 
 the rule: **"no colour" is the font's colour, and on this client's panels that is gold - say white
 when white is meant.**
 
+## L-214 — a guild's key read as a character's name, and a probe sent to the wrong character
+
+**2026-09-27.** `FamilyDB.guilds` is keyed by guild and realm. *Uga-Chamber of Aspects* is the guild
+**Uga**, Alliance, seven tabs - and Uga is also one of Alberto's characters, Horde, in the guild *Già
+mi creo pagu* on Emerald Dream. `docs/MIDNIGHT.md` §130 wrote the key up as *Uga's guild*, and the
+next request asked for the guild bank probes *on Uga*. Alberto ran them there, on a three-tab guild
+whose tabs all hold items, and the reading could not say anything about the seven-tab bank it was
+meant for.
+
+**Bitten:** one round trip in the game, and a section written up with the wrong owner.
+
+**What now catches it.** Nothing automatic: a request for a reading is written by hand. Before a
+probe is sent, the **character** it runs on is named from the record itself - the guild's
+`seenBy`, the member key with its realm - and a key is read by the code that builds it
+(`guild .. "-" .. realm`), never by what the words in it look like. Where the reading is about a
+guild, the request names the guild, its realm and a character in it.
+
 ## L-213 — one special row carried a claim about all rows, and a screenshot of the interface took it back
 
 **2026-09-24.** Probe version 16 read quest-log index 3 on Midnight, right after a shut heading,

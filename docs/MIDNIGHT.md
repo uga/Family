@@ -4468,8 +4468,11 @@ the members' copies and in the Inventory block. The same screenshots raised thre
 
 §128's second and third faults, read by Alberto on live.
 
-**What Family stored for each guild tab**: *Uga*'s guild on Chamber of Aspects, tab 1 *Res mistae*;
-*Già mi creo pagu*'s guild on Emerald Dream, tabs 1 to 3 *Tab 1*, *Tab 2*, *Tab 3*. So the guild tab's
+**What Family stored for each guild tab** (keys are guild and realm): the guild *Uga* on Chamber of
+Aspects, Alliance - Ahia's, §127's seven tabs - tab 1 *Res mistae*; the guild *Già mi creo pagu* on
+Emerald Dream, Horde, tabs 1 to 3 *Tab 1*, *Tab 2*, *Tab 3*. (First written here as *Uga's guild*
+and *Già mi creo pagu's guild*, as if the keys named members; Uga is also a character, in the second
+guild - L-214.) So the guild tab's
 name is read and drawn on Midnight as on every client (`main`'s backlog 86): the second guild's tabs
 are really called *Tab 1* to *Tab 3*, which reads like Family's placeholder and is not. Nothing to
 build. Still open: only one of the first guild's seven tabs (§127) is stored.
@@ -4562,3 +4565,9 @@ for the button's own id, which is the profession's skill line - under the same t
 cast: the member being played, and a window Family has seen, so it knows the profession opens. A
 client that may cast keeps the cast and never takes this route. Three checks, four mutations.
 **Not yet seen in the game from Family's button.**
+
+**The second reading went to the wrong guild** (2026-09-27, L-214). Asked *on Uga*, it was run by the
+character Uga, Horde, whose guild *Già mi creo pagu* has three tabs, all holding items: `GetNumGuildBankTabs`
+3, `GetCurrentGuildBankTab` 1, *Già mi creo pagu*, *Officer*, and all three stored with names (tab 3
+renamed *Terza* since) - right, and not the case in question. The guild *Uga* still holds tab 1 only,
+read 11:48 UTC. The reading that matters is at that guild's bank, by a character in it.
