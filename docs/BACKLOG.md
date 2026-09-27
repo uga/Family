@@ -7516,7 +7516,17 @@ will be lines to show for Skinning, and maybe more. So the redesign is certain f
 branch and likely for Mists. Not designed yet; the first step is to read the current layout
 (`Family_UI/Professions.lua`) against a Mists character with five and write down what does not fit.
 
-## 108. Transmogrification on Mists — OPEN 2026-09-27, shape chosen, waiting on the fourth probe
+## 108. Transmogrification on Mists — OPEN 2026-09-27, account or character unsettled, two probes waiting
+
+**Reopened the same afternoon.** The VARIE session sent a reference for both builds, read from
+Blizzard's UI source and generated API documentation:
+`/home/dietpi/dev/varie/wow-transmog-2026-09-27-tech/` - `README.md`, `mists-transmog.md` (for this
+slice) and `midnight-transmog.md`, **which goes to the Midnight session (`family-retail-57`) with the
+handoff once the Mists version lands**, not before. It says the collection is account-wide and the
+category counts are class-filtered, so the second reading's "per character" is not established. A fifth
+probe, *transmog collection: account or character*, asks each of Eccebombo and Luga about the other's
+worn looks. **If the collection is account-wide, Alberto's choice below was made on a wrong premise** -
+every member of one account would answer the same - and it goes back to him with the reading.
 
 **Chosen by Alberto 2026-09-27**: Eccebombo and Luga share one game account, so the collection is per
 character; what Family shows is **which family members have collected an item's look**, on the item's

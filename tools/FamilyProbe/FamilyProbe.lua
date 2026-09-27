@@ -1068,6 +1068,43 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog collection by catego
     return table.concat(out, " | ")
 end }
 
+-- **Backlog 108: is the collection the account's or the character's?** The second reading found
+-- different collected counts on Eccebombo and Luga, one account, and read it as per character; the
+-- VARIE session's reference (Blizzard's own UI and documentation) says account-wide, with the
+-- counts following a class filter. The counts cannot settle it. This can: each character is asked
+-- about the *other's* worn looks by their source ids, read on 2026-09-27 - an account-wide
+-- collection says yes to both lists on both characters, a per-character one only to its own.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog collection: account or character", ask = function()
+    local out = {}
+    local _, classFile, classID = try(_G.UnitClass, "player")
+    out[#out + 1] = "class " .. tostring(classFile) .. " " .. tostring(classID)
+    local filter = inside("C_TransmogCollection", "GetClassFilter")
+    out[#out + 1] = "class filter " .. (filter and shape(callPacked(filter)) or "absent")
+
+    local has = inside("C_TransmogCollection", "PlayerHasTransmogItemModifiedAppearance")
+    local knows = inside("C_TransmogCollection", "PlayerKnowsSource")
+    local source = inside("C_TransmogCollection", "GetSourceInfo")
+    local sets = {
+        { "Eccebombo's", { 123962, 126931, 123325, 122502 } },
+        { "Luga's", { 275406, 275335, 275492, 275313 } },
+    }
+    for _, set in ipairs(sets) do
+        for _, id in ipairs(set[2]) do
+            local line = set[1] .. " " .. id
+                .. " || has " .. describe(has and try(has, id))
+                .. " || knows " .. describe(knows and try(knows, id))
+            local info = source and try(source, id)
+            if type(info) == "table" then
+                line = line .. " || isCollected " .. describe(info.isCollected)
+                    .. " playerCanCollect " .. describe(info.playerCanCollect)
+                    .. " isValidSourceForPlayer " .. describe(info.isValidSourceForPlayer)
+            end
+            out[#out + 1] = line
+        end
+    end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end

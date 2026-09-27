@@ -5756,6 +5756,13 @@ Eccebombo, `5.5.4`, the two *transmog* probes of backlog 108, away from a Transm
   equipped item in this slot*); handed 5 about the waist (122502 and 275313, the belts' sources); handed
   1, the neck, nil. The probe's first draft had `slot - 1`, "corrected" to `slot` before it ran; the
   reading says the draft was right.
+- **Withdrawn the same afternoon: "per character" does not follow from the counts.** The VARIE session's
+  reference (`/home/dietpi/dev/varie/wow-transmog-2026-09-27-tech/mists-transmog.md`, §B.3, from
+  Blizzard's own UI and documentation for 5.5.4.69934) says the collection is **account-wide** and that
+  the category counts follow a **class filter** that is shared UI state - so two characters of
+  different classes answer different collected counts from one collection. The counts cannot tell the
+  two apart. The probe *transmog collection: account or character* asks each character about the
+  other's worn looks by source id, which can.
 - `GetNumTransmogSources()` answers 6 on both - a count of source kinds, not of anything collected.
 - `C_Transmog.GetSlotVisualInfo(location)` answers a table of 9, not yet printed.
 
