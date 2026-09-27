@@ -5781,6 +5781,29 @@ Eccebombo, `5.5.4`, the two *transmog* probes of backlog 108, away from a Transm
 - `GetNumTransmogSources()` answers 6 on both - a count of source kinds, not of anything collected.
 - `C_Transmog.GetSlotVisualInfo(location)` answers a table of 9, not yet printed.
 
+### Who can learn a look: the per-class call answers for every class — read 2026-09-27
+
+Luga (Druid, 85), probe *transmog who can learn*, carrying *Lordly Armguards* (item 13135, mail,
+bind on equip), whose look the account has not collected: appearance 49402, source 125462.
+
+- **`GetValidAppearanceSourcesForClass(49402, classID)` answers for all eleven classes from one
+  character**: one source for 1, 2, 3, 6 and 7 (Warrior, Paladin, Hunter, Death Knight, Shaman) and none
+  for 4, 5, 8, 9, 10 and 11 (Rogue, Priest, Mage, Warlock, Monk, Druid) - exactly the classes that can
+  wear mail, plate wearers included. So armour type and, by the same token, class restrictions can be
+  judged for any member from whoever is logged in. It does **not** know level: whether a Hunter or a
+  Shaman under 40 can wear mail is not in this answer.
+- **`PlayerCanCollectSource` and `AccountCanCollectSource` both answer `true, true`** on the Druid, for a
+  mail item it cannot wear. So *can collect* is not *this class can wear it*; it cannot be used for the
+  list.
+- `GetAppearanceInfoBySource(125462)` answers the documented table: `appearanceIsCollected=false`,
+  `appearanceIsUsable=false`, `isAnySourceValidForPlayer=false`, `appearanceNumSources=2`,
+  `sourceIsKnown=true`, and the rest. **Read in a client for the first time here.**
+- **The proficiency spells answer nothing useful**: `IsSpellKnown` says `false` for all twenty on the
+  Druid - Leather and Staves among them, which a Druid has - while `GetSpellInfo` names each one
+  (*Cloth*, *Plate Mail*, *Staves* ...). So the ids are right and the call is the wrong question. The
+  whole skill list is asked next (*transmog skill list whole*), for the level-40 armour rule.
+- The item's bind type reads 2 (bind on equip) through `GetItemInfo`'s fourteenth value.
+
 ### The guild bank on Midnight: a tab switch sends one event, with the new tab current — read 2026-09-27
 
 Alberto's event trace on the Midnight branch (Ahia, guild Uga, tabs clicked about two seconds apart),

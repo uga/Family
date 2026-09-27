@@ -7524,6 +7524,14 @@ the goal is a tooltip line - *appearance can be learnt by* and the members who c
 their level - leaving out bind-on-pickup items and respecting class restrictions. The holder-only
 design below was dropped before it was committed. Probe *transmog who can learn* asks what that needs.
 
+**Chosen with it (Alberto, *We need 1 2 and 3*)**: on the Possessions panel, (1) a filter for items whose
+look the account already has - safe to sell or disenchant; (2) a filter for unbound items whose look it
+has not, with who can learn each; (3) both covering the guild bank and mail as well as bags and banks.
+
+**Read 2026-09-27 (DATASOURCES, *Who can learn a look*)**: the per-class call answers for all eleven
+classes from one character, so class and armour type are settled; level is not, and the skill-list probe
+asks for it on a character under 40.
+
 **Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
 whose look the account has not collected, marked on the Possessions panel, with who can learn them.
 

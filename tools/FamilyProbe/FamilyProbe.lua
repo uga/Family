@@ -1180,6 +1180,41 @@ PROBES[#PROBES + 1] = { area = "transmog", name = "transmog who can learn", ask 
     return table.concat(out, " | ")
 end }
 
+-- **Backlog 108: what this character can wear, from its own skill list.** The proficiency
+-- spells all answered false on Luga (a druid, who wears leather and holds a staff), so they
+-- say nothing. The old skill list is on Mists (DATASOURCES, measured 2026-09-06) and on the
+-- older clients carried *Armor Proficiencies* - Cloth, Leather, Mail, Plate Mail - with a
+-- rank of 1 of 1, which Family's own reader skips. Every row here, headers included, so the
+-- armour lines and their heading show whatever they are called; to be read on a character
+-- under 40 whose class moves to mail or plate at 40, which is where the level matters.
+PROBES[#PROBES + 1] = { area = "transmog", name = "transmog skill list whole", ask = function()
+    if not there("GetNumSkillLines") then return "GetNumSkillLines absent" end
+    local collapsed = {}
+    local count = try(GetNumSkillLines) or 0
+    for index = 1, count do
+        local name, isHeader, isExpanded = try(GetSkillLineInfo, index)
+        if name and isHeader and not isExpanded then collapsed[name] = true end
+    end
+    try(ExpandSkillHeader, 0)
+
+    local out = { "level " .. tostring(try(UnitLevel, "player")) }
+    count = try(GetNumSkillLines) or 0
+    for index = 1, count do
+        local name, isHeader, _, rank, _, _, maxRank = try(GetSkillLineInfo, index)
+        if name then
+            out[#out + 1] = (isHeader and "[" .. name .. "]")
+                or (name .. " " .. tostring(rank) .. "/" .. tostring(maxRank))
+        end
+    end
+
+    count = try(GetNumSkillLines) or 0
+    for index = count, 1, -1 do
+        local name, isHeader = try(GetSkillLineInfo, index)
+        if name and isHeader and collapsed[name] then try(CollapseSkillHeader, index) end
+    end
+    return table.concat(out, " | ")
+end }
+
 PROBES[#PROBES + 1] = { area = "nodes", name = "Enum.TooltipDataType", ask = function()
     local enum = _G.Enum
     if type(enum) ~= "table" then return "no Enum on this client" end
