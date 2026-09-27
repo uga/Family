@@ -4878,3 +4878,7 @@ profession window's slots remain.
 valued at its auction price, 414g 77s - right, and the auction lane. The per-copy vendor price of §134
 is the bound lane, so it is seen only on a bound levelled piece: a worn one, whose *family's lot* under
 CTRL should read the game's own sell price.
+
+**A bound levelled piece** (Alberto's screenshot, 2026-09-27, Mara's *Master's Leggings of the Fireflash*,
+item level 24, soulbound): Family's *Sell Price (each)* 15s 58c, the game's own - *seems correct*.
+Its lot under CTRL, the worth's bound lane, is not in the screenshot.
