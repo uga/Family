@@ -7532,6 +7532,14 @@ has not, with who can learn each; (3) both covering the guild bank and mail as w
 classes from one character, so class and armour type are settled; level is not, and the skill-list probe
 asks for it on a character under 40.
 
+**Open, asked by Alberto the same evening:** does *valid for the class* mean *that class learns the look
+by equipping it*? Only a mail item was read, and the call counted the plate classes valid for it. Whether
+a Paladin or Warrior collects a **cloth** look by wearing it is unmeasured. Two readings settle it, both on
+Eccebombo (Paladin): the probe with the Journeyman's Robe as the first uncollected look in the backpack
+(which classes the call names), then the robe equipped and taken off - whether *You haven't collected
+this appearance* leaves its tooltip. If the call is looser than the game, the list counts each class's
+own armour type only, and that needs the skill list or a rule, not this call.
+
 **Chosen by Alberto 2026-09-27, on the measured premise**: items anywhere in the family's possessions
 whose look the account has not collected, marked on the Possessions panel, with who can learn them.
 
