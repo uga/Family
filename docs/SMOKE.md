@@ -5,8 +5,9 @@ stubs the client, so it cannot know whether an API returns what it claims; the c
 settles textures and nothing else. This file is the only gate that runs against a real
 client, and it is run by a person because there is no other way to run it.
 
-**A full release does not go out until all three clients have a row** at the bottom of this
-file, against the version being cut. An alpha or a beta needs one row rather than three: a
+**A full release does not go out until every client has a row** at the bottom of this file,
+against the version being cut: Era, Anniversary and Mists, and **from 5.0.0 on Midnight too**
+(Alberto, 2026-09-28). An alpha or a beta needs one row rather than all of them: a
 pre-release only reaches the people who go looking for it, and holding one back until every
 client has been swept is how the build that would have found the bug stays on this machine.
 
@@ -50,7 +51,7 @@ only order in which a red result can still stop something.
 
 ## The pass
 
-Per client: **Era**, **Anniversary**, **Mists**.
+Per client: **Era**, **Anniversary**, **Mists**, and from 5.0.0 **Midnight**.
 
 ### Capabilities — the first thing to look at
 - [ ] `/family caps` runs and reports.
@@ -427,7 +428,7 @@ take these with it.
 | v4.4.0 | Era | 23/9/26 | Alberto | Pass |
 | v4.4.0 | Mists | 23/9/26 | Alberto | Pass |
 
-*Client* is `Era`, `Anniversary` or `Mists` — the three the `.toc` names. *Result* is `pass`, or what was not run and
+*Client* is `Era`, `Anniversary`, `Mists` or, from 5.0.0, `Midnight`. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say
 so. The version cell may carry the `v` or leave it off; `release.sh` reads either.
 
