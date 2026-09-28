@@ -1,0 +1,6 @@
+name: the professions panel lists a member with no skills, so gear alone opens a page
+file: addons/Family_UI/Professions.lua
+--- old
+		return meta.skills and next(meta.skills) and true or false
+--- new
+		return true

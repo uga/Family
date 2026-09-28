@@ -1,0 +1,6 @@
+name: a gear page names no reason for having no recipes
+file: addons/Family_UI/Professions.lua
+--- old
+				string.format(not Family:ProfessionMakes(chosen)
+--- new
+				string.format(false

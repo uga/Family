@@ -1,0 +1,6 @@
+name: a profession wearing gear and making nothing gets no button
+file: addons/Family_UI/Professions.lua
+--- old
+			elseif gearOf[id] then
+--- new
+			elseif false then

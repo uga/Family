@@ -4882,3 +4882,40 @@ CTRL should read the game's own sell price.
 **A bound levelled piece** (Alberto's screenshot, 2026-09-27, Mara's *Master's Leggings of the Fireflash*,
 item level 24, soulbound): Family's *Sell Price (each)* 15s 58c, the game's own - *seems correct*.
 Its lot under CTRL, the worth's bound lane, is not in the screenshot.
+
+## 136. Profession accessories on the Professions panel (2026-09-28)
+
+**Not on the whole-family gear grid.** Alberto, on the grid's screenshot: *that grid is a problem* -
+the list is 750 pixels wide, a Midnight row is 542 (the class picture and eighteen slots), and a
+member with every profession slot filled has eleven more (two primaries at three, Cooking two, Fishing
+three): 858, past the edge, and packed they break the grid's one rule, that a column is a slot. A
+second line under each member was turned down: *a second line of icons will make the grid way longer
+to read, especially when you have many alts*.
+
+**On the Professions panel, as Archaeology is.** Alberto: *the fact that we did this for archaeology is
+decisive*. A profession with slots recorded in `equipment.professions` gets a button whether or not it
+has recipes (`Family_UI/Professions.lua`, the loop that builds the bar), so Herbalism, Skinning and
+Fishing, which the bar left out as *nothing to make*, are back on Midnight with their gear as their
+page. The page opens with one row a slot in the game's order - the tool, then the accessories - the
+piece's name in its quality's colour and its item level, an empty slot said to be empty, the game's
+tooltip by the piece's link (which says *Tool* or *Accessory* itself), filtered by the box as a recipe
+is. A page with no recipes says why in the sentence the bar's footnote already uses - *nothing to
+make*, *opened, and listed nothing*, *never opened* - so no new sentence and no translator. The
+Classic clients record no profession gear, so their bar is unchanged.
+
+**All professions, not four.** Alberto, 2026-09-28: every Midnight profession has accessories -
+Blacksmithing, Tailoring, Engineering and the rest. §135's readings named four because they are the
+skinner's; nothing here lists professions: the slots are asked of each profession the character has.
+
+**Shared under Equipment, and no panel from it alone.** Alberto decided the pieces travel with the
+gear to the guild and the wide family. His worry, the same day: a friend who shared their equipment
+and not their professions must not get a professions page made of their tools. It cannot: the panel
+lists members by their recorded skills, and a sibling's skills travel only under the *Professions*
+grant (`Wide.lua`, the category's `meta`); guildmates are not on that panel at all (`UI:EveryMember`
+is our members and the wide family's). So the panel shows a sibling's tools only where both grants
+were given. Checks: a member with gear and no skills has no page; an Equipment-only offering carries
+no skills; the guild's and the sibling's offerings carry the pieces.
+
+Eleven checks, seven mutations. **Not yet seen in game.** Found on the way and not touched: the rows are
+pooled and the recipe rows do not clear an archaeology race's `toggleRace`, so a recipe drawn where a
+race heading was may open and shut a race when clicked.

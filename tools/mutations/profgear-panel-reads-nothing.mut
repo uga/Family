@@ -1,0 +1,6 @@
+name: the professions panel reads no gear from the record
+file: addons/Family_UI/Professions.lua
+--- old
+				gearOf[profession.line] = profession.slots
+--- new
+				gearOf[profession.line] = nil

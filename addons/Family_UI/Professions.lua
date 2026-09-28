@@ -939,7 +939,8 @@ local function build(frame)
 
 	local function row(index)
 		local existing = rows[index]
-		if existing then return existing end
+		-- A worn tool's link is set only by the rows that draw one, so it is taken off here.
+		if existing then existing.gearLink = nil return existing end
 
 		-- An ordinary button, and nothing protected anywhere beneath it.
 		--
@@ -1126,6 +1127,9 @@ local function build(frame)
 		-- Burning Crusade as on Era - reported from play with Lesser Magic Wand, whose row
 		-- showed the spell and so carried none of what Family says about the wand.
 		UI:AttachTooltip(r, function(self)
+			-- A profession's worn tool, as it really is: its link carries the level it was
+			-- raised to, and an id does not.
+			if self.gearLink then return "itemlink", self.gearLink, self.fallback end
 			local made = self.itemID or Family.Recipes:Product(self.spellID)
 			if made then return "item", made, self.fallback end
 			if self.spellID then return "spell", self.spellID, self.fallback end
@@ -1742,6 +1746,16 @@ local function build(frame)
 			end
 		end
 
+		-- **The profession tools and accessories** (Midnight, `docs/MIDNIGHT.md` §136), by the
+		-- profession they belong to, read from the gear record where the scanner puts them.
+		local equipment = payload.equipment or {}
+		local gearOf = {}
+		for _, profession in ipairs(equipment.professions or {}) do
+			if profession.line and #(profession.slots or {}) > 0 then
+				gearOf[profession.line] = profession.slots
+			end
+		end
+
 		-- Only the professions there is something to look at.
 		--
 		-- Herbalism, skinning and fishing make nothing, and a button leading to an empty list
@@ -1797,6 +1811,11 @@ local function build(frame)
 				-- projects, and the artifacts solved, drawn where recipes would be.
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif record and record.recipes and #record.recipes > 0 then
+				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
+			elseif gearOf[id] then
+				-- **A profession with tools and accessories has a page for them**, recipes
+				-- or none, as Archaeology has (Alberto 2026-09-28: *the fact that we did
+				-- this for archaeology is decisive*). Herbalism's page is its gear.
 				ordered[#ordered + 1] = { name = name, id = id, skill = skill }
 			elseif skill.rank and not Family:ProfessionMakes(id) then
 				-- **The ones with nothing to open.** Herbalism, skinning, fishing
@@ -2089,7 +2108,7 @@ local function build(frame)
 			return
 		end
 
-		-- Whatever is chosen has recipes: that is what got it a button in the first place.
+		-- Whatever is chosen has recipes or a profession's gear: that is what got it a button.
 		local skill = skills[chosen]
 		local record = stored[chosen] or {}
 		local recipes = record.recipes or {}
@@ -2143,10 +2162,21 @@ local function build(frame)
 			end
 		end
 
-		status:SetText(string.format(L["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s"
-			.. "   |cff888888|||r   seen %s"],
-			shownProfession, rankText(skill) or "", #recipes,
-			table.concat(pieces, "  "), UI:Ago(record.recipesSeen)))
+		-- A page that is only gear says why there are no recipes under it, in the sentence the
+		-- line under the bar uses for a profession it leaves out.
+		if #recipes == 0 then
+			status:SetText(string.format("|cff9d9d9d%s|r   |cff888888|||r   %s",
+				string.format(not Family:ProfessionMakes(chosen)
+					and L["%s: nothing to make, so nothing to list"]
+					or record.recipes and L["%s opened, and listed nothing"]
+					or L["%s never opened"], shownProfession),
+				rankText(skill) or ""))
+		else
+			status:SetText(string.format(L["|cffffd700%s|r %s   |cff888888|||r   %d recipes  %s"
+				.. "   |cff888888|||r   seen %s"],
+				shownProfession, rankText(skill) or "", #recipes,
+				table.concat(pieces, "  "), UI:Ago(record.recipesSeen)))
+		end
 
 		local used, y = 0, 0
 		list:SetWidth(UI:ListWidth(scroll))
@@ -2164,6 +2194,42 @@ local function build(frame)
 			h:Show()
 			headed[#headed + 1] = entry.text
 			y = y + ROW
+		end
+
+		-- **Its tools and accessories first**, one row a slot in the game's order - the tool,
+		-- then the accessories - and an empty slot said to be one. Which is which is the game's
+		-- own tooltip's to say. The box filters them by the name on the row, as it does a recipe.
+		local worn = equipment.worn or {}
+		for _, slot in ipairs(gearOf[chosen] or {}) do
+			local item = worn[slot]
+			local name = item and Family.Names:Item(item.id, "professions", function()
+				if frame:IsShown() then frame:Refresh() end
+			end)
+			if needle == "" or (name and name:lower():find(needle, 1, true)) then
+				used = used + 1
+				local r = row(used)
+				r:SetPoint("TOPLEFT", 0, -y)
+				r:SetPoint("TOPRIGHT", 0, -y)
+				r:Show()
+				y = y + ROW
+
+				local quality = item and select(3, Family:ItemInfo(item.id))
+				local colour = quality and _G.ITEM_QUALITY_COLORS
+					and _G.ITEM_QUALITY_COLORS[quality]
+				r.text:SetText(item and ((colour and colour.hex or "|cffdddddd") .. name .. "|r")
+					or L["|cff9d9d9dempty|r"])
+				r.note:SetText(item and item.itemLevel
+					and string.format("|cffffd700%d|r", item.itemLevel) or "")
+				showMaterials(r, {})
+				r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - ROW - 20
+					- MATERIAL_INSET_BARE - NOTE_ROOM - NOTE_GAP))
+				r.spellID, r.itemID, r.gearLink = nil, item and item.id, item and item.item
+				r.memberKey, r.profession, r.recipeName = nil, nil, nil
+				r.waiting:SetShown(false)
+				r.canOpen, r.announce, r.toggleRace, r.expandKey = false, nil, nil, nil
+				r.fallback = { { name or L["|cff9d9d9dempty|r"] } }
+				r.icon:SetTexture(item and Family:ItemIcon(item.id) or nil)
+			end
 		end
 
 		for _, recipe in ipairs(shown) do

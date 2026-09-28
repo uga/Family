@@ -14611,6 +14611,112 @@ do
 	check("a profession's name is level with its slots, and the next row a slot and a gap below",
 		top(skinSlot) and top(skinSlot) == top(skinName) and top(cookSlot) == top(skinSlot) - 36,
 		tostring(top(skinSlot)) .. " / " .. tostring(top(skinName)) .. " / " .. tostring(top(cookSlot)))
+
+	-- **And on the Professions panel** (`docs/MIDNIGHT.md` §136): a profession wearing gear has a
+	-- button and a page, recipes or none, as Archaeology has - Skinning makes nothing, and Cooking
+	-- was never opened here.
+	local heldSkills = (Family.Database:Meta(me) or {}).skills
+	local skills = {}
+	for k, v in pairs(heldSkills or {}) do skills[k] = v end
+	skills[393] = { rank = 100, maxRank = 100 }
+	skills[185] = { rank = 100, maxRank = 100, secondary = true }
+	Family.Database:SetMeta(me, { skills = skills })
+	ITEM_NAMES[4024] = "Durable Pack"
+	Family.UI:ShowTab("professions")
+	local wasShowing = Family.UI.__professionsShowing
+	local function professionButton(word)
+		for _, f in ipairs(frames) do
+			if f.__shown ~= false and type(f.__text) == "string" and f.__text:find(word, 1, true)
+				and f.__scripts.PostClick then return f end
+		end
+	end
+	Family.UI:ShowProfessionFor(me, 393)
+	Family.UI:Refresh()
+	local skinButton, cookButton = professionButton("Skinning"), professionButton("Cooking")
+	check("the Professions panel offers Skinning and Cooking for the gear they wear",
+		skinButton ~= nil and cookButton ~= nil)
+	if skinButton then skinButton.__scripts.PostClick(skinButton) end
+	Family.UI:Refresh()
+	check("Skinning's page is its tool and accessories, and says it has nothing to make",
+		visibleText("Item #4023") and visibleText("Durable Pack") and visibleText("Item #4025")
+			and visibleText("Skinning: nothing to make"))
+	local packRow, toolRow
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.__familyTooltip and type(f.text) == "table" then
+			if tostring(f.text.__text):find("Durable Pack", 1, true) then packRow = f end
+			if tostring(f.text.__text):find("Item #4023", 1, true) then toolRow = f end
+		end
+	end
+	check("the tool first, in the game's order",
+		top(toolRow) and top(packRow) and top(toolRow) > top(packRow),
+		tostring(top(toolRow)) .. " / " .. tostring(top(packRow)))
+	local kind, what
+	if packRow then kind, what = packRow.__familyTooltip(packRow) end
+	check("and a worn piece describes itself by its link",
+		kind == "itemlink" and what == "item:4024:0:0:0:0:0:0:0:60", tostring(kind) .. " " .. tostring(what))
+	_G.FamilyProfessionsSearch:SetText("durable")
+	Family.UI:Refresh()
+	check("the box keeps the pieces whose name it finds and drops the others",
+		visibleText("Durable Pack") and not visibleText("Item #4023"))
+	_G.FamilyProfessionsSearch:SetText("")
+	if cookButton then cookButton.__scripts.PostClick(cookButton) end
+	Family.UI:Refresh()
+	check("Cooking's page says it was never opened",
+		visibleText("Cooking never opened") and visibleText("Item #4026"))
+	-- A recipe drawn in the row a piece of gear had is asked about by what it makes, not by the
+	-- piece's link: rows are pooled, and Skinning's third row is Cooking's first recipe.
+	local stored = Family.Database:Payload(me) or {}
+	local heldProfessions = stored.professions
+	stored.professions = { [185] = { recipes = { { name = "Spiced Bread", itemID = 4541 } },
+		recipesSeen = time() } }
+	Family.Database:SetPayload(me, stored, { "professions" })
+	if skinButton then skinButton.__scripts.PostClick(skinButton) end
+	Family.UI:Refresh()
+	if cookButton then cookButton.__scripts.PostClick(cookButton) end
+	Family.UI:Refresh()
+	local breadKind
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and f.__familyTooltip and type(f.text) == "table"
+			and tostring(f.text.__text):find("Spiced Bread", 1, true) then
+			breadKind = f.__familyTooltip(f)
+		end
+	end
+	check("and a recipe drawn where a worn piece was describes what it makes",
+		breadKind == "item", tostring(breadKind))
+	stored.professions = heldProfessions
+	Family.Database:SetPayload(me, stored, { "professions" })
+	Family.Database:SetMeta(me, { skills = heldSkills or Family.CLEAR })
+	-- **Gear alone opens no professions page** (Alberto, 2026-09-28: a friend who shared their
+	-- equipment and not their professions must not get a professions panel for their tools).
+	-- The panel lists members by their skills, and skills travel under Professions only.
+	Family.Database:SetMeta(me, { skills = Family.CLEAR })
+	check("a member with profession gear and no skills recorded has no professions page",
+		Family.UI:ShowProfessionFor(me, 393) == false)
+	Family.Database:SetMeta(me, { skills = heldSkills or Family.CLEAR })
+	if wasShowing then
+		Family.UI:ShowProfessionFor(wasShowing)
+	else
+		for _, f in ipairs(frames) do
+			if f.__name == "FamilyProfessionsEveryone" then f.__scripts.OnClick(f) end
+		end
+	end
+	-- Back on the gear page the checks after this one read.
+	Family.UI:ShowTab("character")
+	Family.UI:Refresh()
+
+	-- **Shared under Equipment**, to a sibling and to the guild (Alberto, 2026-09-28).
+	local heldWide = FamilyDB.wide
+	FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+		links = { gearfam = { name = "Gear", grants = { [me] = { equipment = true } },
+			siblings = {}, members = {} } } }
+	local sent = Family.Wide:Offering(FamilyDB.wide.links.gearfam)[me]
+	local sentGear = sent and sent.payload and sent.payload.equipment
+	check("a sibling granted Equipment is sent the profession gear",
+		sentGear and sentGear.professions and sentGear.professions[1].line == 393
+			and sentGear.worn[24] and sentGear.worn[24].id == 4024)
+	check("and no skills with it, so no professions page for them on the other side",
+		sent and sent.meta and sent.meta.skills == nil)
+	FamilyDB.wide = heldWide
 	caps.professionGear = nil
 	Family.Character:Scan()
 	gear = (Family.Database:Payload(me) or {}).equipment or {}
@@ -22007,7 +22113,9 @@ print("guild share")
 		{ guild = guildName, realm = "Fire Maw" })
 	Family.Database:SetPayload(Family:CurrentMember(), {
 		bags = { [0] = { size = 16, free = 14 } },
-		equipment = { itemLevel = 70.5, counted = 17, worn = { [1] = { id = 6948 } } },
+		equipment = { itemLevel = 70.5, counted = 17, worn = { [1] = { id = 6948 },
+			[24] = { id = 193480, profession = 393 } },
+			professions = { { line = 393, slots = { 23, 24, 25 } } } },
 		talents = { activeGroup = 1, groupCount = 2, system = "trees", groups = {} },
 	})
 
@@ -22016,6 +22124,10 @@ print("guild share")
 	check("and what it would send is our own characters in that guild", mine ~= nil)
 	check("carrying gear and talents", mine and mine.equipment ~= nil
 		and mine.talents ~= nil)
+	-- Profession tools and accessories go with the gear (Alberto, 2026-09-28).
+	check("and the gear carries the profession tools and accessories",
+		mine and mine.equipment and mine.equipment.worn[24]
+			and mine.equipment.professions and mine.equipment.professions[1].line == 393)
 	check("and nothing else - not bags, not mail, not money",
 		mine and mine.bags == nil and mine.mail == nil and mine.meta.money == nil)
 

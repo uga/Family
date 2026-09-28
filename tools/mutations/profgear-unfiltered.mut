@@ -1,0 +1,6 @@
+name: the search box does not filter a profession's gear
+file: addons/Family_UI/Professions.lua
+--- old
+			if needle == "" or (name and name:lower():find(needle, 1, true)) then
+--- new
+			if true then
