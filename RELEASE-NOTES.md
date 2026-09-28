@@ -1,105 +1,97 @@
-## 4.4.0 — 2026-09-23
+## 5.0.0 — 2026-09-28
 
-### Herbs and ore in the world
+**Family now runs on World of Warcraft: Midnight**, beside Classic Era, Burning Crusade Anniversary
+and Mists of Pandaria - one download for all four.
 
-- **Hovering a herb or a mining vein in the world says who in your family already has some.**
-  Point at a Silverleaf or an Iron Deposit out in the open and the game's own tooltip gains the
-  possessions block, the same one that herb or that ore gets in your bags. It answers **none**
-  when nobody has any, which is usually the answer you wanted. A vein's block names the ore, so
-  you can see at a glance that twenty under a Copper Vein means twenty Copper Ore.
-- **It works whatever language you play in**, because every word it matches is one your own
-  client gave it. A vein it cannot place with confidence stays quiet instead of naming the wrong
-  metal. Thorium and khorium veins are told apart, which took a second look: their names share
-  seven letters and each was silencing the other on Burning Crusade and on Mists.
-- **You do not need the profession to get the answer.** A character who cannot mine an Iron
-  Deposit, or whose mining is too low for it, still sees who in the family is holding iron ore -
-  which is usually the character asking.
-- **And the dots on your maps answer too** - the minimap and the world map both, including the
-  ones GatherMate and Gatherer draw from where they remember nodes being. A zone's own label is
-  left alone. A cursor covering several different nodes answers about each of them, one block per herb or ore, however many pins are
-  stacked up. Herbs on a GatherMate pin answer too, which they did not at first - that addon
-  writes its names in colour, and Family was reading the colour as part of the name.
+### Midnight
 
-### Professions
+- **Your banks by the names you gave their tabs**: the character bank's tabs and the Warband
+  bank's are listed under their own names, and the Warband bank is recorded like any other.
+- **Profession tools and accessories are recorded.** Each character's gear page shows them a row
+  per profession, and the **Professions** panel shows them as a strip at the top of that
+  profession's page - which gives Skinning, Herbalism and Fishing a page of their own. They are
+  shared with your guild and a linked family under *Equipment*.
+- **Items that scale with level are described and priced as the copy you hold**: *of the
+  Fireflash* and its real item level, not the base item's, and its sell price and your family's
+  worth by that copy's own price.
+- **Who can learn a look follows Midnight's rule**: anybody who can wear that armour type or a
+  heavier one, once at the item's level. A look you already have from another item counts as
+  known.
+- **Archaeology, reputations and the guild bank work as on the other clients**, including the
+  *Inactive* reputations, which Midnight sets per character.
+- **A profession button opens that profession's window**, and a skinner's recipes can be shared
+  with the guild, since Skinning makes things on Midnight.
+- **Skyriding or steady flight** is shown on the summary and shared with a linked family under
+  *Character*.
 
-- **A profession's recipe list can no longer be wiped by opening its window.** Family sometimes read
-  the window before the game had finished filling it, and saved the one recipe, or none, that it saw
-  at that moment - a cook with seventy-five recipes was recorded with one. Now a list that would
-  shrink by more than half is read again a moment later and saved only if the second look agrees.
+### Errors
 
-### Instance lockouts
+- **Family no longer stops with *script ran too long* when a lot happens at once**, such as a boss
+  dying with the whole pack looted. The work Family does after an event now runs a little at a
+  time, the longest-waiting first, instead of all in the same moment. On Mists this showed as
+  *error in deferred character*.
 
-- **Family now records which instances each character is saved to, and when each lock resets.**
-  They are on the summary's **Cooldowns** page, which is the old Crafting page. Crafting cooldowns
-  come first, as before, then instance lockouts: each raid or dungeon once, with the characters
-  saved to it underneath, their lock number, and how long until it resets. Only locks still
-  running are listed, and when nobody is saved anywhere the section says so. Before, Family said
-  it did not record lockouts at all.
-- **A lockout is read when that character logs in**, and again after a boss dies. A character you
-  have not logged in since they were saved is not listed.
-- **Lockouts can be shared with a linked family**, in a category of their own. They are not sent
-  unless you tick it.
+### Sharing with a linked family
 
-### Quests already handed in
+- **Five sharing categories instead of thirteen**: *Possessions* (with auctions, money and
+  currencies), *Equipment*, *Professions*, *Mail* and *Character* (with talents, quests,
+  reputations, world buffs and raid lockouts). A category you already shared stays ticked only if
+  you had ticked everything it now includes, so nothing new is shared without asking. Some boxes
+  may need ticking again. Shared characters now also show their profession specialisation and
+  what they have in the post.
 
-- **Hovering a quest in Family's quest lists now says which of your characters have already handed
-  it in**, or that nobody in the family has yet. Useful when a chain, an attunement or a reputation
-  grind comes up and you need to know who can still do it. Before, Family only knew what was in each
-  quest log.
-- Each character's history is read when they log in and after every quest they hand in, so a
-  character you have not logged in since this update has not been read yet.
+### Archaeology
+
+- **Family now records Archaeology on Mists of Pandaria**: each race's fragments, the project in
+  progress, and every artifact solved, with when it was first solved and how many times. It is
+  read when the character logs in and whenever fragments or projects change, without the
+  Archaeology window being opened. On the **Professions** panel, Archaeology has a button of its
+  own: a line per race with the project in progress under it; click a race to open the artifacts
+  it has solved. The summary still shows
+  its rank alone. It is shared with a linked family under *Professions*. Before, Family knew only
+  the rank.
+
+### Reputations
+
+- **Reputations are listed the way the game lists them**: under the game's own headings, in the
+  game's order, with a second level of headings on Mists of Pandaria. Every heading starts closed;
+  click one to open it. Typing in the filter opens whatever matches. Before, headings were sorted
+  alphabetically and every faction was always shown.
+- **An inactive faction is filed where it belongs on the whole-family page.** A character's own
+  page keeps the game's *Inactive* heading. On the whole-family page the faction sits under its
+  real heading, and the characters who set it inactive have *inactive* written before their
+  standing. Before, it could be listed under *Inactive* for everybody.
+
+### Possessions
+
+- **Every guild bank tab is recorded, with its name, including the empty ones.** A tab you have
+  not opened yet is shown as *not opened yet*, and one you opened empty says *empty*. A tab read
+  on an earlier visit keeps what it held until you open it again. Before, only the tabs holding
+  something were recorded, and a visit that did not load a tab forgot what it had held.
+- **Who in the family can learn a look, on Mists.** An item whose look your account has not
+  collected now says on its tooltip which of your characters could learn it - the right class,
+  wearing that armour type as their own, and high enough level - or that none of them can.
+  Items that bind on pickup are left out, since nobody else can receive them. Below the names, in
+  grey, who could learn it once they reach the item's level, and who has to log in once before
+  Family knows what they wear.
+- **Looks to learn and looks known, on Mists.** Two switches beside the Possessions search pick out
+  the items whose look your account has not collected yet, and those whose look it already has and
+  can be sold without losing it. On one character they dim everything else; with *Whole family* they
+  list every such item across bags, banks, mail and guild banks, with nothing typed.
+- **A guild bank tab is drawn at its full size**, with its free slots counted like a bag's. Before,
+  it stopped at the last item in it and looked like a much smaller tab.
+- **CTRL-ALT and a click on an item in a Possessions block now opens the family's list of it**, as
+  its tooltip says. It did nothing on Family's own blocks; it worked only on the game's bags and
+  links.
+
+### Item tooltips
+
+- **On an item that is bound to you, the Auction line says *(unbound)*.** The auction price is
+  still shown, but it is what an unbound copy sells for, not what yours is worth: a bound item is
+  valued at the vendor price. Works in your bags, your bank and your worn gear.
 
 ### The summary
 
-- **Hold CTRL and click a character's name on the summary to open their possessions, or ALT to
-  open their professions.** Every summary list, your own characters and a linked family's alike.
-  A character who has never opened a profession window says so in chat instead of opening the
-  professions page on somebody else. Hovering a name says both, in grey, at the foot of its
-  tooltip.
-- **Hovering a character's name on the summary now says where they logged out**, just under the
-  name.
-- **The worth lines say what they count**: *712 items priced at auction prices*. They used to say
-  *712 at auction prices*, which left the reader to guess. The same on an item's tooltip.
-- **Realm headings on the summary show their whole name again.** They had been cut short, as in
-  *Pyrewood Village...*.
-- **Rested experience keeps growing while a character is away.** The summary's column is now
-  *Rest XP est.*: the figure recorded at logout, plus 5% of a level for every 8 hours away where
-  the character was resting, or every 32 hours anywhere else, up to a level and a half.
-  Pandaren fill twice as fast, up to three levels. The page's note says so. Before, the column
-  showed the figure from the day the character was put away. A character not logged in since
-  this update shows its old figure until its next login.
-- **A currency's heading on the summary shows its whole name when you hover it**, where the
-  heading had to be cut to fit, as in *Darkmoon Pri...*.
-- **An instance lockout's name and difficulty fit on the Cooldowns page**:
-  *Hellfire Citadel: Ramparts  Heroic* used to be cut to *Hellfire Citadel: Rampa...*.
-- **The summary's Last seen column gives the age alone**: *15d*, *3h*, *yesterday*, and *shared
-  15d* for a linked family's character. It used to add *ago*, and *shared 15d ago* did not fit.
-- **The Cooldowns page has one line of headings per section**: *Crafting cooldowns*, *Member*,
-  *Ready*, and *Instance lockouts*, *Member*, *Resets in*. The line above them used to repeat
-  *Cooldown*, *Member*, *Ready*.
-
-### Achievements
-
-- **Family no longer breaks off with *script ran too long* while you are fighting.** On Mists of
-  Pandaria it read all four thousand of your achievements again every couple of seconds during a
-  raid, which is far more than the game lets an addon do at once. They are now read a little at a
-  time, shortly after you arrive in the world and whenever you earn one. Progress on a
-  half-finished achievement now refreshes at each loading screen instead of every few seconds,
-  and nothing you can see on the Achievements page has changed.
-
-### Typing to Family
-
-- **`/family widetime` says what changed** for each character it lists as changed since it was
-  last sent to a linked family: *Malachia (bags, zone)*, or *not known* where Family did not keep
-  what it sent. Before, it gave only the name.
-- **`/family scancost` says which part of reading your character costs what**, a part at a time.
-  For when Family is slow, or stops with an error while you play.
-
-### Currencies
-
-- **Honor on Burning Crusade is recognised by the game's own number for it, not by its name.**
-  A family whose characters are played on clients of different languages now sees one honor
-  column that adds up, where before an English client and a French one made two columns that
-  each held half the family. Characters read before this change, and not logged in since, are
-  counted in the same honor column as everybody else. They used to get a second *Honor Points*
-  column of their own.
+- **Hovering a line on the Cooldowns page describes that line's character.** After looking at
+  the Miscellaneous page, a crafting cooldown or lockout line could show another character's
+  tooltip, or none.

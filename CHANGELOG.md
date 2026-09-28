@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 5.0.0 — 2026-09-28
+
 **Family now runs on World of Warcraft: Midnight**, beside Classic Era, Burning Crusade Anniversary
 and Mists of Pandaria - one download for all four.
 
