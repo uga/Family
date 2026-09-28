@@ -4943,3 +4943,8 @@ pretend Midnight and finds no ranged slot, and a mutation takes the filter off.
 search does work on accessories, that closes the case*). Worn profession gear is counted by the index
 like any worn piece, so searching the family's possessions names who wears it; the Professions panel's
 whole-family search stays about recipes.
+
+**Out of the Possessions worn row** (Alberto's screenshot, 2026-09-28, Mara: the *Durable Pack* drawn at the
+end of the *equipped* row - *it shouldn't*). The row is built from every worn slot, and profession gear is
+recorded as worn. It now leaves out any piece carrying its `profession`; the index is untouched, so the
+Possessions search still names who wears one, as seen the same day. One check, one mutation.

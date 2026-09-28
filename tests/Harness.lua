@@ -14612,6 +14612,23 @@ do
 		top(skinSlot) and top(skinSlot) == top(skinName) and top(cookSlot) == top(skinSlot) - 36,
 		tostring(top(skinSlot)) .. " / " .. tostring(top(skinName)) .. " / " .. tostring(top(cookSlot)))
 
+	-- **Not in the Possessions page's worn row** (Alberto 2026-09-28, on the pack drawn at its
+	-- end: *it shouldn't*); the index still counts it, so the family's search finds it.
+	Family.UI:Show()
+	Family.UI:ShowContentsFor(me)
+	local wornBlock, packDrawn
+	for _, f in ipairs(frames) do
+		if f.__shown ~= false and type(rawget(f, "block")) == "table" and f.block.where == "equipped" then
+			wornBlock = f.block
+			if f.itemID == 4024 then packDrawn = true end
+		end
+	end
+	local body = 0
+	for _, item in pairs(gear.worn or {}) do if not item.profession then body = body + 1 end end
+	check("the Possessions worn row leaves the profession tools and accessories out",
+		wornBlock and wornBlock.size == body and not packDrawn,
+		tostring(wornBlock and wornBlock.size) .. " / " .. tostring(body))
+
 	-- **And on the Professions panel** (`docs/MIDNIGHT.md` §136): a profession wearing gear has a
 	-- button and a page, recipes or none, as Archaeology has - Skinning makes nothing, and Cooking
 	-- was never opened here.

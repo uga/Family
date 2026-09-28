@@ -1,0 +1,6 @@
+name: the Possessions worn row draws the profession tools and accessories
+file: addons/Family_UI/Contents.lua
+--- old
+			if not item.profession then order[#order + 1] = slot end
+--- new
+			if item then order[#order + 1] = slot end

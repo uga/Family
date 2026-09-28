@@ -178,7 +178,12 @@ local function containersOf(payload, meta)
 	if payload and payload.equipment then
 		local worn = payload.equipment.worn or {}
 		local order, slots = {}, {}
-		for slot in pairs(worn) do order[#order + 1] = slot end
+		-- **Not the profession tools and accessories** (Midnight, `docs/MIDNIGHT.md` §136): Alberto,
+		-- on the pack drawn at the end of this row, *it shouldn't*. They have their strip on the
+		-- Professions panel; the family's search still finds them, which reads the index.
+		for slot, item in pairs(worn) do
+			if not item.profession then order[#order + 1] = slot end
+		end
 		table.sort(order)
 
 		for index, slot in ipairs(order) do
