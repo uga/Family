@@ -1,0 +1,6 @@
+name: the grant fold runs on every load and takes back ticks given since
+file: addons/Family/Wide.lua
+--- old
+    if wide.grantsFolded then return end
+--- new
+    if false then return end

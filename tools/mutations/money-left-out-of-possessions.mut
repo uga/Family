@@ -1,0 +1,6 @@
+name: the money is not shared under possessions
+file: addons/Family/Wide.lua
+--- old
+               "auctionsSeen", "money", "currencies", "currenciesSeen" },
+--- new
+               "auctionsSeen", "currencies", "currenciesSeen" },

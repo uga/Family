@@ -1,6 +1,6 @@
-name: there is no lockouts category to grant
+name: raid locks are not shared under character
 file: addons/Family/Wide.lua
 --- old
-    { id = "lockouts",    label = L["Lockouts"],    meta = { "lockouts", "lockoutsSeen" } },
+               "boons", "banked", "lockouts", "lockoutsSeen" },
 --- new
-
+               "boons", "banked" },

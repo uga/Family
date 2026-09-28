@@ -1,0 +1,6 @@
+name: the time played at a level counts as a change worth sending
+file: addons/Family/Wide.lua
+--- old
+    return field == "lastSeen" or field == "played" or field == "playedAtLevel"
+--- new
+    return field == "lastSeen" or field == "played" or field == "never"

@@ -1,0 +1,6 @@
+name: a folded category is ticked where any one of its old ones was
+file: addons/Family/Wide.lua
+--- old
+                    if not old[id] then all = false end
+--- new
+                    if false then all = false end

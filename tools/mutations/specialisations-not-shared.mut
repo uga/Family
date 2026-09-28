@@ -1,6 +1,6 @@
-name: archaeology does not cross a link under professions
+name: the crafter's branch is not shared under professions
 file: addons/Family/Wide.lua
 --- old
                "archaeology", "archaeologySeen", "specialisations" },
 --- new
-               "specialisations" },
+               "archaeology", "archaeologySeen" },

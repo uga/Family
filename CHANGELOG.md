@@ -36,6 +36,15 @@ is a decision rather than an afternoon of archaeology.
   time, the longest-waiting first, instead of all in the same moment. On Mists this showed as
   *error in deferred character*.
 
+### Sharing with a linked family
+
+- **Five sharing categories instead of thirteen**: *Possessions* (with auctions, money and
+  currencies), *Equipment*, *Professions*, *Mail* and *Character* (with talents, quests,
+  reputations, world buffs and raid lockouts). A category you already shared stays ticked only if
+  you had ticked everything it now includes, so nothing new is shared without asking. Some boxes
+  may need ticking again. Shared characters now also show their profession specialisation and
+  what they have in the post.
+
 ### Archaeology
 
 - **Family now records Archaeology on Mists of Pandaria**: each race's fragments, the project in

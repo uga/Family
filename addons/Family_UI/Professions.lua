@@ -817,7 +817,13 @@ local function build(frame)
 
 	local function row(index)
 		local existing = rows[index]
-		if existing then return existing end
+		if existing then
+			-- The one mark the archaeology page leaves that the recipe rows do not set
+			-- themselves: left on, a recipe drawn in a row that was a race heading opened a
+			-- race when clicked. The race heading sets it again after this.
+			existing.toggleRace = nil
+			return existing
+		end
 
 		-- An ordinary button, and nothing protected anywhere beneath it.
 		--

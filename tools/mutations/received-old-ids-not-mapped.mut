@@ -1,0 +1,6 @@
+name: an old category heard from an older Family is not read as the new one
+file: addons/Family/Wide.lua
+--- old
+                if told[id] then told[category.id] = true end
+--- new
+                if false then told[category.id] = true end
