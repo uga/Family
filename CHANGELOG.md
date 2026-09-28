@@ -29,6 +29,30 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+**Family now runs on World of Warcraft: Midnight**, beside Classic Era, Burning Crusade Anniversary
+and Mists of Pandaria - one download for all four.
+
+### Midnight
+
+- **Your banks by the names you gave their tabs**: the character bank's tabs and the Warband
+  bank's are listed under their own names, and the Warband bank is recorded like any other.
+- **Profession tools and accessories are recorded.** Each character's gear page shows them a row
+  per profession, and the **Professions** panel shows them as a strip at the top of that
+  profession's page - which gives Skinning, Herbalism and Fishing a page of their own. They are
+  shared with your guild and a linked family under *Equipment*.
+- **Items that scale with level are described and priced as the copy you hold**: *of the
+  Fireflash* and its real item level, not the base item's, and its sell price and your family's
+  worth by that copy's own price.
+- **Who can learn a look follows Midnight's rule**: anybody who can wear that armour type or a
+  heavier one, once at the item's level. A look you already have from another item counts as
+  known.
+- **Archaeology, reputations and the guild bank work as on the other clients**, including the
+  *Inactive* reputations, which Midnight sets per character.
+- **A profession button opens that profession's window**, and a skinner's recipes can be shared
+  with the guild, since Skinning makes things on Midnight.
+- **Skyriding or steady flight** is shown on the summary and shared with a linked family under
+  *Character*.
+
 ### Errors
 
 - **Family no longer stops with *script ran too long* when a lot happens at once**, such as a boss

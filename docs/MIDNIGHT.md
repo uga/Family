@@ -5030,3 +5030,22 @@ four mutations. A slot is right once its character has scanned again - logging t
 it. **Not yet seen.** Not changed: the name Family lists by and the Possessions search go by the id, so
 *Fireflash* finds nothing and two suffixes of one item count as one; that is `main`'s variant rule
 (backlog 67), which knows the suffix field and not the bonus ids.
+
+## 140. Toward 5.0.0 (2026-09-28)
+
+Alberto's decision: `midnight` merged into `main`, then `5.0.0-beta.1` and 5.0.0 from `main`, with
+`main`'s pending 4.x work inside it (`docs/DECISIONS.md`, 2026-09-28).
+
+**The Classic pretend clients, compared with `main`'s harness** (`git diff main...midnight`): 19 of
+`main`'s lines altered, everything else added. Two touch a stub and neither changes what an existing
+call gets: `hooksecurefunc` also takes the game's table form (§103), the global form as before; one
+section's own item stub answers one more id, 21007. The rest are checks - the bag checks guarded down to
+the slot, and the node and auction checks rewritten for behaviour this branch changed on purpose (§103,
+§88). No Classic client's build or surface is altered.
+
+**The release notes**: the Midnight section written under *Unreleased* in `CHANGELOG.md`, from §§130-139.
+Until now this branch wrote none, and *Unreleased* held only `main`'s 4.x entries.
+
+**Still before the merge**: a Midnight row in `docs/SMOKE.md` (Alberto's to play); the Leggings fix
+(§139) and Skinning on the guild grid (§138) seen; `tools/release.sh` asking a full release for a
+Midnight row, which is `main`'s and sent to DEV; `main`'s commits pushed.
