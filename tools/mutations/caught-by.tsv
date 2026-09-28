@@ -1,18 +1,38 @@
 # case	the check that caught it	the section that check is in
 # Written by a full run of tools/mutate.py, at the end. Do not edit by hand.
+tools/mutations/a-category-is-asked-every-time.mut	and the heading it sits under, asked once per category	professions on the fourth pretend client
 tools/mutations/a-changed-case-file-is-not-a-changed-case.mut	a changed case file is a changed case, whatever its file: has done	the gate run by the mutator
 tools/mutations/a-changed-member-is-called-never-sent.mut	a member sent and changed since is counted as changed, by name	wide family
+tools/mutations/a-client-that-can-read-no-pet-rewrites-the-record.mut	and a scan leaves the hunter's pets exactly where they were	pets on the fourth pretend client
+tools/mutations/a-client-that-cannot-read-skills-writes-an-empty-summary.mut	and the summary's skills, read from another client last week, are left alone	professions on the fourth pretend client
+tools/mutations/a-client-with-no-book-is-never-asked-for-materials.mut	with no book shipped for this client, a recipe's materials are asked of the client	recipe materials on the fourth pretend client
+tools/mutations/a-client-with-no-spellbook-clears-the-specialisations.mut	while a spellbook that cannot be read leaves what was known alone	the branch a profession was taken down
+tools/mutations/a-client-without-the-old-quest-call-is-walked-anyway.mut	a quest scan on a client with no count at all stores no payload	the quest log on the fourth pretend client
+tools/mutations/a-currency-list-header-is-a-currency.mut	the modern list answers where the loose calls are gone, a shut heading's currency among them	the currency list Midnight is the first client to answer
 tools/mutations/a-currency-row-carries-no-id.mut	the id is taken from the row where the client links to no currency at all	currencies
 tools/mutations/a-currency-row-outranks-its-link.mut	with the id taken out of the link rather than the name kept	currencies
+tools/mutations/a-disagreement-on-an-unknown-client-is-dropped.mut	a client with no column still has a row whose symbol is there named	loading Family_UI
+tools/mutations/a-faction-count-of-nought-is-read-as-a-silence.mut	where both counts answer, the old one is read and the newer one is not asked	reputations on the fourth pretend client
+tools/mutations/a-faction-list-is-never-counted-the-newer-way.mut	the faction list is read through C_Reputation where the old count is absent	reputations on the fourth pretend client
+tools/mutations/a-gathering-technique-is-dropped-from-the-list.mut	a recipe read on Midnight is named from the base profession	professions on the fourth pretend client
 tools/mutations/a-harness-change-takes-nothing-with-it.mut	and an unknown case, or one filed under a section since renamed, runs anyway	the gate run by the mutator
+tools/mutations/a-heading-click-does-nothing.mut	a click on a line's heading opens it, its recipes under it	what a recipe is made of, beside the recipe
 tools/mutations/a-heading-is-any-print-at-all.mut	and the harness's own headings say which section that check is in	the gate run by the mutator
+tools/mutations/a-heading-rank-is-not-drawn.mut	and an open line opens with its name and rank, a category with its name	what a recipe is made of, beside the recipe
+tools/mutations/a-heading-rank-is-not-kept.mut	and its heading keeps the rank of its own	professions on the fourth pretend client
+tools/mutations/a-heading-with-a-standing-is-read-as-a-heading.mut	the faction list is read through C_Reputation where the old count is absent	reputations on the fourth pretend client
+tools/mutations/a-hidden-quest-row-is-recorded.mut	the log is read through C_QuestLog where the old count is absent	the quest log on the fourth pretend client
 tools/mutations/a-hung-gate-counts-as-caught.mut	a case whose gate never answers is reported hung and not caught, and its file restored	the gate run by the mutator
 tools/mutations/a-junk-section-is-kept-for-ever.mut	and a junk section written before is dropped, not left to sit there	the gate run by the mutator
 tools/mutations/a-killed-run-jams-its-tree-shut.mut	and a run killed before it could tidy up does not jam that tree shut	the gate run by the mutator
 tools/mutations/a-lane-count-goes-back-in-the-money-column.mut	with the two lanes it was reached by, never the total on its own	vendor prices: one from the client, one learned from merchants
 tools/mutations/a-lane-counts-everything-held.mut	with the two lanes it was reached by, never the total on its own	vendor prices: one from the client, one learned from merchants
+tools/mutations/a-late-list-is-not-read.mut	a list that lands after the read stopped waiting is read then, and says it came late	reading the newer house whole
+tools/mutations/a-late-list-outlives-the-visit.mut	while one that lands after the auction house was closed is not read	reading the newer house whole
 tools/mutations/a-letter-line-has-no-tooltip.mut	a letter line is there to hover	what is in the post
 tools/mutations/a-letter-rides-into-a-member-row.mut	and folded, no line on screen is still carrying a letter	what is in the post
+tools/mutations/a-line-heading-has-no-rank.mut	and an open line opens with its name and rank, a category with its name	what a recipe is made of, beside the recipe
+tools/mutations/a-line-rank-is-not-kept.mut	the profession brings every line's rank, in the client's order	professions on the fourth pretend client
 tools/mutations/a-link-the-client-cannot-name-opens-nothing.mut	while CTRL and ALT open the family's copies of it	a modified click on an item
 tools/mutations/a-material-box-is-only-as-tall-as-its-picture.mut	and stands the whole height of the row, so its column is all materials	what a recipe is made of, beside the recipe
 tools/mutations/a-material-box-is-only-as-wide-as-its-picture.mut	a picture's box reaches half the gap on each side of it	what a recipe is made of, beside the recipe
@@ -20,20 +40,68 @@ tools/mutations/a-material-box-reaches-one-way-only.mut	a picture's box reaches 
 tools/mutations/a-material-picture-forgets-which-item-it-shows.mut	hovering a material describes that material, not the thing being made	what a recipe is made of, beside the recipe
 tools/mutations/a-material-picture-lets-the-row-go-dark.mut	and the row it sits on stays lit while the pointer is on a picture	what a recipe is made of, beside the recipe
 tools/mutations/a-material-picture-swallows-the-row-click.mut	and clicking a picture does what clicking the row does	what a recipe is made of, beside the recipe
+tools/mutations/a-member-money-cell-is-whole.mut	coins: the Summary's Money cells, a member's and a total's, drop the copper too	vendor prices: one from the client, one learned from merchants
+tools/mutations/a-merchant-row-with-no-price-is-recorded-as-free.mut	but a merchant read on Midnight learns no price at all	the merchant on the fourth pretend client
+tools/mutations/a-midnight-owned-row-needs-a-link.mut	a measured Midnight owned row, with no link and no bid field, is recorded	the auction house on the fourth pretend client
+tools/mutations/a-midnight-profession-goes-unnamed.mut	a recipe read on Midnight is named from the base profession	professions on the fourth pretend client
+tools/mutations/a-midnight-quest-history-is-never-read.mut	the quest history is read from C_QuestLog's list where the old call is gone	the quest history on the fourth pretend client
+tools/mutations/a-missing-column-answers-yes.mut	a client with no column still has a row whose symbol is there named	loading Family_UI
+tools/mutations/a-nameless-recipe-list-is-recorded-anyway.mut	while an empty profession name, the shut window's answer, names nothing	professions on the fourth pretend client
+tools/mutations/a-newer-faction-bar-is-measured-from-nought.mut	the measured row reads as its id, its standing and where it is on the bar	reputations on the fourth pretend client
+tools/mutations/a-newer-faction-heading-is-opened-the-old-way.mut	the faction list is read through C_Reputation where the old count is absent	reputations on the fourth pretend client
+tools/mutations/a-newer-faction-heading-is-shut-the-old-way.mut	both shut headings were opened, and both are shut again, last first	reputations on the fourth pretend client
+tools/mutations/a-newer-quest-row-has-its-id-searched-for.mut	its id is the row's own, with no search through quest links	the quest log on the fourth pretend client
 tools/mutations/a-page-folds-straight-to-the-least.mut	one that overflows folds as little as returns it under the page, ten first	loading Family_UI
 tools/mutations/a-page-that-fits-still-folds.mut	a page whose blocks all fit folds nothing	loading Family_UI
+tools/mutations/a-profession-click-casts-where-the-client-forbids-it.mut	and on a client that forbids an addon to cast, the click asks for no cast	what a recipe is made of, beside the recipe
+tools/mutations/a-quest-history-list-is-read-by-position.mut	and a quest in it reads as done, and one not in it as not done	the quest history on the fourth pretend client
+tools/mutations/a-quest-log-is-never-counted-the-newer-way.mut	the log is read through C_QuestLog where the old count is absent	the quest log on the fourth pretend client
+tools/mutations/a-rank-is-not-counted-back.mut	and it knows it is three of three, counted back and forward along the chain	professions on the fourth pretend client
 tools/mutations/a-reader-changes-a-record-without-writing-it.mut	no record was changed in place by anything but a write of it, after every scanner and reader in this run	records are changed only by writing them, and the saved data's read is timed
+tools/mutations/a-recipe-category-is-not-recorded.mut	and the heading it sits under, asked once per category	professions on the fourth pretend client
+tools/mutations/a-recipe-line-is-not-recorded.mut	a recipe on Midnight records the expansion line it is on	professions on the fourth pretend client
+tools/mutations/a-recipe-rank-is-not-drawn.mut	a recipe that comes in ranks shows which it is, beside its name	what a recipe is made of, beside the recipe
+tools/mutations/a-recipe-the-client-will-not-describe-is-asked-again.mut	and each recipe is asked once a session, one the client will not describe included	recipe materials on the fourth pretend client
+tools/mutations/a-recipe-with-no-book-has-no-product.mut	and what a recipe makes is the client's answer too, where no book says	recipe materials on the fourth pretend client
+tools/mutations/a-recorded-question-mark-is-kept.mut	a row recorded with the question mark draws the spell's picture instead	what a recipe is made of, beside the recipe
+tools/mutations/a-refused-spell-script-stops-the-file.mut	and the same for the old spell script	the tooltip hooks on the fourth pretend client
+tools/mutations/a-refused-tooltip-script-stops-the-file.mut	a tooltip that refuses the old item script is asked, and nothing is thrown	the tooltip hooks on the fourth pretend client
 tools/mutations/a-scanner-reaches-for-the-global-family.mut	no file of the recording addon takes the global Family	loading Family
+tools/mutations/a-search-leaves-lines-shut.mut	while a search opens them all, so no match is hidden	what a recipe is made of, beside the recipe
 tools/mutations/a-second-run-from-one-tree-is-queued.mut	a second run from the same tree is refused rather than queued	the gate run by the mutator
+tools/mutations/a-secret-tooltip-line-is-handed-on.mut	a tooltip line whose text is secret is read as no text, and nothing raises	a secret line in a tooltip
+tools/mutations/a-shut-line-has-no-count.mut	a shut line draws its heading and none of its recipes	what a recipe is made of, beside the recipe
+tools/mutations/a-shut-line-shows-its-recipes.mut	a shut line draws its heading and none of its recipes	what a recipe is made of, beside the recipe
+tools/mutations/a-shut-quest-heading-is-put-back-the-old-way.mut	every heading was opened, and the two found shut are shut again, last first	the quest log on the fourth pretend client
+tools/mutations/a-shut-window-names-a-profession-with-nothing.mut	while an empty profession name, the shut window's answer, names nothing  ->	professions on the fourth pretend client
+tools/mutations/a-single-line-is-grouped.mut	while a list on one line stays flat, as Mists draws it	what a recipe is made of, beside the recipe
+tools/mutations/a-slot-answered-as-a-table-is-read-as-ten-returns.mut	backpack contents	login and bag scan
+tools/mutations/a-slot-takes-its-last-alternative.mut	a slot's first alternative is the one taken, and an optional slot is not counted	recipe materials on the fourth pretend client
+tools/mutations/a-stack-priced-tooltip-leaves-ours-unmarked.mut	where the client has written its own sell price, Family's says it is for one	the sell price where the client already shows one
 tools/mutations/a-summary-lane-count-goes-back-in-the-column.mut	the summary row's tooltip counts each lane in its own words	the Stock column
+tools/mutations/a-superseded-rank-is-listed-too.mut	a recipe read on Midnight is named from the base profession	professions on the fourth pretend client
+tools/mutations/a-talent-name-is-taken-from-the-first-return.mut	and with only the swapped loose call left, the name is still the name	talents on the fourth pretend client
+tools/mutations/a-technique-keeps-its-profession-as-line.mut	with no line listed, a technique still takes its line from the categories	professions on the fourth pretend client
+tools/mutations/a-total-money-cell-is-whole.mut	coins: the Summary's Money cells, a member's and a total's, drop the copper too	vendor prices: one from the client, one learned from merchants
 tools/mutations/a-want-mid-transfer-forgets-the-old-client.mut	and an old client among the waiting requests is answered with the whole offering	a transfer that stopped half way is picked up, not believed
 tools/mutations/a-want-mid-transfer-is-never-answered.mut	and once it has drained, two requests are answered once, with what they lack	a transfer that stopped half way is picked up, not believed
 tools/mutations/a-want-mid-transfer-keeps-only-the-last.mut	and an old client among the waiting requests is answered with the whole offering	a transfer that stopped half way is picked up, not believed
 tools/mutations/a-want-mid-transfer-queues-it-twice.mut	a request arriving mid-transfer puts nothing on top of what is in flight	a transfer that stopped half way is picked up, not believed
 tools/mutations/a-whole-list-is-sent-to-a-panel-as-well.mut	a list drawn whole offers the gesture as well	a family bigger than a tooltip
 tools/mutations/a-wrong-check-count-is-committed.mut	and one claiming a different number is refused	the hooks, and the one claim in a commit message that can be checked
+tools/mutations/achievements-budget-ignored.mut	a walk with a budget stops inside a category once it is spent	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-midnight-off.mut	while the ones that have their answer - the guild bank, achievements - are on	loading Family_UI
+tools/mutations/achievements-midway-moves-on.mut	the scheduled walk is still going after a frame, midway through the one category	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-points-not-added.mut	and the points are this character's own, added up	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-resume-restarts.mut	and goes on from there to the end of it	talents on Mists - a different system behind the same panel
 tools/mutations/achievements-walk-does-not-step.mut	a frame later it has done one category and not both	talents on Mists - a different system behind the same panel
 tools/mutations/achievements-walk-keeps-nothing.mut	achievements are read on a client that has them	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-warband-counted.mut	on Midnight a member's achievements are the ones this character earned	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-warband-never-asked.mut	on Midnight a member's achievements are the ones this character earned	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-warband-only-kept.mut	the Warband's alone are left out, and a started one is kept	talents on Mists - a different system behind the same panel
+tools/mutations/achievements-warband-total-points.mut	and finishes with this character's achievements and points, not the Warband's total	talents on Mists - a different system behind the same panel
+tools/mutations/active-group-namespace-unasked.mut	where the old globals are gone the active group is asked of the namespace	talents on the fourth pretend client
+tools/mutations/addon-casts-midnight-allowed.mut	and on a client that forbids an addon to cast, the click asks for no cast	what a recipe is made of, beside the recipe
 tools/mutations/ah-categories-probe-classes-nothing.mut	and says how many stored items the client could class, and which	the button on the auction window
 tools/mutations/ah-categories-probe-lists-nothing.mut	the category probe lists the house's categories in the client's order	the button on the auction window
 tools/mutations/ahsellers-a-blind-list-is-reported-as-a-negative.mut	and the reading says it cannot settle it, rather than reporting a negative	whether an auction house is shared across the connected realm group
@@ -41,17 +109,47 @@ tools/mutations/ahsellers-a-short-name-counts-as-a-full-one.mut	and counts those
 tools/mutations/ahsellers-any-seller-proves-sharing.mut	only this realm's sellers is said to prove nothing either way	whether an auction house is shared across the connected realm group
 tools/mutations/ahsellers-bare-name-filed-nowhere.mut	and files a bare name under this realm and a qualified one under its own	whether an auction house is shared across the connected realm group
 tools/mutations/ahsellers-reads-only-the-short-name.mut	and files a bare name under this realm and a qualified one under its own	whether an auction house is shared across the connected realm group
+tools/mutations/an-auction-created-asks-for-nothing.mut	an auction created asks the house for the owned list again	the auction house on the fourth pretend client
 tools/mutations/an-empty-material-slot-still-takes-the-mouse.mut	while a slot with nothing in it is not there to be hovered	what a recipe is made of, beside the recipe
+tools/mutations/an-empty-reputation-list-is-recorded-as-a-reading.mut	and a scan that reads nought leaves the stored faction list alone	reputations on the fourth pretend client
 tools/mutations/an-enchant-cost-ignores-the-switch.mut	and with the extra off it says nothing about materials	what a craftable thing costs to make
 tools/mutations/an-enchant-tooltip-leaves-out-its-materials.mut	coins: a crafted thing's total is written in gold  ->	what a craftable thing costs to make
+tools/mutations/an-item-with-no-book-is-never-matched-to-a-recorded-recipe.mut	while one a member knows the recipe for is matched to it, once the record is written	recipe materials on the fourth pretend client
 tools/mutations/an-offering-is-dated-by-its-posting.mut	a shared member is dated when it was last seen, not when it was sent	an exchange carries what changed, not everything again
+tools/mutations/an-opened-line-survives-a-page-change.mut	and changing page shuts whatever was open	what a recipe is made of, beside the recipe
+tools/mutations/an-optional-reagent-is-counted-as-a-material.mut	a slot's first alternative is the one taken, and an optional slot is not counted	recipe materials on the fourth pretend client
+tools/mutations/an-unanswered-quest-history-is-a-history-of-none.mut	with neither call, nothing is written and the scanner says so	the quest history on the fourth pretend client
+tools/mutations/an-unknown-client-is-read-as-the-newest-known.mut	Midnight is not mistaken for one of the three Classic clients	loading Family_UI
+tools/mutations/an-unlearnt-last-profession-is-read-as-an-unreadable-sheet.mut	a sheet that answers and holds no profession writes an empty summary	professions
+tools/mutations/an-unlearnt-next-rank-supersedes-the-learnt-one.mut	a recipe read on Midnight is named from the base profession	professions on the fourth pretend client
+tools/mutations/an-unlisted-line-is-dropped.mut	and a line a recipe named and the list did not comes after, with no rank	professions on the fourth pretend client
+tools/mutations/an-unlisted-line-is-not-walked.mut	a line the rank list does not name goes under the listed line its category sits in	professions on the fourth pretend client
 tools/mutations/an-unloaded-item-is-searched-for-by-its-placeholder.mut	while CTRL and ALT open the family's copies of it	a modified click on an item
+tools/mutations/an-unreadable-faction-list-is-read-as-none.mut	with neither count, the read answers nothing, not an empty list	reputations on the fourth pretend client
 tools/mutations/an-unreadable-scroll-offset-is-taken-for-nought.mut	nor is one whose scroll offset the client will not give up	vendor prices: one from the client, one learned from merchants
 tools/mutations/any-frame-is-taken-for-a-browse-button.mut	a scrolled list is read at the row on the screen, not at the slot showing it	vendor prices: one from the client, one learned from merchants
 tools/mutations/any-frame-is-taken-for-a-merchant-button.mut	while a frame that is not one of the vendor's own buttons is refused	vendor prices: one from the client, one learned from merchants
 tools/mutations/any-line-at-the-margin-is-a-section.mut	and only a real heading of this harness counts as a section	the gate run by the mutator
 tools/mutations/any-number-in-that-place-is-an-id.mut	a twelfth value of 0 is not mistaken for an id	currencies
 tools/mutations/any-row-length-is-the-measured-one.mut	nor is a longer one, however id-shaped the number in that place looks	currencies
+tools/mutations/any-skill-line-in-the-tree-is-taken.mut	a technique that answers its profession takes its line from the category above it	professions on the fourth pretend client
+tools/mutations/any-system-message-asks-for-the-owned-list.mut	while any other system message asks for nothing	the auction house on the fourth pretend client
+tools/mutations/arch-empty-races-kept.mut	a race with nothing in it is not recorded, one with fragments is	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-midnight-off.mut	and archaeology, which answers there as it does on Mists (§131)	loading Family_UI
+tools/mutations/arch-no-need.mut	with its fragments, the project's cost and the project	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-not-shared.mut	archaeology crosses a link under the professions grant	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-panel-no-button.mut	the Professions panel offers Archaeology beside the professions with recipes	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-panel-no-history.mut	a race with a history says so with a plus	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-panel-no-project.mut	chosen, it lists the race and its project, the history shut	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-project-counted-solved.mut	and a count of solved artifacts that leaves the project in progress out	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-race-never-opens.mut	a race with a history says so with a plus	archaeology: fragments, the project and the artifacts solved
+tools/mutations/arch-races-start-open.mut	chosen, it lists the race and its project, the history shut	archaeology: fragments, the project and the artifacts solved
+tools/mutations/armour-first-not-best.mut	the skill scan records the best armour listed as the member's own	looks to learn and looks known
+tools/mutations/armour-not-recorded.mut	the skill scan records the best armour listed as the member's own	looks to learn and looks known
+tools/mutations/armour-spells-first.mut	the skill scan records the best armour listed as the member's own	looks to learn and looks known
+tools/mutations/armour-spells-not-asked.mut	with no armour on the skill list, the best armour spell known is the member's own	looks to learn and looks known
+tools/mutations/auction-bound-copy-unmarked.mut	a bound copy in the bags marks its Auction line as the unbound price	vendor prices: one from the client, one learned from merchants
+tools/mutations/auction-bound-slot-unchecked.mut	and a slot that does not hold this item marks nothing	vendor prices: one from the client, one learned from merchants
 tools/mutations/auction-panel-anchored-to-a-corner.mut	the panel fills a frame the client sized rather than a corner nobody has measured	a Family tab on the auction window
 tools/mutations/auction-panel-stays-up-over-the-browse-list.mut	and clicking one of the client's own takes ours away again	a Family tab on the auction window
 tools/mutations/auction-price-per-lot.mut	and a stack is divided into the price of one	vendor prices: one from the client, one learned from merchants
@@ -61,10 +159,20 @@ tools/mutations/auction-replicate-both-forms.mut	and a house that prices by the 
 tools/mutations/auction-settle-once.mut	and a page the client held back is not announced or asked for twice	vendor prices: one from the client, one learned from merchants
 tools/mutations/auction-tab-assumes-three.mut	and it takes the number after the ones the client already had	a Family tab on the auction window
 tools/mutations/auction-tab-hides-nothing.mut	clicking it shows our panel and puts the client's own away	a Family tab on the auction window
+tools/mutations/auction-unbound-copy-marked.mut	an unbound copy is not marked	vendor prices: one from the client, one learned from merchants
+tools/mutations/auction-worn-not-bound.mut	a worn copy is marked too	vendor prices: one from the client, one learned from merchants
 tools/mutations/bags-brief-cooldown-not-marked.mut	and marked brief	crafting cooldowns
 tools/mutations/bags-brief-floor-admits-global-cooldown.mut	but a second and a half of global cooldown is not recorded	crafting cooldowns
 tools/mutations/bags-brief-floor-for-every-item.mut	and so is a thing in a bag with a long cooldown of its own	what is ready, and what is not ready yet
 tools/mutations/bags-brief-maker-cooldown-not-recorded.mut	a Chronoboon counting down its hour is recorded, as the moment it comes back	crafting cooldowns
+tools/mutations/bags-never-look-in-the-container-namespace.mut	general bag slots exclude the quiver	login and bag scan
+tools/mutations/bags-vendor-price-dropped.mut	on Midnight a slot keeps what a vendor pays for that copy, read off its link	the same bag scan on the fourth pretend client
+tools/mutations/bank-tab-empty-name-kept.mut	and a tab whose name came back empty has none  ->	the Warband bank on the fourth pretend client
+tools/mutations/bank-tab-name-not-drawn.mut	a bank tab is titled by the name its player gave it, not its bag's item	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/bank-tab-name-not-kept.mut	a tab of the character's bank keeps its own name, not the placeholder item's	the Warband bank on the fourth pretend client
+tools/mutations/bank-tab-name-not-passed.mut	a bank tab is titled by the name its player gave it, not its bag's item	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/bank-tab-names-not-gated.mut	and a client whose bank is bags is not asked for tab names	the Warband bank on the fourth pretend client
+tools/mutations/bank-vendor-price-dropped.mut	and a bank slot keeps what a vendor pays for that copy, read off its link	the Warband bank on the fourth pretend client
 tools/mutations/banned-word-sweep-covers-nothing.mut	the sweep covers the tracked tree, this file among it	no word from the list outside the tree appears inside it
 tools/mutations/banned-word-sweep-never-says-no.mut	the sweep finds a banned word in a made-up file, whatever its case  ->	no word from the list outside the tree appears inside it
 tools/mutations/banned-word-sweep-quotes-everything.mut	the sweep finds a banned word in a made-up file, whatever its case  ->	no word from the list outside the tree appears inside it
@@ -78,6 +186,8 @@ tools/mutations/big-list-stranded-by-a-short-answer.mut	and a short answer that 
 tools/mutations/big-list-waits-for-an-emptied-list.mut	and an emptied list drops it at once rather than waiting for it to return	vendor prices: one from the client, one learned from merchants
 tools/mutations/blank-search-must-be-all-nils.mut	a search nobody narrowed is read as the whole house, quality of -1 and all	how long a read of the auction house takes
 tools/mutations/boon-icons-at-row-edge.mut	and its buffs end where the Chrono figure does	the letters, put away with everything else
+tools/mutations/bound-reagent-client-unasked.mut	on Midnight a material's binding is asked of the client, a Warband one included	what a craftable thing costs to make
+tools/mutations/bound-reagent-table-overruled.mut	a client with a shipped table is not asked, even where it would say bound	what a craftable thing costs to make
 tools/mutations/broker-bags-drawn-with-the-group-icon.mut	and the character scope shows its bags free of total, then its money	what the broker and the minimap button say and do
 tools/mutations/broker-character-shows-no-bags.mut	and the character scope shows its bags free of total, then its money	what the broker and the minimap button say and do
 tools/mutations/broker-character-shows-unread-bags-as-empty.mut	and only its money while its bags have never been read	what the broker and the minimap button say and do
@@ -93,18 +203,29 @@ tools/mutations/can-make-counts-the-post.mut	and not what is in the post, on auc
 tools/mutations/can-make-ignores-the-bank.mut	a recipe can be made as many times as its scarcest material allows	what a recipe is made of, beside the recipe
 tools/mutations/can-make-reads-the-client-snapshot.mut	the recipe row says what the character can make from what they hold	what a recipe is made of, beside the recipe
 tools/mutations/can-make-takes-the-largest.mut	a recipe can be made as many times as its scarcest material allows	what a recipe is made of, beside the recipe
+tools/mutations/caps-midnight-ammo-unseen.mut	and every row has been seen in the game, which the merge asks for	loading Family_UI
+tools/mutations/caps-midnight-currencies-off.mut	and every row answers there now, currencies on and dual specialisation off	loading Family_UI
+tools/mutations/caps-midnight-dailies-unseen.mut	and every row has been seen in the game, which the merge asks for	loading Family_UI
+tools/mutations/caps-midnight-dualspec-on.mut	and every row answers there now, currencies on and dual specialisation off	loading Family_UI
+tools/mutations/caps-midnight-glyphs-on.mut	while no row disagrees with the client any more	loading Family_UI
+tools/mutations/caps-midnight-keyring-on.mut	while no row disagrees with the client any more	loading Family_UI
+tools/mutations/caps-midnight-transmog-unseen.mut	and every row has been seen in the game, which the merge asks for	loading Family_UI
+tools/mutations/caps-midnight-trees-on.mut	this client claims no talent trees, so the tree reader is not the one asked	talents on the fourth pretend client
 tools/mutations/category-answers-no-criteria-count.mut	and how many criteria it had to ask about, which is what the walk costs	talents on Mists - a different system behind the same panel
+tools/mutations/category-zero-is-asked-for.mut	while a row with no category has no heading, and nothing was asked for it	professions on the fourth pretend client
 tools/mutations/changelog-unreleased-in-workshop-words.mut	and no entry sits above the heading it belongs under	the changelog, as release.sh will cut it
 tools/mutations/choosing-waits-for-the-machine.mut	a run with nothing to gate never waits for the machine	the gate run by the mutator
+tools/mutations/chrono-column-on-midnight.mut	and not on Midnight, where the Mount column still is	what the broker and the minimap button say and do
+tools/mutations/chronoboon-midnight-drawn.mut	and not on Midnight, where the Mount column still is	what the broker and the minimap button say and do
 tools/mutations/coins-any-shape-trusted.mut	coins: and so does one whose string is not a figure followed by a coin	vendor prices: one from the client, one learned from merchants
 tools/mutations/coins-bid-value-too-narrow.mut	coins: activity's bids column holds the largest figure it was sized for	what the broker and the minimap button say and do
 tools/mutations/coins-client-never-asked.mut	coins: a single figure is written in white beside the client's own coins	vendor prices: one from the client, one learned from merchants
 tools/mutations/coins-harness-measures-no-coin.mut	coins: a coin at the text's own height is measured as twelve pixels	what the broker and the minimap button say and do
 tools/mutations/coins-money-too-narrow.mut	every cell of the overview set fits its column in enUS	what the broker and the minimap button say and do
-tools/mutations/coins-summary-money-total-white.mut	coins: the summary's totals are written in gold, Worth's and Money's both	the Stock column
+tools/mutations/coins-summary-money-total-white.mut	coins: the Summary's Money cells, a member's and a total's, drop the copper too	vendor prices: one from the client, one learned from merchants
 tools/mutations/coins-tooltip-total-white.mut	coins: a crafted thing's total is written in gold	what a craftable thing costs to make
 tools/mutations/coins-total-not-gold.mut	coins: a total is written in gold	vendor prices: one from the client, one learned from merchants
-tools/mutations/coins-worth-millions-in-full.mut	coins: Worth over a million gold is written as millions, rounded, with the gold coin	vendor prices: one from the client, one learned from merchants
+tools/mutations/coins-worth-millions-in-full.mut	coins: the Money column writes ten thousand gold and over without the copper	vendor prices: one from the client, one learned from merchants
 tools/mutations/coins-worth-millions-truncated.mut	coins: Worth over a million gold is written as millions, rounded, with the gold coin	vendor prices: one from the client, one learned from merchants
 tools/mutations/contents-door-hidden.mut	the door opens the window, which a bag slot finds shut	a modified click on an item
 tools/mutations/cooldowns-heading-row-keeps-its-words.mut	the Cooldowns page's heading row says nothing its sections say	instance lockouts, read, kept and drawn
@@ -140,12 +261,36 @@ tools/mutations/crafting-page-ignores-its-room.mut	on a page with room for every
 tools/mutations/ctrl-hint-never-offered-anywhere.mut	an auction row is offered the key rather than the answer	vendor prices: one from the client, one learned from merchants
 tools/mutations/ctrl-hint-offered-on-a-bar-slot.mut	a bar slot is offered no key, because the bar keeps it	vendor prices: one from the client, one learned from merchants
 tools/mutations/ctrl-hint-suppressed-by-any-attribute.mut	a stack in the bag is offered the key rather than the answer	vendor prices: one from the client, one learned from merchants
+tools/mutations/currency-click-ignored.mut	a click on Legion opens it, and Warlords stays shut	one member's currencies, grouped as the game groups them
+tools/mutations/currency-click-no-toggle.mut	and a click on its heading opens it	one member's currencies, grouped as the game groups them
+tools/mutations/currency-family-flat.mut	the whole family's currencies are grouped the same way, with the family's total	one member's currencies, grouped as the game groups them
+tools/mutations/currency-family-holders-hidden.mut	and a currency opened lists who holds how many	one member's currencies, grouped as the game groups them
+tools/mutations/currency-family-no-switch.mut	the whole family's currencies are grouped the same way, with the family's total	one member's currencies, grouped as the game groups them
+tools/mutations/currency-family-noughts-listed.mut	and a currency nobody holds any of is not a line there	one member's currencies, grouped as the game groups them
+tools/mutations/currency-family-total-last.mut	the whole family's currencies are grouped the same way, with the family's total	one member's currencies, grouped as the game groups them
+tools/mutations/currency-group-not-kept.mut	each currency keeps the headings above it, in the game's words	the currency list Midnight is the first client to answer
+tools/mutations/currency-heading-left-open.mut	the shut heading was opened to read it and shut again after	the currency list Midnight is the first client to answer
 tools/mutations/currency-heading-no-tooltip.mut	a currency heading cut to fit gives its whole name on hover	a currency filed under its name joins the column of its id
+tools/mutations/currency-legacy-open.mut	the game's groups in the game's order, Legacy's expansions shut and Season 2 open	one member's currencies, grouped as the game groups them
+tools/mutations/currency-order-reversed.mut	the game's groups in the game's order, Legacy's expansions shut and Season 2 open	one member's currencies, grouped as the game groups them
+tools/mutations/currency-own-echo-answered.mut	a currency announcement right after the scan's own opening is not answered, a later one is	the currency list Midnight is the first client to answer
+tools/mutations/currency-panel-flat.mut	the member's Currencies page draws the groups, Legion shut	one member's currencies, grouped as the game groups them
+tools/mutations/currency-search-leaves-shut.mut	a search opens every heading and keeps only what matches, under its headings	one member's currencies, grouped as the game groups them
+tools/mutations/currency-shut-heading-unread.mut	the modern list answers where the loose calls are gone, a shut heading's currency among them	the currency list Midnight is the first client to answer
+tools/mutations/currency-star-no-toggle.mut	a right-click on a currency stars it for the Summary, and it wears the star	one member's currencies, grouped as the game groups them
+tools/mutations/currency-stars-for-account.mut	a right-click on a currency stars it for the Summary, and it wears the star	one member's currencies, grouped as the game groups them
+tools/mutations/currency-stars-old-shape.mut	the per-character stars of the build taken back count as none	one member's currencies, grouped as the game groups them
+tools/mutations/currency-stars-over-four.mut	and a fifth star is refused, the four standing	one member's currencies, grouped as the game groups them
+tools/mutations/currency-top-shut.mut	the game's groups in the game's order, Legacy's expansions shut and Season 2 open	one member's currencies, grouped as the game groups them
 tools/mutations/declared-write-refolds-nothing.mut	and so is a part of the record, beside it	wide family
 tools/mutations/decodecost-calls-no-language-foreign.mut	/family decodecost names a list read in another language, with its language	wide family
 tools/mutations/decodecost-counts-every-skill-as-a-list.mut	and does not count a skill with no recipes as a list at all	wide family
 tools/mutations/decodecost-counts-nothing.mut	/family decodecost counts every stored record, plain and still compressed	wide family
 tools/mutations/decodecost-rewrites-what-it-reads.mut	/family decodecost counts every stored record, plain and still compressed	wide family
+tools/mutations/deferred-newest-first.mut	the longest overdue runs first, and a costly one leaves the rest to the next frame	startup
+tools/mutations/deferred-no-frame-budget.mut	the longest overdue runs first, and a costly one leaves the rest to the next frame	startup
+tools/mutations/deferred-old-request-runs.mut	a job asked for again in the same frame is not run on its old request	startup
+tools/mutations/deferred-tie-by-pairs.mut	cheap jobs that fall due together still run in the same frame, a tie by name	startup
 tools/mutations/every-part-is-counted-as-written.mut	while a part carried along unchanged is not	wide family
 tools/mutations/extras-auction-switch-loses-the-store.mut	and nothing is valued from it while the switch is off	Extras: jobs Family is not for, each switched by itself
 tools/mutations/extras-auction-switch-still-reads-the-page.mut	with the auction extra off, a page on the browse list is not read at all	Extras: jobs Family is not for, each switched by itself
@@ -155,19 +300,57 @@ tools/mutations/extras-tab-ignores-the-switch.mut	switching the auction extra of
 tools/mutations/extras-walk-ignores-the-switch.mut	and a walk of the house refuses, naming the switch rather than a fault	Extras: jobs Family is not for, each switched by itself
 tools/mutations/family-order-names-every-comparison.mut	by name, which is the order the search itself answers in	what a recipe is made of, beside the recipe
 tools/mutations/family-recipe-row-picture-is-the-recorded-one.mut	an enchanting recipe that makes a thing wears the thing's picture	what a recipe is made of, beside the recipe
+tools/mutations/flight-style-cell-says-the-whole-aura.mut	and the Mount column says it in the game's own word, what follows the colon	how fast a character can get about
+tools/mutations/flight-style-guessed.mut	while with neither style's aura on, nothing is said about flying	how fast a character can get about
+tools/mutations/flight-style-not-shared.mut	a sibling granted Character is sent the flight style	what a recipe is made of, beside the recipe
+tools/mutations/flight-style-not-stored.mut	on Midnight the style of flight chosen is recorded, and the ground from the riding spell	how fast a character can get about
+tools/mutations/flight-style-read-for-any-member.mut	and another member's record is not read off this player's riding	how fast a character can get about
+tools/mutations/flight-style-read-on-every-client.mut	and a client with no skyriding in its game never takes this route	how fast a character can get about
+tools/mutations/flight-style-route-never-runs.mut	on Midnight the style of flight chosen is recorded, and the ground from the riding spell	how fast a character can get about
+tools/mutations/flying-midnight-off.mut	and the Mount column says the ground with a dash for the flying not read	how fast a character can get about
 tools/mutations/fold-depth-ignores-headings.mut	the page's headings count against the room	loading Family_UI
+tools/mutations/fold-grants-every-load.mut	the reasons a member is not counted unchanged add up to the gap	wide family
+tools/mutations/fold-grants-widens.mut	and not Character, having ticked two of its six	what a linked family may be granted
 tools/mutations/fold-switch-ignored.mut	switched off, a page that overflows folds nothing, and one not yet measured neither	loading Family_UI
 tools/mutations/fold-switch-off-by-default.mut	the folding switch is on the Options panel, ticked when nothing was ever set	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/fold-switch-stores-nothing.mut	and unticking it switches folding off	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/gathered-midnight-missing.mut	and every build refuses it, including the two where khorium used to hide it	the possessions block on a game tooltip
+tools/mutations/gathered-true-iron-unnamed.mut	and a True Iron vein names True Iron Ore, not Iron Ore	the possessions block on a game tooltip
+tools/mutations/gear-grid-draws-every-slot.mut	and on Midnight the grid leaves the ranged slot out	the whole family's gear on one screen
+tools/mutations/gear-sheet-draws-every-weapon-slot.mut	on Midnight the sheet has no ranged slot, and the other eighteen are drawn	what a recipe is made of, beside the recipe
+tools/mutations/gear-slot-needs-ignored.mut	on Midnight the sheet has no ranged slot, and the other eighteen are drawn	what a recipe is made of, beside the recipe
+tools/mutations/guild-gear-ranged-slot.mut	a guildmate's gear row leaves the ranged slot out on Midnight	guild share
+tools/mutations/guild-skinning-left-out.mut	where Skinning has recipes it is shared, and herbalism and fishing still not	guild share
 tools/mutations/guild-tab-empty-name-kept.mut	a tab the client gives no name is recorded without one, not with an empty one  ->	the bank
 tools/mutations/guild-tab-name-not-kept.mut	and the tab's own name, as the guild bank gave it	the bank
-tools/mutations/guild-tab-title-by-number.mut	a guild bank tab is titled by its own name, and one with none by its number	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/guild-tab-title-by-number.mut	a guild tab with one thing in it is drawn at the whole tab, 97 of 98 free	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/guildbank-earlier-tab-wiped.mut	a tab read on an earlier visit keeps what it held when this visit does not load it	the bank
+tools/mutations/guildbank-empty-tab-on-screen-dropped.mut	the tab on screen is recorded as read and empty, with its name	the bank
+tools/mutations/guildbank-midnight-off.mut	while the ones that have their answer - the guild bank, achievements - are on	loading Family_UI
+tools/mutations/guildbank-shown-tabs-ignored.mut	every tab shown during the visit counts as read, not only the last	the bank
+tools/mutations/guildbank-shown-tabs-kept.mut	and the next visit starts from its own tabs	the bank
+tools/mutations/guildbank-tab-stops-at-last-item.mut	a guild tab with one thing in it is drawn at the whole tab, 97 of 98 free	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/guildbank-unseen-not-said.mut	an empty tab says so, and one never opened says that	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/guildbank-zero-under-empty.mut	an empty or unread tab's heading has no count under it	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/headings-are-not-drawn.mut	a click on a line's heading opens it, its recipes under it	what a recipe is made of, beside the recipe
 tools/mutations/held-by-builds-the-whole-family.mut	opening one member's professions page reads that member's record and no other	a tooltip and a one-member page ask about no more than they show
 tools/mutations/held-by-keeps-a-stale-member.mut	and what it holds is answered afresh once that member is written	a tooltip and a one-member page ask about no more than they show
+tools/mutations/held-node-by-substring.mut	but one that only contains that name does not	the possessions block on a game tooltip
+tools/mutations/held-node-minimap-held-only.mut	while two coloured pins of different herbs answer about each of them	the possessions block on a game tooltip
+tools/mutations/held-node-never-asked.mut	one that is exactly the name of something held draws its block	the possessions block on a game tooltip
+tools/mutations/held-node-world-asks-lists.mut	and one line off the maps is never scored as a vein	the possessions block on a game tooltip
 tools/mutations/index-files-under-the-plain-item.mut	so the family counts it under that heading and never under the plain item	auctions
+tools/mutations/item-icon-has-no-new-route.mut	its picture through C_Item where GetItemIcon is gone	items and spells on the PTR, where the old globals are gone
+tools/mutations/item-icon-skips-the-old-call.mut	while a client that answers the old calls is read through them	items and spells on the PTR, where the old globals are gone
+tools/mutations/item-info-has-no-new-route.mut	an item is described through C_Item where GetItemInfo is gone, every place kept	items and spells on the PTR, where the old globals are gone
+tools/mutations/item-info-skips-the-old-call.mut	where the client has written its own sell price, Family's says it is for one	the sell price where the client already shows one
+tools/mutations/item-instant-skips-the-old-call.mut	while a client that answers the old calls is read through them	items and spells on the PTR, where the old globals are gone
 tools/mutations/itemclick-shift-ignored.mut	and shift, which the game already uses, is left alone	a modified click on an item
 tools/mutations/knowers-of-names-though-a-table-answered.mut	once a table names the spell, a recipe carrying neither id is not matched by name	a tooltip and a one-member page ask about no more than they show
 tools/mutations/last-seen-keeps-ago.mut	Last seen gives an age without the word ago	the fixes the live check asked for are still in place
+tools/mutations/learn-later-line-dropped.mut	and says in grey who could once levelled, and who has to log in once	looks to learn and looks known
+tools/mutations/learn-line-not-on-tooltip.mut	the tooltip names who can learn the look	looks to learn and looks known
+tools/mutations/lines-are-drawn-backwards.mut	recipes are laid out by line in the record's order, then by category	what a recipe is made of, beside the recipe
 tools/mutations/loaded-list-tally-counts-rows-as-items.mut	what a loaded list held is counted while it is read, not by reading it twice	vendor prices: one from the client, one learned from merchants
 tools/mutations/loaded-list-tally-hides-blank-rows.mut	rows the client will not describe are counted rather than passed over	vendor prices: one from the client, one learned from merchants
 tools/mutations/loaded-list-tally-only-at-the-end.mut	a loaded list only part way read still says what it has counted so far	vendor prices: one from the client, one learned from merchants
@@ -176,15 +359,26 @@ tools/mutations/loaded-stamp-is-not-the-last-file.mut	and the stamp before the s
 tools/mutations/lockout-any-row-width-trusted.mut	and so is a row wider than fourteen, whatever its fourteenth holds	instance lockouts, read, kept and drawn
 tools/mutations/lockout-blocks-keyed-by-words.mut	one place in two languages is one block	instance lockouts, read, kept and drawn
 tools/mutations/lockout-boss-kill-asks-nothing.mut	a boss dying asks again, since that is when a lock is made	instance lockouts, read, kept and drawn
-tools/mutations/lockout-category-missing.mut	deDE translates only strings the addon still asks for	the translations
+tools/mutations/lockout-bosses-asked-on-classic.mut	a Classic client, where the call answers but is wrong, is not asked for bosses	instance lockouts, read, kept and drawn
+tools/mutations/lockout-bosses-count-unbounded.mut	a lock is asked for forty bosses at most, whatever its row says	instance lockouts, read, kept and drawn
+tools/mutations/lockout-bosses-killed-not-kept.mut	with the ones down marked, and only those	instance lockouts, read, kept and drawn
+tools/mutations/lockout-bosses-killed-unsaid.mut	with the one down said to be	instance lockouts, read, kept and drawn
+tools/mutations/lockout-bosses-never-asked.mut	on Midnight a lock carries its bosses, in the game's order	instance lockouts, read, kept and drawn
+tools/mutations/lockout-bosses-not-on-hover.mut	hovering it names the bosses in order	instance lockouts, read, kept and drawn
+tools/mutations/lockout-bosses-silent-slot-kept.mut	a boss slot that answers nothing is skipped	instance lockouts, read, kept and drawn
+tools/mutations/lockout-category-missing.mut	character carries everything the panels read for it	what a linked family may be granted
 tools/mutations/lockout-empty-line-cut-at-column.mut	the line saying so has the row's width, not the first column's	instance lockouts, read, kept and drawn
 tools/mutations/lockout-empty-says-nothing.mut	deDE translates only strings the addon still asks for	the translations
 tools/mutations/lockout-heading-drawn-when-empty.mut	but the lockouts section is still drawn	instance lockouts, read, kept and drawn
 tools/mutations/lockout-label-clipped-at-24.mut	and the name and its difficulty are drawn whole	instance lockouts, read, kept and drawn
+tools/mutations/lockout-line-keeps-last-lock.mut	a line that drew a lock lists no bosses once it is a member on another set	instance lockouts, read, kept and drawn
+tools/mutations/lockout-line-tooltip-stale-member.mut	hovering it names the bosses in order	instance lockouts, read, kept and drawn
 tools/mutations/lockout-page-hides-lock-only-members.mut	and the name and its difficulty are drawn whole	instance lockouts, read, kept and drawn
 tools/mutations/lockout-page-skips-own-members.mut	and the name and its difficulty are drawn whole	instance lockouts, read, kept and drawn
 tools/mutations/lockout-picker-offers-no-places.mut	the picker offers the place	instance lockouts, read, kept and drawn
 tools/mutations/lockout-place-narrow.mut	the lockout's place has room for a name and its difficulty	instance lockouts, read, kept and drawn
+tools/mutations/lockout-progress-counts-all.mut	which counts as one of ten	instance lockouts, read, kept and drawn
+tools/mutations/lockout-progress-not-drawn.mut	a lock read with its bosses says how many are down, of how many	instance lockouts, read, kept and drawn
 tools/mutations/lockout-read-beside-the-request.mut	and records nothing until the answer arrives	instance lockouts, read, kept and drawn
 tools/mutations/lockout-reset-not-rounded.mut	a reset a few seconds later does not change the member's mark	instance lockouts, read, kept and drawn
 tools/mutations/lockout-saved-to-nothing-kept.mut	a character whose locks have all gone is saved to nothing	instance lockouts, read, kept and drawn
@@ -193,11 +387,26 @@ tools/mutations/lockout-section-under-a-chosen-timer.mut	a crafting timer chosen
 tools/mutations/lockout-that-let-go-still-held.mut	a lock whose moment has passed is not held	instance lockouts, read, kept and drawn
 tools/mutations/lockout-unlocked-row-recorded.mut	a character saved to two raids reads as two lockouts	instance lockouts, read, kept and drawn
 tools/mutations/login-decodes-nothing-ahead.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
+tools/mutations/look-by-item-only.mut	a look it has is known	looks to learn and looks known
+tools/mutations/look-dim-ignores-look.mut	looks to learn leaves the tunic lit and dims the boots on one member	looks to learn and looks known
+tools/mutations/look-not-indexed.mut	the family's search answers every item to learn, with nothing typed	looks to learn and looks known
+tools/mutations/look-not-recorded-in-bags.mut	the bag scan records each slot's look as its holder read it	looks to learn and looks known
+tools/mutations/look-other-source-ignored.mut	a look collected from another item is known, though this item's own answer is no	looks to learn and looks known
+tools/mutations/look-owners-not-narrowed.mut	and only under the holders whose account lacks it	looks to learn and looks known
+tools/mutations/look-search-ignores-look.mut	the family's search answers every item to learn, with nothing typed	looks to learn and looks known
+tools/mutations/look-switches-always-shown.mut	and a client with no collection shows neither switch	looks to learn and looks known
+tools/mutations/look-switches-laid-from-box.mut	the switches sit against Whole family and the search box ends at them	looks to learn and looks known
+tools/mutations/look-uncached-called-collected.mut	and an item the client has not cached answers nothing, not a look	looks to learn and looks known
+tools/mutations/look-wear-lower-class-rules.mut	and the class answer, which there says who may use it, rules nobody out	looks to learn and looks known
+tools/mutations/look-wear-lower-no-later.mut	while a member below its level is later, and one unread still has to log in	looks to learn and looks known
+tools/mutations/look-wear-lower-off.mut	where wearing a lower type collects a look, a plate wearer learns a mail one	looks to learn and looks known
+tools/mutations/look-wear-lower-same-only.mut	where wearing a lower type collects a look, a plate wearer learns a mail one	looks to learn and looks known
 tools/mutations/made-by-misses-trainer-recipes.mut	a wand and a rod name the spell that makes them on all three builds	what a recipe is made of, beside the recipe
 tools/mutations/made-with-hidden-without-prices.mut	and a recipe with no prices at all still says what it is made of  ->	what a craftable thing costs to make
 tools/mutations/mail-close-passes-event-arguments.mut	and a request left unanswered in one visit is not claimed in the next	the money that came out of the mailbox
 tools/mutations/mail-empty-ignores-attachments.mut	while a letter still has something in it the total waits	the money that came out of the mailbox
 tools/mutations/mail-empty-ignores-the-server.mut	and a mailbox the server still holds letters for is not empty yet	the money that came out of the mailbox
+tools/mutations/mail-in-post-not-shared.mut	mail carries everything the panels read for it	what a linked family may be granted
 tools/mutations/mail-report-counts-a-returned-letter.mut	money leaving the inbox with nothing asked for is not reported	the money that came out of the mailbox
 tools/mutations/mail-report-counts-the-same-money-twice.mut	money leaving the inbox with nothing asked for is not reported	the money that came out of the mailbox
 tools/mutations/mail-report-forgets-a-take-on-the-next-update.mut	money answered one update late is still said when it arrives  ->	the money that came out of the mailbox
@@ -214,10 +423,12 @@ tools/mutations/mail-total-said-twice.mut	and closing it straight after does not
 tools/mutations/mail-total-waits-for-the-close.mut	emptying the mailbox says the total there and then, with the box still open	the money that came out of the mailbox
 tools/mutations/maker-block-asks-no-table-first.mut	a product whose spell the shipped tables name is drawn with its maker	a tooltip and a one-member page ask about no more than they show
 tools/mutations/marking-reads-a-field-nothing-writes.mut	a member sent and changed since is counted as changed, by name	wide family
+tools/mutations/material-picture-uses-the-old-global.mut	a material's picture is drawn through C_Item where GetItemIcon is gone	what a recipe is made of, beside the recipe
 tools/mutations/may-ride-names-the-general-riding-skill.mut	while a character whose only riding skill is the general one is told nothing extra	what a character may ride, beside what they can
 tools/mutations/member-recipe-row-picture-is-the-recorded-one.mut	a member's recipe row wears the picture of what it makes	what a recipe is made of, beside the recipe
 tools/mutations/migration-goes-through-setpayload.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
 tools/mutations/migration-stamps-a-new-mark.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
+tools/mutations/minimap-refill-not-followed.mut	on Midnight's minimap the block is written inside the round that refills the tooltip	the possessions block on a game tooltip
 tools/mutations/money-cell-keeps-a-spare-place-showing.mut	a figure with no copper uses one place and puts the other away	money lines up by gold, silver and copper
 tools/mutations/money-cell-keeps-the-last-rows-places.mut	a cell that is not money keeps the whole width and shows no places	money lines up by gold, silver and copper
 tools/mutations/money-cell-never-gives-the-width-back.mut	a cell that is not money keeps the whole width and shows no places	money lines up by gold, silver and copper
@@ -225,6 +436,7 @@ tools/mutations/money-even-pad-on-the-wrong-end.mut	and an enchant's money figur
 tools/mutations/money-even-widest-never-found.mut	and an enchant's money figures are drawn the same width too	what a craftable thing costs to make
 tools/mutations/money-font-not-taken-from-the-tooltip.mut	and measured in the font that tooltip is drawn in, not the one it started in	what a craftable thing costs to make
 tools/mutations/money-font-widths-kept-across-fonts.mut	and the places inside each figure are held at that font's widest digits	what a craftable thing costs to make
+tools/mutations/money-left-out-of-possessions.mut	and the money with the bags, as one Possessions	wide family
 tools/mutations/money-padding-calibrated-on-nothing.mut	a client that answers sensibly is believed, and one that does not is left alone	money lines up by gold, silver and copper
 tools/mutations/money-padding-trusts-the-width-it-asks-for.mut	and two figures take the same room from the silver onwards, to the pixel	money lines up by gold, silver and copper
 tools/mutations/money-places-laid-back-over-the-cell.mut	the silver place begins where the cell ends, by its own left edge	money lines up by gold, silver and copper
@@ -246,6 +458,7 @@ tools/mutations/names-keeps-the-build-of-a-replaced-client.mut	a client at a bui
 tools/mutations/neutral-house-beats-your-own.mut	your own side's house wins over the shared one where both have a price	the neutral auction house is one market for both sides of a realm
 tools/mutations/neutral-house-filed-under-a-side.mut	a reading taken at the neutral house is filed under the realm, not under a side	the neutral auction house is one market for both sides of a realm
 tools/mutations/neutral-house-reaches-another-realm.mut	a reading taken at the neutral house is filed under the realm, not under a side	the neutral auction house is one market for both sides of a realm
+tools/mutations/no-book-is-read-off-the-wrong-table.mut	a wand and a rod name the spell that makes them on all three builds	what a recipe is made of, beside the recipe
 tools/mutations/no-part-is-counted-as-written.mut	and the part a scan replaced is counted as written	wide family
 tools/mutations/node-block-names-nothing.mut	a line naming two different veins answers about both	the possessions block on a game tooltip
 tools/mutations/node-cluster-answers-for-the-first.mut	a line naming two different veins answers about both	the possessions block on a game tooltip
@@ -257,7 +470,7 @@ tools/mutations/node-describes-what-the-client-named.mut	and a tooltip the clien
 tools/mutations/node-does-not-refuse-a-place.mut	a place the client names is refused rather than scored as an ore	the possessions block on a game tooltip
 tools/mutations/node-herb-matched-loosely.mut	a herb name that is only part of an item's name resolves to nothing	the possessions block on a game tooltip
 tools/mutations/node-line-is-never-split.mut	a line naming two different veins answers about both  ->	the possessions block on a game tooltip
-tools/mutations/node-minimap-needs-the-minimap-itself.mut	a blip on the minimap resolves from its one line	the possessions block on a game tooltip
+tools/mutations/node-minimap-needs-the-minimap-itself.mut	while two coloured pins of different herbs answer about each of them	the possessions block on a game tooltip
 tools/mutations/node-minimap-tries-ores-first.mut	a herb node nobody holds any of says so rather than nothing  ->	the possessions block on a game tooltip
 tools/mutations/node-name-is-never-remembered.mut	a node name is worked out once however often it is hovered	the possessions block on a game tooltip
 tools/mutations/node-name-keeps-its-markup.mut	a herb whose name arrives wrapped in a colour still resolves, and as the herb  ->	the possessions block on a game tooltip
@@ -267,7 +480,7 @@ tools/mutations/node-never-redrawn-after-a-refill.mut	and gets it back when the 
 tools/mutations/node-never-reports-a-tooltip-shape.mut	and every tooltip reports its shape before any gate runs	the possessions block on a game tooltip
 tools/mutations/node-nobody-holds-draws-nothing.mut	a herb node nobody holds any of says so rather than nothing  ->	the possessions block on a game tooltip
 tools/mutations/node-offers-a-click-on-a-rock.mut	a node never offers a gesture that needs an item to click	the possessions block on a game tooltip
-tools/mutations/node-one-line-needs-no-map.mut	and neither is a tooltip with no second line at all	the possessions block on a game tooltip
+tools/mutations/node-one-line-needs-no-map.mut	and one line off the maps is never scored as a vein	the possessions block on a game tooltip
 tools/mutations/node-ore-floor-is-dropped.mut	and a three-letter coincidence with a very short ore name is refused	the possessions block on a game tooltip
 tools/mutations/node-ore-margin-is-never-waived.mut	a line naming two different veins answers about both  ->	the possessions block on a game tooltip
 tools/mutations/node-ore-margin-is-waived-for-all.mut	a vein whose two best candidates are close draws nothing	the possessions block on a game tooltip
@@ -277,27 +490,45 @@ tools/mutations/node-piece-keeps-its-markup.mut	and the spacing the markup leave
 tools/mutations/node-profession-must-be-the-whole-line.mut	a vein whose second line only requires the profession is still a node	the possessions block on a game tooltip
 tools/mutations/node-reads-only-the-second-line.mut	and one whose second line is blank and whose third requires the profession	the possessions block on a game tooltip
 tools/mutations/node-refuses-a-tooltip-another-addon-grew.mut	a node of five lines is still a node  ->	the possessions block on a game tooltip
-tools/mutations/node-refuses-the-world-map.mut	a pin on the world map is served too	the possessions block on a game tooltip
+tools/mutations/node-refuses-the-world-map.mut	a vein pin on the world map included	the possessions block on a game tooltip
 tools/mutations/node-scores-a-count-not-a-share.mut	a line naming two different veins answers about both  ->	the possessions block on a game tooltip
 tools/mutations/node-silent-list-says-nothing.mut	and a list the client has not finished naming says so, and says which and how many	the possessions block on a game tooltip
 tools/mutations/node-title-keeps-repeats.mut	three pins of one vein are one name in the title	the possessions block on a game tooltip
 tools/mutations/node-turned-away-says-nothing.mut	a tooltip turned away names the gate that did it	the possessions block on a game tooltip
 tools/mutations/offering-carries-the-clocks-inside.mut	the granted member arrives	wide family
+tools/mutations/old-headings-stay-on-screen.mut	and none once the record has no lines, none left on screen from before	what a recipe is made of, beside the recipe
 tools/mutations/on-data-ignores-the-clocks.mut	a member held back arrives with nothing but a newer age	wide family
 tools/mutations/one-far-character-makes-the-family-out-of-reach.mut	and says that none of them is, rather than naming one of the three	a family is a person with several characters
+tools/mutations/our-own-sell-price-counts-as-the-clients.mut	and Family's own line, drawn before, does not count as the client's	the sell price where the client already shows one
 tools/mutations/ours-make-counts-unlearnt-lists.mut	but not one on a list the character has unlearnt	what a craftable thing costs to make
 tools/mutations/ours-make-leaves-out-items.mut	what our own members can make is read off their recipe lists, by spell and by item	what a craftable thing costs to make
 tools/mutations/ours-make-never-dropped.mut	and a recipe written to a record is in it at the next question	what a craftable thing costs to make
 tools/mutations/out-of-reach-is-called-offline.mut	a family whose characters are all on realms out of reach is said to be so	a family is a person with several characters
 tools/mutations/own-auction-forgets-which-variant.mut	a member's own auction records the string that says which variant it is	auctions
+tools/mutations/pets-creature-any-row.mut	a GUID whose number no row carries names no creature	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-creature-from-generic-guid.mut	and is the tamed creature from its list row, not the GUID's generic one	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-creature-guid-any-kind-generic.mut	with the demon its Creature- GUID names, not a pet's generic one	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-modern-book-keeps-commands.mut	the cat's book is read from C_SpellBook, abilities by id and commands left out	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-modern-book-never-asked.mut	the cat's book is read from C_SpellBook, abilities by id and commands left out  ->	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-modern-book-no-rank.mut	with the book's own words beside the id	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-modern-kind-dropped.mut	a warlock's demon is keyed by its family alone, from the kind the book answers	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-modern-stable-first.mut	where the old stable call answers, it is the one read	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-modern-stable-never-asked.mut	with the stable shut the pet on call is read from Midnight's list	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-number-whole-field.mut	and is the tamed creature from its list row, not the GUID's generic one	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-stabled-dropped-away.mut	and the stabled one after it, marked so	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-stabled-kept-at-master.mut	a scan renews the stable, on call and stabled	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
+tools/mutations/pets-stabled-read-away-from-master.mut	and the stabled one after it, marked so	a hunter's pets on the fourth pretend client, through C_StableInfo and C_SpellBook
 tools/mutations/plain-pass-is-not-started.mut	and the plain storage pass ran the checks rather than none of them	records are changed only by writing them, and the saved data's read is timed
 tools/mutations/plain-record-answers-no-mark.mut	a member sent and changed since is counted as changed, by name	wide family
 tools/mutations/plain-record-without-mark-is-never-stamped.mut	a plain record with no mark has its parts marked the first time it is asked, and keeps it	a record from before backlog 74 keeps its mark when it is rewritten plain
+tools/mutations/played-at-level-in-mark.mut	the time played at this level does not make a member worth sending again	what a linked family may be granted
+tools/mutations/pooled-profession-row-keeps-its-race.mut	a recipe drawn where a race heading was chooses the recipe, not the race	archaeology: fragments, the project and the artifacts solved
 tools/mutations/possessions-consolidate-keyring-merged.mut	switched on, the carried bags are one block, the keyring its own, and the bank one	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/possessions-consolidate-merges-nothing.mut	switched on, the carried bags are one block, the keyring its own, and the bank one	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/possessions-consolidate-real-slot-lost.mut	a slot in the carried block is described by the bag and slot it is really in	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/possessions-consolidate-title-lost.mut	the blocks are titled Bags and Bank	Possessions: the carried bags as one block and the bank as another (backlog 85)
 tools/mutations/possessions-page-ignores-its-room.mut	on a page with room for all nine holders none is folded away	an alias for a linked family
+tools/mutations/possessions-status-lines-touch.mut	the possessions status parts its two lines by two pixels	looks to learn and looks known
 tools/mutations/price-audit-ban-keeps-price.mut	a price banned in its market values nothing, on the lot or on the member	vendor prices: one from the client, one learned from merchants
 tools/mutations/price-audit-ban-not-obeyed.mut	a price banned in its market values nothing, on the lot or on the member	vendor prices: one from the client, one learned from merchants
 tools/mutations/price-audit-ban-stops-readings.mut	and still files a reading for an item banned in this market	vendor prices: one from the client, one learned from merchants
@@ -325,24 +556,52 @@ tools/mutations/price-audit-panel-wheel-resorts.mut	scrolling and paging redraw 
 tools/mutations/price-audit-previous-price-lost.mut	the newer house keeps the price a reading replaced	vendor prices: one from the client, one learned from merchants
 tools/mutations/price-audit-ten-times-not-enough.mut	a price ten times the one it replaced is suspect	auditing the auction prices Family collected (backlog 81)
 tools/mutations/price-audit-value-ignores-bans.mut	and out of what a recipe costs	the realms of one connected group are valued from one auction house
+tools/mutations/price-block-no-link.mut	and the item's tooltip hands the price block the link it is showing	the sell price where the client already shows one
+tools/mutations/price-link-everywhere.mut	and elsewhere by its id, as it always was	the sell price where the client already shows one
+tools/mutations/price-scaled-by-id.mut	where an item's price moves with its level, it is priced by its link	the sell price where the client already shows one
 tools/mutations/probe-fields-cut-at-six.mut	an eighteen-key record keeps the key that identifies it	FamilyProbe prints a record whole
 tools/mutations/probe-keeps-one-answer-about-sending.mut	the probe prints every answer the client gives about sending a query	the button on the auction window
 tools/mutations/probe-prints-the-id-not-the-item-string.mut	the probe shows a list row as the whole item string, suffix and all	the button on the auction window
 tools/mutations/probe-shows-no-rows-without-a-query.mut	the probe shows a list row as the whole item string, suffix and all	the button on the auction window
 tools/mutations/profession-collapse-not-recorded.mut	a window that lists nothing does not replace twenty recipes on its first read	professions
 tools/mutations/profession-collapse-refuses-the-write.mut	the small record is stored, because a player really can unlearn a profession	professions
-tools/mutations/professions-door-opens-on-anybody.mut	ALT on a character with no profession does not open the panel on anybody	CTRL or ALT and a click on a Summary name goes to that character
+tools/mutations/profession-open-by-line-anybody.mut	and not for somebody else's profession	what a recipe is made of, beside the recipe
+tools/mutations/profession-open-by-line-everywhere.mut	while a client that lets an addon cast never takes that route	what a recipe is made of, beside the recipe
+tools/mutations/profession-open-by-line-missing.mut	but asks for the window by the profession's line instead	what a recipe is made of, beside the recipe
+tools/mutations/profession-open-by-line-wrong-id.mut	but asks for the window by the profession's line instead	what a recipe is made of, beside the recipe
+tools/mutations/professions-door-opens-on-anybody.mut	a member with profession gear and no skills recorded has no professions page	what a recipe is made of, beside the recipe
 tools/mutations/professions-learns-brief-item-cooldowns.mut	unless its cooldown is a brief one, which would carry it to the guild	crafting cooldowns
 tools/mutations/professions-panel-writes-aliases-into-the-record.mut	a profession filed under a word is drawn under its id without the record changing	what a recipe is made of, beside the recipe
+tools/mutations/profgear-in-possessions-row.mut	the Possessions worn row leaves the profession tools and accessories out	what a recipe is made of, beside the recipe
+tools/mutations/profgear-link-leaks.mut	Cooking's page says it was never opened, with two boxes	what a recipe is made of, beside the recipe
+tools/mutations/profgear-no-button.mut	the Professions panel offers Skinning and Cooking for the gear they wear	what a recipe is made of, beside the recipe
+tools/mutations/profgear-not-read.mut	a profession's tool and accessories are recorded as worn, by the slots the game names	what a recipe is made of, beside the recipe
+tools/mutations/profgear-page-without-skills.mut	a member with profession gear and no skills recorded has no professions page	what a recipe is made of, beside the recipe
+tools/mutations/profgear-panel-reads-nothing.mut	the Professions panel offers Skinning and Cooking for the gear they wear	what a recipe is made of, beside the recipe
+tools/mutations/profgear-profession-dropped.mut	a profession's tool and accessories are recorded as worn, by the slots the game names	what a recipe is made of, beside the recipe
+tools/mutations/profgear-row-not-drawn.mut	and the gear page draws the profession's row, its name and its three slots	what a recipe is made of, beside the recipe
+tools/mutations/profgear-row-steps-twice.mut	a profession's name is level with its slots, and the next row a slot and a gap below	what a recipe is made of, beside the recipe
+tools/mutations/profgear-status-reason-lost.mut	Skinning's page is a strip of its tool and accessories, and says it has nothing to make	what a recipe is made of, beside the recipe
+tools/mutations/profgear-strip-left-shown.mut	and puts it away when none does	what a recipe is made of, beside the recipe
+tools/mutations/profgear-tooltip-by-id.mut	and a worn piece describes itself by its link	what a recipe is made of, beside the recipe
+tools/mutations/profgear-unfiltered.mut	and puts it away when none does	what a recipe is made of, beside the recipe
+tools/mutations/profgear-ungated.mut	while a client without profession gear records none	what a recipe is made of, beside the recipe
 tools/mutations/quest-done-claims-out-of-nothing.mut	with no history read anywhere, the tooltip claims nothing either way	a quest row's own objectives, under the client's description of the quest
 tools/mutations/quest-done-never-folds.mut	twelve who have done it are ten names and a count	the quests a character has already handed in
-tools/mutations/quest-history-flags-read-as-ids.mut	a quest this character has handed in says so on its row's tooltip	a quest row's own objectives, under the client's description of the quest
+tools/mutations/quest-history-flags-read-as-ids.mut	and a quest in it reads as done, and one not in it as not done	the quest history on the fourth pretend client
 tools/mutations/quest-history-ignores-the-filled-table.mut	a quest this character has handed in says so on its row's tooltip	a quest row's own objectives, under the client's description of the quest
 tools/mutations/quest-history-pool-not-saved.mut	the family list survives a reload in the order it was built	the quests a character has already handed in
 tools/mutations/quest-history-shared-with-quests.mut	granting quests does not send the history	the quests a character has already handed in
 tools/mutations/quest-history-turn-in-reads-nothing.mut	handing a quest in reads the history again	the quests a character has already handed in
+tools/mutations/quest-limit-asked-everywhere.mut	and a Classic client keeps MAX_QUESTS even where the log would say otherwise	the quest log
+tools/mutations/quest-limit-constant-on-midnight.mut	the log's size is Midnight's 35, asked of the log, not the 25 the old constant says	the quest log on the fourth pretend client
 tools/mutations/quest-row-tooltip-omits-who-has-done-it.mut	a quest this character has handed in says so on its row's tooltip	a quest row's own objectives, under the client's description of the quest
 tools/mutations/quests-page-ignores-its-room.mut	on a page with room for all of them nobody is folded away	everybody's quests at once
+tools/mutations/ranged-slot-midnight-drawn.mut	on Midnight the sheet has no ranged slot, and the other eighteen are drawn	what a recipe is made of, beside the recipe
+tools/mutations/reagent-bag-filed-as-bank.mut	with the window open, Midnight's six tabs are read	the bank on the fourth pretend client
+tools/mutations/reagent-bag-not-read.mut	a Midnight-build scan counts the bags it was given, the reagent bag among them	the same bag scan on the fourth pretend client
+tools/mutations/reagent-bag-read-everywhere.mut	and not with the carried bags	the bank
+tools/mutations/reagent-bag-skipped-in-classic-bank.mut	on a Classic client the first bank bag, container 5, is read with the bank	the bank
 tools/mutations/realm-group-ban-only-where-put.mut	a ban on one realm of the group keeps the price out for every realm of it	the realms of one connected group are valued from one auction house
 tools/mutations/realm-group-list-without-us-written.mut	a list that leaves out the realm being played is not written down	the realms of one connected group are valued from one auction house
 tools/mutations/realm-group-names-not-normalised.mut	a member on another realm of the group is valued from a reading taken on a third	the realms of one connected group are valued from one auction house
@@ -351,6 +610,8 @@ tools/mutations/realm-group-never-forgotten.mut	a realm the client now says stan
 tools/mutations/realm-group-not-remembered.mut	a member on another realm of the group is valued from a reading taken on a third	the realms of one connected group are valued from one auction house
 tools/mutations/realm-group-sides-mixed.mut	while the other side still has only the shared one	the neutral auction house is one market for both sides of a realm
 tools/mutations/realm-group-stalest-wins.mut	an older reading on the member's own realm gives way to a fresher one next door	the realms of one connected group are valued from one auction house
+tools/mutations/realms-namespace-unasked.mut	and where the old call is gone the namespace's list is asked	a guild that spans a connected group
+tools/mutations/received-old-ids-not-mapped.mut	an older Family's old id is heard as the category that took it in	what a linked family may be granted
 tools/mutations/recipe-ctrl-swaps-to-the-recipe-again.mut	and with CTRL held it is still what it makes, so the key does what it does elsewhere	what a recipe is made of, beside the recipe
 tools/mutations/recipe-drilldown-draws-no-materials.mut	and opening it puts a line underneath carrying the materials	what a recipe is made of, beside the recipe
 tools/mutations/recipe-drilldown-needs-hidden-crafters.mut	a recipe with materials is one a click can open, crafters or no crafters	what a recipe is made of, beside the recipe
@@ -372,11 +633,24 @@ tools/mutations/recipe-strip-inset-ignores-the-note.mut	and the note ends to the
 tools/mutations/recipe-strip-keeps-a-stale-row.mut	while a recipe with no materials at all leaves an empty strip behind it	what a recipe is made of, beside the recipe
 tools/mutations/recipe-strip-on-the-whole-family-list.mut	and no row on it carries a materials strip, its own or a borrowed one	what a recipe is made of, beside the recipe
 tools/mutations/recipes-collapse-never-read-again.mut	and once it has filled, the second read writes it whole	professions
-tools/mutations/recipes-collapse-only-this-character.mut	with nothing collapsed anywhere, it says none	what a recipe is made of, beside the recipe
+tools/mutations/recipes-collapse-only-this-character.mut	a collapsed record on another character is listed, by name	what a recipe is made of, beside the recipe
 tools/mutations/recipes-collapse-stale-read-confirms.mut	an empty read long after an earlier one is held again, not taken as confirmed	professions
 tools/mutations/recipes-collapse-written-at-once.mut	a window that lists nothing does not replace twenty recipes on its first read	professions
 tools/mutations/release-does-not-run-the-mutations.mut	release.sh runs the recorded mutations too, and stops on them	the release script refuses a version with no live-check row
 tools/mutations/release-workflow-runs-the-harness-without-the-words.mut	release.yml hands the words list to every step that runs the harness	the release workflow may create the release it uploads
+tools/mutations/rep-heading-first-copy-not-most.mut	the whole family files an inactive faction where another member has it active	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-heading-id-zero-kept.mut	an inactive faction says so itself, and *Inactive*'s id 0 is not kept	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-heading-sign-always-open.mut	a shut heading says so with a plus	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-heading-without-id-preferred.mut	the whole family files an inactive faction where another member has it active	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-headings-start-open.mut	a character's headings are drawn in the game's order, shut	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-inactive-copy-places-faction.mut	the whole family files an inactive faction where another member has it active	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-inactive-not-marked.mut	and writes inactive before the progress of whoever set it so	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-inactive-not-read.mut	a faction the client calls not active is recorded inactive, and only that one	reputations on the fourth pretend client
+tools/mutations/rep-merge-appends.mut	members' orders merge into one that none of them contradicts	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-midnight-inactive-everywhere.mut	an inactive faction says so itself, and *Inactive*'s id 0 is not kept	reputations in the game's order, headings shut, inactive per character
+tools/mutations/rep-midnight-inactive-inverted.mut	a faction the client calls not active is recorded inactive, and only that one	reputations on the fourth pretend client
+tools/mutations/rep-midnight-inactive-not-read.mut	a faction the client calls not active is recorded inactive, and only that one	reputations on the fourth pretend client
+tools/mutations/rep-nesting-ignored.mut	and the measured ordinary one, under a heading with a standing, files under the heading above it	reputations on the fourth pretend client
 tools/mutations/replay-a-query-carrying-getall.mut	and refuses to send one page of it either	how long a read of the auction house takes
 tools/mutations/reputations-page-ignores-its-room.mut	on a page with room for all of a faction's people none is folded away	the family's reputations, as factions rather than as members
 tools/mutations/resend-sends-only-what-changed.mut	/family wide resend sends every member again, with nothing changed	Update now sends what changed, and resend sends everything
@@ -387,6 +661,7 @@ tools/mutations/rested-no-ceiling.mut	and never past a level and a half	rested e
 tools/mutations/rested-pandaren-single-ceiling.mut	and holds up to three levels	rested experience worked forward from the reading
 tools/mutations/rested-pandaren-single.mut	a Pandaren fills twice as fast	rested experience worked forward from the reading
 tools/mutations/rested-scan-no-moment.mut	the scan records when rested was read and whether the character was resting	rested experience worked forward from the reading
+tools/mutations/riding-known-skips-the-old-call.mut	on Midnight the style of flight chosen is recorded, and the ground from the riding spell	how fast a character can get about
 tools/mutations/scancost-prices-a-client-that-has-no-achievements.mut	and given frames enough, every part reports with a count and a time	wide family
 tools/mutations/scancost-times-everything-in-one-frame.mut	one frame later the first part has reported and no other has	wide family
 tools/mutations/search-box-refreshes-on-every-keystroke.mut	three keys typed inside the wait search nothing while the keys are coming	what a recipe is made of, beside the recipe
@@ -394,40 +669,90 @@ tools/mutations/search-box-waits-for-code-too.mut	with the feature off, the sear
 tools/mutations/sending-mark-keeps-last-seen.mut	a member held back arrives with nothing but a newer age	wide family
 tools/mutations/sending-mark-keeps-the-seen-stamps.mut	so the member is still held back from the link	a member's mark stays still when nothing changed
 tools/mutations/shared-field-check-finds-every-name.mut	and a name no source holds is found nowhere, nor is part of a word	what Wide Family shares is what Family records
+tools/mutations/shut-lines-at-the-end-are-not-drawn.mut	and the panel draws the lines as headings, shut, with no recipe under them	what a recipe is made of, beside the recipe
 tools/mutations/slash-help-not-registered.mut	/family help lists the commands without apologising for itself	what a recipe is made of, beside the recipe
+tools/mutations/slot-ctrl-alt-unheard.mut	CTRL-ALT and a click on it searches the family for that item	CTRL-ALT on a Family slot opens the family's list
+tools/mutations/spec-branches-spellbook-unasked.mut	without the old call the player's spellbook is asked instead	the crafters block on a recipe tooltip
+tools/mutations/spec-branches-wrong-bank.mut	without the old call the player's spellbook is asked instead	the crafters block on a recipe tooltip
+tools/mutations/specialisations-not-shared.mut	professions carries everything the panels read for it	what a linked family may be granted
+tools/mutations/spell-info-has-no-new-route.mut	a spell to be learned later is not one she has, and a flyout keeps what is behind it	reputations on the fourth pretend client
+tools/mutations/spell-info-places-shifted.mut	a spell's table is read back in the old call's places, with no rank	items and spells on the PTR, where the old globals are gone
+tools/mutations/spell-info-skips-the-old-call.mut	while a client that answers the old calls is read through them	items and spells on the PTR, where the old globals are gone
+tools/mutations/spellbook-modern-flyout-dropped.mut	a spell to be learned later is not one she has, and a flyout keeps what is behind it	reputations on the fourth pretend client
+tools/mutations/spellbook-modern-future-kept.mut	a spell to be learned later is not one she has, and a flyout keeps what is behind it	reputations on the fourth pretend client
+tools/mutations/spellbook-modern-offspec-kept.mut	and records the spellbook, read through C_SpellBook where the old walk finds no tabs	reputations on the fourth pretend client
+tools/mutations/spellbook-modern-unasked.mut	and records the spellbook, read through C_SpellBook where the old walk finds no tabs  ->	reputations on the fourth pretend client
+tools/mutations/spellbook-modern-wrong-bank.mut	and records the spellbook, read through C_SpellBook where the old walk finds no tabs  ->	reputations on the fourth pretend client
 tools/mutations/stable-mark-keeps-deadline-seconds.mut	a reset a few seconds later does not change the member's mark	instance lockouts, read, kept and drawn
 tools/mutations/stable-mark-keeps-the-moment-a-part-was-read.mut	and moves no member's mark	a member's mark stays still when nothing changed
 tools/mutations/status-does-not-count-compressed-records.mut	a record from before backlog 74 is counted as still compressed	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/status-load-time-trusts-a-reset-clock.mut	and says it was not measured when the clock ran backwards between the two	records are changed only by writing them, and the saved data's read is timed
 tools/mutations/status-load-time-without-the-parse-stamp.mut	/family status says how long the saved data took to read at login	records are changed only by writing them, and the saved data's read is timed
+tools/mutations/summary-currency-caption-current.mut	and says that is what they are	one member's currencies, grouped as the game groups them
+tools/mutations/summary-currency-caption-starred.mut	the Summary shows the starred currency and nothing else, and says so under it	one member's currencies, grouped as the game groups them
+tools/mutations/summary-currency-classic-emptied.mut	the currencies a member holds each get a column	what the broker and the minimap button say and do
+tools/mutations/summary-currency-legacy-default.mut	and with nothing starred, the current groups in the game's order, never Legacy's	one member's currencies, grouped as the game groups them
 tools/mutations/summary-currency-name-key-not-joined.mut	one Honor Points column, whichever way each record was filed	a currency filed under its name joins the column of its id
+tools/mutations/summary-currency-order-reversed.mut	and with nothing starred, the current groups in the game's order, never Legacy's	one member's currencies, grouped as the game groups them
+tools/mutations/summary-currency-stars-ignored.mut	the Summary shows the starred currency and nothing else, and says so under it	one member's currencies, grouped as the game groups them
 tools/mutations/summary-hint-missing-under-a-tooltip.mut	a member's tooltip on the misc set offers both clicks, in grey	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-hint-only-where-a-tooltip-was.mut	a member's tooltip on the bags set offers both clicks, in grey  ->	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-hint-promises-alt-to-everyone.mut	and one with no profession recorded is not offered ALT on the bags set	CTRL or ALT and a click on a Summary name goes to that character
+tools/mutations/summary-line-keeps-last-member-keys.mut	a Cooldowns line's tooltip is about its own member, after Miscellaneous	instance lockouts, read, kept and drawn
 tools/mutations/summary-name-both-held-is-control.mut	and both held is an ordinary click, not either gesture	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-name-ignores-modifiers.mut	and ALT and a click opens that character's professions	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-name-misses-in-silence.mut	and says why, by name  ->	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-name-swaps-the-doors.mut	CTRL and a click on a name opens that character's possessions	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-note-under-the-scroll-bar.mut	the Cooldowns note stops where the list does	instance lockouts, read, kept and drawn
 tools/mutations/summary-realm-heading-cut-by-its-text.mut	a realm's heading on the Summary has the row's width, not the Member column's	instance lockouts, read, kept and drawn
+tools/mutations/summary-row-keeps-last-sets-tooltip-key.mut	a Cooldowns line's tooltip is about its own member, after Miscellaneous	instance lockouts, read, kept and drawn
 tools/mutations/summary-tooltip-no-logout-place.mut	under a character's name, where they logged out, subzone beside the zone  ->	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-tooltip-place-twice-on-misc.mut	but not twice on Miscellaneous, which says it on its own Where line	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/switching-exchange-on-announces-nothing.mut	switching automatic exchange back on announces, and sends nothing else	logging in announces, and pushes nothing
 tools/mutations/taking-a-whole-letter-reads-one-attachment.mut	money answered one update late is still said when it arrives  ->	the money that came out of the mailbox
+tools/mutations/talent-node-active-hero-unasked.mut	a hero node under its hero tree, which is named	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-hero-ignored.mut	a hero node under its hero tree, which is named	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-hero-unnamed.mut	under the hero tree's name, with a rank where there is more than one	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-loadout-unnamed.mut	with the loadout's name	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-order-lost.mut	in the order the tree reads, top first and left first	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-other-specs-dropped.mut	a second specialisation is recorded beside the first, which is kept	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-points-hidden.mut	and each side's points	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-pools-swapped.mut	and filed under the side whose pool it costs from	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-rank-hidden.mut	under the hero tree's name, with a rank where there is more than one	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-side-guessed.mut	and filed under the side whose pool it costs from	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-spec-count-by-class-unasked.mut	and the class's count of specialisations is asked by class where the old call is gone	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-unchosen-hero-listed.mut	a node not taken is not listed, nor one whose entry leads to no spell	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-node-untaken-listed.mut	a node not taken is not listed, nor one whose entry leads to no spell	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-nodes-never-read.mut	Midnight's talents are read as nodes, for the specialisation being played	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-nodes-not-drawn.mut	the panel says which of the class's three specialisations it shows	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-nodes-read-everywhere.mut	a talent scan on Midnight records a group	talents on the fourth pretend client
+tools/mutations/talent-pvp-not-drawn.mut	the PvP talents are drawn under their own heading	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-pvp-not-read.mut	the PvP talents are kept with the specialisation, as their spells	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-pvp-spell-misplaced.mut	the PvP talents are kept with the specialisation, as their spells	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/talent-war-mode-not-drawn.mut	deDE translates only strings the addon still asks for	the translations
+tools/mutations/talent-war-mode-not-kept.mut	and War Mode as the player's switch, not where the character stands	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/the-auction-counters-take-the-key-the-workers-use.mut	the window's own event survives too, which is what asks for the list	the auction house on the fourth pretend client
+tools/mutations/the-auction-created-event-is-not-heard.mut	and the house's own event for a new auction asks the same, where a client sends it	the auction house on the fourth pretend client
 tools/mutations/the-auction-row-count-is-not-checked.mut	while a row naming something else is not counted at all	vendor prices: one from the client, one learned from merchants
+tools/mutations/the-bank-starts-at-the-backpack.mut	with the window open, Midnight's six tabs are read	the bank on the fourth pretend client
 tools/mutations/the-browse-list-is-asked-about-row-nought.mut	and a frame that answers no id at all is refused rather than crashed on	vendor prices: one from the client, one learned from merchants
 tools/mutations/the-browse-row-ignores-the-scroll.mut	a scrolled list is read at the row on the screen, not at the slot showing it	vendor prices: one from the client, one learned from merchants
+tools/mutations/the-category-tree-is-not-climbed.mut	a technique that answers its profession takes its line from the category above it	professions on the fourth pretend client
 tools/mutations/the-check-that-caught-it-is-not-read.mut	which check caught a case is read out of the gate's own words	the gate run by the mutator
+tools/mutations/the-classic-clients-lose-the-profession-cast.mut	clicking a profession asks the client to open it, by its stored word	what a recipe is made of, beside the recipe
 tools/mutations/the-click-is-offered-on-an-action-bar-slot.mut	a bar slot is offered no click, because the bar keeps the keys	a family bigger than a tooltip
 tools/mutations/the-click-is-offered-where-no-hook-was-installed.mut	while a client that cannot catch one still gets the directions	a family bigger than a tooltip
-tools/mutations/the-click-reads-the-name-out-of-the-link.mut	and a link in somebody else's language is searched for as this client names it	a modified click on an item
+tools/mutations/the-click-reads-the-name-out-of-the-link.mut	CTRL-ALT and a click on it searches the family for that item	CTRL-ALT on a Family slot opens the family's list
+tools/mutations/the-clients-sell-price-is-never-found.mut	where the client has written its own sell price, Family's says it is for one	the sell price where the client already shows one
 tools/mutations/the-crafter-row-counts-names-instead-of-measuring.mut	and a row of short names holds more than the four it used to	what a recipe is made of, beside the recipe
+tools/mutations/the-current-line-is-not-marked.mut	and the line the profession's own rank belongs to is marked, and only that one	professions on the fourth pretend client
 tools/mutations/the-fold-count-is-not-measured-into-the-line.mut	and no line is ever drawn wider than the column, marker included	what a recipe is made of, beside the recipe
 tools/mutations/the-fold-count-leaves-out-the-guild.mut	and it counts both groups, which is what opening the row lists	what a recipe is made of, beside the recipe
 tools/mutations/the-fold-count-sits-before-the-guild.mut	and a row of short names holds more than the four it used to	what a recipe is made of, beside the recipe
 tools/mutations/the-fold-marker-is-not-measured-with-the-names.mut	and one fewer when the count of the rest has to fit beside them	two ways of saying it, and the shorter one where the longer will not fit
 tools/mutations/the-gate-counts-and-tells-nobody.mut	pre-commit writes the count where commit-msg will look for it	the hooks, and the one claim in a commit message that can be checked
 tools/mutations/the-gesture-is-named-only-under-a-contraction.mut	a list drawn whole offers the gesture as well	a family bigger than a tooltip
+tools/mutations/the-lines-are-not-stored.mut	and its expansion lines are kept with the recipes	professions on the fourth pretend client
 tools/mutations/the-lock-does-not-say-who-holds-it.mut	and says which process is holding it, for whoever is waiting	the gate run by the mutator
 tools/mutations/the-loot-quantity-is-the-wrong-return.mut	a loot row is multiplied by what is lying in that slot	vendor prices: one from the client, one learned from merchants
 tools/mutations/the-machine-lock-is-never-taken.mut	a run holds the machine's lock while it runs, and lets it go at the end	the gate run by the mutator
@@ -437,12 +762,21 @@ tools/mutations/the-mail-total-says-what-you-now-own.mut	and does not go on to s
 tools/mutations/the-mark-gaps-do-not-add-up.mut	a member sent and changed since is counted as changed, by name	wide family
 tools/mutations/the-merchant-quantity-is-the-wrong-return.mut	a merchant's row is multiplied by what one purchase hands over	vendor prices: one from the client, one learned from merchants
 tools/mutations/the-merchant-row-is-not-checked.mut	and a vendor's row naming something else is not counted	vendor prices: one from the client, one learned from merchants
+tools/mutations/the-money-column-keeps-copper-on-large-sums.mut	coins: the Money column writes ten thousand gold and over without the copper	vendor prices: one from the client, one learned from merchants
+tools/mutations/the-namespace-talent-reader-is-never-offered.mut	it was read through the namespace, which answers a table	talents on the fourth pretend client
+tools/mutations/the-newer-faction-count-is-asked-first.mut	where both counts answer, the old one is read and the newer one is not asked	reputations on the fourth pretend client
+tools/mutations/the-newer-quest-count-is-asked-first.mut	where both counts answer, the old one is read and the newer one is not asked	the quest log on the fourth pretend client
+tools/mutations/the-node-reader-skips-the-secret-guard.mut	a node tooltip with a secret line is read without raising, and draws nothing	the possessions block on a game tooltip
 tools/mutations/the-pile-count-never-leaves-the-bags.mut	an auction row is offered the key rather than the answer	vendor prices: one from the client, one learned from merchants
 tools/mutations/the-position-outranks-the-table-link.mut	a link on C_CurrencyInfo outranks the twelfth value of the row	currencies
+tools/mutations/the-ranks-ahead-are-not-counted.mut	while one whose next rank is not learnt keeps the rank it has, one of two	professions on the fourth pretend client
+tools/mutations/the-recorded-recipe-index-outlives-the-record.mut	while one a member knows the recipe for is matched to it, once the record is written	recipe materials on the fourth pretend client
 tools/mutations/the-register-forgets-a-case-that-went-red.mut	and only a real heading of this harness counts as a section	the gate run by the mutator
 tools/mutations/the-ruler-leaves-its-measurement-behind.mut	and measuring puts back what the font string was saying	two ways of saying it, and the shorter one where the longer will not fit
+tools/mutations/the-schematic-product-is-not-kept.mut	and what a recipe makes is the client's answer too, where no book says	recipe materials on the fourth pretend client
 tools/mutations/the-status-line-drops-the-hint-unmeasured.mut	with no ruler at all the long way is used	two ways of saying it, and the shorter one where the longer will not fit
 tools/mutations/the-status-line-never-drops-the-hint.mut	and the short way where there is not	two ways of saying it, and the shorter one where the longer will not fit
+tools/mutations/the-status-names-the-whole-profession.mut	and the status line names the line the profession's rank belongs to	what a recipe is made of, beside the recipe
 tools/mutations/the-table-link-is-never-asked.mut	a link on C_CurrencyInfo outranks the twelfth value of the row	currencies
 tools/mutations/the-table-link-outranks-the-global.mut	the global link outranks the one hanging off C_CurrencyInfo	currencies
 tools/mutations/the-tooltip-guard-forgets-which-row.mut	moving to the next row of the same item does not keep the last row's count	vendor prices: one from the client, one learned from merchants
@@ -470,7 +804,7 @@ tools/mutations/tooltip-draws-a-lot-worth-nothing.mut	a lot the game will not pa
 tools/mutations/tooltip-hint-names-only-the-stack.mut	with a pile in front of you as well, the hint names both answers	vendor prices: one from the client, one learned from merchants
 tools/mutations/tooltip-item-money-not-evened.mut	every money figure on a tooltip is drawn the same width, to within a pixel	what a craftable thing costs to make
 tools/mutations/tooltip-material-priced-in-the-short-form.mut	and an enchant's money figures are drawn the same width too	what a craftable thing costs to make
-tools/mutations/tooltip-never-reads-the-link.mut	an item somebody owns gets a possessions block	the possessions block on a game tooltip
+tools/mutations/tooltip-never-reads-the-link.mut	and the item's tooltip hands the price block the link it is showing  ->	the sell price where the client already shows one
 tools/mutations/tooltip-owner-cap.mut	and the whole of what it writes fits the screen it measured	the possessions block on a game tooltip
 tools/mutations/tooltip-possessions-row-cooldown-first.mut	after saying where it is	the possessions block on a game tooltip
 tools/mutations/tooltip-possessions-row-draws-passed-cooldown.mut	a wait that has passed is not drawn at all	the possessions block on a game tooltip
@@ -478,6 +812,7 @@ tools/mutations/tooltip-possessions-row-drops-cooldown.mut	the shaker's own tool
 tools/mutations/tooltip-spell-money-not-evened.mut	and an enchant's money figures are drawn the same width too	what a craftable thing costs to make
 tools/mutations/tooltip-total-priced-in-the-short-form.mut	coins: a crafted thing's total is written in gold	what a craftable thing costs to make
 tools/mutations/tooltip-worth-priced-in-the-short-form.mut	and holding it says what the whole lot comes to, each holder at their own market	vendor prices: one from the client, one learned from merchants
+tools/mutations/uncategorised-recipes-go-last.mut	recipes are laid out by line in the record's order, then by category	what a recipe is made of, beside the recipe
 tools/mutations/unmeasured-list-redraws-every-time.mut	an unmeasured list answers unknown and is drawn again once, not every frame	loading Family_UI
 tools/mutations/unwritten-record-loses-the-mark-it-came-with.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
 tools/mutations/update-now-drops-the-offering-list.mut	the granted member arrives	wide family
@@ -487,6 +822,7 @@ tools/mutations/update-now-sends-everything.mut	Update now asks the exchange for
 tools/mutations/variant-count-ignores-the-suffix.mut	one base item under three suffixes counts as one item and three variants	vendor prices: one from the client, one learned from merchants
 tools/mutations/variant-count-uses-the-whole-item-string.mut	so the family counts it under that heading and never under the plain item	auctions
 tools/mutations/variant-key-forgets-the-suffix.mut	so the family counts it under that heading and never under the plain item	auctions
+tools/mutations/vendor-price-everywhere.mut	and a client where they do not keeps none	codec round trip
 tools/mutations/walk-arrival-keys-every-member-alike.mut	two members waiting on the same item both answer with its name once it arrives	the recipe index
 tools/mutations/walk-arrival-leaves-the-recipe-index-stale.mut	and once the client names it, the next answer has the name	the recipe index
 tools/mutations/walk-ask-again-slowly.mut	and time the client spent refusing to send is counted as neither of the other two	how long a read of the auction house takes
@@ -497,14 +833,46 @@ tools/mutations/walk-patience-by-tries.mut	a client saying not yet is waited out
 tools/mutations/walk-quiet-fired-once.mut	and a page asked for and never answered ends the read rather than leaving it alive	how long a read of the auction house takes
 tools/mutations/walk-quiet-on-the-wall-clock.mut	a read of the house starts at page nought	vendor prices: one from the client, one learned from merchants
 tools/mutations/walk-split-on-stop.mut	and says where that time went, which is why anybody stops one	how long a read of the auction house takes
+tools/mutations/warband-bank-free-miscounted.mut	the Warband bank is read from the account's tabs the client names	the Warband bank on the fourth pretend client
+tools/mutations/warband-bank-never-read.mut	a visit to the bank stores it once, for the account, with who saw it	the Warband bank on the fourth pretend client
+tools/mutations/warband-bank-not-indexed.mut	the index holds the Warband bank beside the guild banks, counted once	the Warband bank on the fourth pretend client
+tools/mutations/warband-bank-read-anywhere.mut	a client without a Warband bank is not asked for one	the Warband bank on the fourth pretend client
+tools/mutations/warband-bank-unmarked.mut	the index holds the Warband bank beside the guild banks, counted once	the Warband bank on the fourth pretend client
+tools/mutations/warband-block-missing.mut	a member's page of ours draws the Warband bank's tab as a block, last	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/warband-block-on-siblings.mut	and a linked family's member's page does not	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/warband-look-dropped.mut	a Warband slot keeps whether the account has its look, as every other slot does	the Warband bank on the fourth pretend client
+tools/mutations/warband-tab-name-not-drawn.mut	and a Warband tab by its own name, one with none by its number	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/warband-tab-name-not-kept.mut	a Warband tab keeps the name the player gave it	the Warband bank on the fourth pretend client
+tools/mutations/warband-tab-name-not-passed.mut	and a Warband tab by its own name, one with none by its number	Possessions: the carried bags as one block and the bank as another (backlog 85)
+tools/mutations/warband-tooltip-as-guild.mut	the possessions block names the Warband bank, with its count beside it	the possessions block on a game tooltip
+tools/mutations/warband-word-english-only.mut	in the client's own word for it where the client has one	the possessions block on a game tooltip
 tools/mutations/warm-up-decodes-everything-at-once.mut	a warm-up step decodes one record, not every record at once	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/warm-up-stops-after-one.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/warm-up-visits-plain-records.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
+tools/mutations/warmode-flag-event-ignored.mut	switching War Mode off is read when the game says a flag changed	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/warmode-flag-rescans-trees.mut	and without reading the talents again	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/warmode-writes-unchanged.mut	a flag that changed without War Mode moving writes nothing	Midnight's talents: one tree of nodes, drawn as a list
+tools/mutations/who-bind-on-pickup-listed.mut	an item that binds on pickup reaches nobody else, so names nobody	looks to learn and looks known
+tools/mutations/who-class-ignored.mut	nor by a class the game says the look is not for, whatever its armour	looks to learn and looks known
+tools/mutations/who-cloak-as-cloth.mut	a cloak's look goes by class alone	looks to learn and looks known
+tools/mutations/who-later-ignores-armour.mut	but not one who wears a higher armour than the item now	looks to learn and looks known
+tools/mutations/who-level-ignored.mut	a mail look is learnt by a Paladin who wears mail, at its level	looks to learn and looks known
+tools/mutations/who-plate-learns-mail.mut	and not by one who wears plate, nor by a class it is not for	looks to learn and looks known
+tools/mutations/who-unread-not-said.mut	and a member of the right class whose armour is unread is listed to log in	looks to learn and looks known
+tools/mutations/whole-list-read-gives-up-at-thirty.mut	a list forty-eight seconds late is still waited for, as live Midnight's was	reading the newer house whole
+tools/mutations/whole-list-read-says-a-page-never-arrived.mut	and says the whole list did not arrive, in rows rather than pages	reading the newer house whole
+tools/mutations/whole-list-read-silent-on-arrival.mut	deDE translates only strings the addon still asks for	the translations
+tools/mutations/whole-list-read-silent-on-asking.mut	deDE translates only strings the addon still asks for	the translations
+tools/mutations/whole-list-read-stops-in-pages.mut	deDE translates only strings the addon still asks for	the translations
 tools/mutations/wide-panel-tick-redraws-everything.mut	and the panel was not laid out again to move it	wide family
 tools/mutations/widetime-parts-not-named.mut	and so is a part of the record, beside it	wide family
 tools/mutations/widetime-pieces-not-kept-on-got.mut	and keeps what went into that mark, for widetime to name	they say what they stored, and that is what a mark means afterwards
 tools/mutations/widetime-pieces-not-kept-on-send.mut	and what went into each mark is kept beside it, under that mark	a transfer that stopped half way is picked up, not believed
 tools/mutations/widetime-pieces-trusted-under-any-mark.mut	and where what was sent is not known, it says so	wide family
+tools/mutations/wire-sends-new-ids-only.mut	a Possessions grant is said as itself and as auctions, money and currencies	what a linked family may be granted
+tools/mutations/worn-vendor-price-dropped.mut	where prices follow the item's level, a worn piece keeps its own vendor price	codec round trip
+tools/mutations/worth-copy-price-ignored.mut	a copy whose own price the scan read is valued at it, not at the id's	the possessions block on a game tooltip
+tools/mutations/worth-copy-price-not-summed.mut	a copy whose own price the scan read is valued at it, not at the id's	the possessions block on a game tooltip
 tools/mutations/worth-lane-always-plural.mut	one item in a lane is said in the singular	the Stock column
 tools/mutations/worth-prices-a-variant-at-the-plain-item.mut	a variant is valued at its own price and not at its cheapest sibling's	a random-enchantment suffix is a thing of its own
 tools/mutations/write-keeps-the-old-mark.mut	and so is a part of the record, beside it	wide family

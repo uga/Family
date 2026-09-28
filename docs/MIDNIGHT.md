@@ -4998,3 +4998,9 @@ So it **will tag on `midnight`**. Three things would go wrong on the way:
    twice in `CHANGELOG.md`, and the `## Version:` line of both `.toc` files conflicts too.
 
 None of this is changed here: it is `main`'s script and the choice of how a beta goes out is Alberto's.
+
+**The full mutation run, on this branch** (2026-09-28, at `de27e57`): **892 caught, 0 not**, twenty minutes.
+One of the merge's conditions met; the register, `tools/mutations/caught-by.tsv`, refreshed from it.
+
+**§122 seen** (Alberto, 2026-09-28, Mana-Tombs): *did all bosses in MT with plenty of combat looting etc,
+no more delayed errors* - the deferred jobs' budget a frame works on live.
