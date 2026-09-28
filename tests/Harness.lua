@@ -14734,6 +14734,15 @@ do
 			and sentGear.worn[24] and sentGear.worn[24].id == 4024)
 	check("and no skills with it, so no professions page for them on the other side",
 		sent and sent.meta and sent.meta.skills == nil)
+	-- **Skyriding or steady flight goes with Character** (`docs/MIDNIGHT.md` §137), the one value
+	-- only Midnight writes that no category carried.
+	local heldStyle = (Family.Database:Meta(me) or {}).flightStyle
+	Family.Database:SetMeta(me, { flightStyle = "skyriding" })
+	FamilyDB.wide.links.gearfam.grants[me].character = true
+	sent = Family.Wide:Offering(FamilyDB.wide.links.gearfam)[me]
+	check("a sibling granted Character is sent the flight style",
+		sent and sent.meta and sent.meta.flightStyle == "skyriding")
+	Family.Database:SetMeta(me, { flightStyle = heldStyle or Family.CLEAR })
 	FamilyDB.wide = heldWide
 	caps.professionGear = nil
 	Family.Character:Scan()

@@ -4948,3 +4948,18 @@ whole-family search stays about recipes.
 end of the *equipped* row - *it shouldn't*). The row is built from every worn slot, and profession gear is
 recorded as worn. It now leaves out any piece carrying its `profession`; the index is untouched, so the
 Possessions search still names who wears one, as seen the same day. One check, one mutation.
+
+## 137. The five sharing categories, and what Midnight adds to them (2026-09-28)
+
+Alberto folded Wide Family's thirteen categories into five - Possessions, Equipment, Professions, Mail,
+Character - and sent the work to `main` (`docs/DECISIONS.md`, 2026-09-28). DEV landed it as `ba21267`,
+merged here as `3103138`: a new category ticked only where every old one it folds was, and both old and
+new names on the wire so a 4.x family and a 5.x family still understand each other. One fixture of this
+branch's that builds a link by hand now carries `grantsFolded = true`, as DEV asked of every such fixture.
+
+**What only Midnight writes.** The keys every scanner here writes to a member's record, compared with
+`main`'s by a script: one is new, `flightStyle` - Skyriding or steady flight, written by `Mounts.lua`
+behind `skyriding` and drawn by the Summary beside the flying speed. It goes under **Character**, with the
+mount speeds. Everything else this branch adds travels inside a record a category already sends: the
+profession tools and accessories in `equipment`, the bank tabs' names and a slot's look in `bank` and
+`bags`. One check (a sibling granted Character is sent it), one mutation.

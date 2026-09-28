@@ -1,0 +1,6 @@
+name: Skyriding or steady flight is not shared under Character
+file: addons/Family/Wide.lua
+--- old
+               "flightStyle",
+--- new
+               "flightStyleNot",

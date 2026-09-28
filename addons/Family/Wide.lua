@@ -90,6 +90,9 @@ local CATEGORIES = {
                "rested", "restedAt", "resting", "xpMax", "guild", "guildless", "hearth", "hearthID",
                "zone", "subzone", "zoneID", "mapID", "zoneLocale",
                "mount", "mountFly",
+               -- Skyriding or steady flight, where the game has both (Midnight, `docs/MIDNIGHT.md`
+               -- §137): the Summary draws it beside the flying speed.
+               "flightStyle",
                "questCount", "questMax", "reputationCount",
                "boons", "banked", "lockouts", "lockoutsSeen" },
       folds = { "character", "talents", "quests", "reputations", "worldbuffs", "lockouts" } },
