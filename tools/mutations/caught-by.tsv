@@ -340,11 +340,15 @@ tools/mutations/held-node-minimap-held-only.mut	while two coloured pins of diffe
 tools/mutations/held-node-never-asked.mut	one that is exactly the name of something held draws its block	the possessions block on a game tooltip
 tools/mutations/held-node-world-asks-lists.mut	and one line off the maps is never scored as a vein	the possessions block on a game tooltip
 tools/mutations/index-files-under-the-plain-item.mut	so the family counts it under that heading and never under the plain item	auctions
+tools/mutations/item-bonuses-ignored.mut	on Midnight, a piece with bonus ids keeps its string	items an id does not describe
+tools/mutations/item-bonuses-ungated.mut	off Midnight, a string with only bonus ids is still an id	items an id does not describe
+tools/mutations/item-bonuses-wrong-field.mut	and one with only where it came from is still an id	items an id does not describe
 tools/mutations/item-icon-has-no-new-route.mut	its picture through C_Item where GetItemIcon is gone	items and spells on the PTR, where the old globals are gone
 tools/mutations/item-icon-skips-the-old-call.mut	while a client that answers the old calls is read through them	items and spells on the PTR, where the old globals are gone
 tools/mutations/item-info-has-no-new-route.mut	an item is described through C_Item where GetItemInfo is gone, every place kept	items and spells on the PTR, where the old globals are gone
 tools/mutations/item-info-skips-the-old-call.mut	where the client has written its own sell price, Family's says it is for one	the sell price where the client already shows one
 tools/mutations/item-instant-skips-the-old-call.mut	while a client that answers the old calls is read through them	items and spells on the PTR, where the old globals are gone
+tools/mutations/item-modifiers-ignored.mut	and so does one with modifiers and no bonus ids	items an id does not describe
 tools/mutations/itemclick-shift-ignored.mut	and shift, which the game already uses, is left alone	a modified click on an item
 tools/mutations/knowers-of-names-though-a-table-answered.mut	once a table names the spell, a recipe carrying neither id is not matched by name	a tooltip and a one-member page ask about no more than they show
 tools/mutations/last-seen-keeps-ago.mut	Last seen gives an age without the word ago	the fixes the live check asked for are still in place
