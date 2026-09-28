@@ -4963,3 +4963,9 @@ behind `skyriding` and drawn by the Summary beside the flying speed. It goes und
 mount speeds. Everything else this branch adds travels inside a record a category already sends: the
 profession tools and accessories in `equipment`, the bank tabs' names and a slot's look in `bank` and
 `bags`. One check (a sibling granted Character is sent it), one mutation.
+
+**Seen in the game** (Alberto, 2026-09-28), of what §126 and §§134-137 left unseen: a bind-on-pickup
+reagent not priced as bought (§112) - *seen working*; nodes named after what they give (§104) - *Yes !*;
+*Look can be learnt by* by Midnight's wear-a-lower-armour rule (§134) - *Yes*; the Wide Family panel's
+five columns (§137) - *Working!*. Still unseen: the deferred jobs' budget a frame (§122), which wants the
+same boss kill with area loot in combat, and the worth's bound lane on a levelled piece (§134).
