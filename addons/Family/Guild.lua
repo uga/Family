@@ -241,8 +241,15 @@ local MAKES_NOTHING = {
 -- One predicate, consulted by the grid that draws the boxes, by the count under it, and by the
 -- wire. Three places that have to agree: a box drawn for something that never crosses is a box
 -- that lies, and a count that includes it is a number that does not match the panel.
+-- **A gathering profession that makes things on one client**, by the capability that says so:
+-- Skinning's window lists recipes on Midnight (`docs/MIDNIGHT.md` §138), so there the argument for
+-- leaving it out above does not hold.
+local MAKES_WHERE = { [393] = "skinningRecipes" }
+
 function Guild:Shareable(skillLine)
 	if type(skillLine) ~= "number" then return false end
+	local where = MAKES_WHERE[skillLine]
+	if where and Family.Capabilities:Has(where) then return true end
 	if MAKES_NOTHING[skillLine] then return false end
 
 	-- **And the general rule, which the list above cannot keep up with.**

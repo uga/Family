@@ -24462,6 +24462,17 @@ print("guild share")
 					and Family.Guild:Shareable(Family:SkillLineFor("Archaeology")) == false)
 			check("and admits mining, for the smelting",
 				Family.Guild:Shareable(mining) == true)
+			-- **Skinning makes things on Midnight** (`docs/MIDNIGHT.md` §138), and there only.
+			do
+				local caps = Family.Capabilities.can
+				local held = caps.skinningRecipes
+				caps.skinningRecipes = true
+				check("where Skinning has recipes it is shared, and herbalism and fishing still not",
+					Family.Guild:Shareable(Family:SkillLineFor("Skinning")) == true
+						and Family.Guild:Shareable(Family:SkillLineFor("Herbalism")) == false
+						and Family.Guild:Shareable(fishing) == false)
+				caps.skinningRecipes = held
+			end
 
 			-- A grant written by a version whose perimeter was wider stops counting the
 			-- moment it is read, and is not deleted to make that true: the tick is somebody's

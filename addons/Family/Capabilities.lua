@@ -236,6 +236,11 @@ local EXPECTED = {
 	-- the skinner's *Durable Pack* (`docs/MIDNIGHT.md` §135). No Classic client has them.
 	professionGear = { [MIDNIGHT] = true },
 
+	-- **Skinning makes things.** On the Classic clients it gathers and has no window; on Midnight
+	-- its window lists recipes, refining and bait among them - Mara's page, twenty (`docs/MIDNIGHT.md`
+	-- §138). Guild share asks *who can make this*, so where this holds a skinner is asked too.
+	skinningRecipes = { [MIDNIGHT] = true },
+
 	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
 	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104). Midnight answers 20, and
 	-- each of the four calls the scanner makes in the shape Mists does: a race's six values, the
@@ -277,6 +282,8 @@ local CONFIRMED = {
 	scaledPrices = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-27: the skinner's slots and pack (§135).
 	professionGear = { [MIDNIGHT] = true },
+	-- Midnight 2026-09-28: Mara's Skinning page, twenty recipes (§138).
+	skinningRecipes = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-26: slot 18 answered nil to `GetInventoryItemID` on Ahia (§110).
 	rangedSlot   = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-27 (§133): Alberto's word for dailies and transmog, the item data for the

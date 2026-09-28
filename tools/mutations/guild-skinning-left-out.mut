@@ -1,0 +1,6 @@
+name: guild share leaves out Skinning where it has recipes
+file: addons/Family/Guild.lua
+--- old
+	if where and Family.Capabilities:Has(where) then return true end
+--- new
+	if false then return true end

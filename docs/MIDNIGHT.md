@@ -4969,3 +4969,32 @@ reagent not priced as bought (§112) - *seen working*; nodes named after what th
 *Look can be learnt by* by Midnight's wear-a-lower-armour rule (§134) - *Yes*; the Wide Family panel's
 five columns (§137) - *Working!*. Still unseen: the deferred jobs' budget a frame (§122), which wants the
 same boss kill with area loot in combat, and the worth's bound lane on a levelled piece (§134).
+
+## 138. Skinning in guild share, and whether `tools/release.sh` can cut a beta here (2026-09-28)
+
+**Skinning makes things on Midnight.** Guild share leaves out what gathers: `Guild:Shareable` refuses
+Skinning by name (`MAKES_NOTHING`, *there is no recipe list behind them at all*) and by the generated
+skill-line table (`makes = false`). On Midnight its window lists recipes - Mara's Skinning page, *20
+recipes*, in Alberto's screenshot of 2026-09-28. A capability, **`skinningRecipes`** (Midnight, seen on
+that page), and where it holds `Shareable` admits Skinning before either refusal; Herbalism and Fishing
+are not measured and stay out. One check, one mutation. **Not yet seen** on the guild grid.
+
+**`tools/release.sh`, read against a beta from this branch** (CLAUDE.md: *once it is checked that
+`tools/release.sh` will tag outside `main`*). Read, not run. It checks no branch at all: a clean tree, a
+new tag, a non-empty *Unreleased*, a `docs/SMOKE.md` row for the version (one for a pre-release), the
+harness and the full mutation run - then it commits the version into both `.toc` files and tags `HEAD`.
+So it **will tag on `midnight`**. Three things would go wrong on the way:
+
+1. **The notes would be `main`'s.** This branch writes no changelog, and *Unreleased* here holds what
+   `main` has merged in - so the gate passes and a `5.0.0-beta.1` would ship `main`'s 4.x notes, with
+   nothing about Midnight. The Midnight notes have to be written under *Unreleased* first.
+2. **The printed push fails half way.** It says `git push && git push origin v<version>`; `midnight`
+   has no upstream, so the first push refuses and the `&&` stops the tag. The tag alone is
+   `git push origin v<version>` - and that tag carries this branch's commits to GitHub, where the
+   release workflow runs on any `v*` tag and publishes. Which is the beta; it is also this branch's
+   history leaving the machine, so it is Alberto's step.
+3. **The release commit conflicts later.** It rewrites *Unreleased* into a `5.0.0-beta.1` section that
+   contains `main`'s unreleased entries; when `main` releases those as 4.x, the next merge meets them
+   twice in `CHANGELOG.md`, and the `## Version:` line of both `.toc` files conflicts too.
+
+None of this is changed here: it is `main`'s script and the choice of how a beta goes out is Alberto's.
