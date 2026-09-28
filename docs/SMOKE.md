@@ -429,10 +429,6 @@ take these with it.
 | v4.4.0 | Mists | 23/9/26 | Alberto | Pass |
 | v5.0.0 | Anniversary | 28/9/26 | Alberto | Pass |
 | v5.0.0 | Era | 28/9/26 | Alberto | Pass |
-| v5.0.0 | Midnight | 28/9/26 | Alberto | Pass |
-| v5.0.0 | Mists | 28/9/26 | Alberto | Pass |
-| v5.0.0 | Anniversary | 28/9/26 | Alberto | Pass |
-| v5.0.0 | Era | 28/9/26 | Alberto | Pass |
 | v5.0.0 | Mists | 28/9/26 | Alberto | Pass |
 | v5.0.0 | Midnight | 28/9/26 | Alberto | Pass |
 
