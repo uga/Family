@@ -71,8 +71,8 @@ notes="$(awk '/^## Unreleased/{found=1; next} found && /^## /{exit} found' CHANG
 # The live checklist is the only gate that runs against a real client, and a person runs it.
 # Nothing here can tell whether that happened; what it can tell is whether anybody wrote the
 # result down, which is the whole difference between a release that was checked and one that
-# was assumed. docs/SMOKE.md sets the bar: a full release needs all three clients recorded
-# against this version, a pre-release needs one row, and a row that honestly says what was not
+# was assumed. docs/SMOKE.md sets the bar: a full release needs every client recorded against
+# this version, a pre-release needs one row, and a row that honestly says what was not
 # run counts. v1.0.0-beta.1 went out with that rule written down and nothing enforcing it.
 smoke="docs/SMOKE.md"
 [[ -f "$smoke" ]] || fail "$smoke is missing - it is the live check and this is the gate that reads it"
@@ -91,15 +91,21 @@ clients="$(awk -F'|' -v want="$version" '
 [[ -n "$clients" ]] || fail "$smoke records no run for $version - run the live check and write the rows before cutting it"
 
 # A pre-release reaches only the people who go looking for it, so one row is the bar. A full
-# release is what CurseForge offers everybody by default, and that needs all three.
+# release is what CurseForge offers everybody by default, and that needs every client.
+#
+# Midnight from 5.0.0 on, the release it first ships in (Alberto, 2026-09-28). Keyed on the major
+# version rather than on the branch having merged, so that the rule is in force before 5.0.0 can
+# be cut and changes nothing for a 4.x.
+wanted="Era:era Anniversary:anni Mists:mists"
+(( ${version%%.*} >= 5 )) && wanted="$wanted Midnight:midnight"
 case "$version" in
     *alpha*|*beta*) ;;
     *)
-        for client in Era:era Anniversary:anni Mists:mists; do
+        for client in $wanted; do
             name="${client%%:*}"
             match="${client##*:}"
             grep -q "$match" <<<"$clients" \
-                || fail "$smoke records no $name run for $version - a full release needs all three clients"
+                || fail "$smoke records no $name run for $version - a full release needs every client"
         done
         ;;
 esac
