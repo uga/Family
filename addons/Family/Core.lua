@@ -258,6 +258,15 @@ function Family:ItemString(link)
 		if (tonumber(parts[index]) or 0) ~= 0 then return worth end
 	end
 
+	-- **Midnight carries the rest further along** (`docs/MIDNIGHT.md` §139): a count of bonus ids
+	-- in the fourteenth field, the ids after it - where *of the Fireflash* lives - and then a count
+	-- of modifiers, where the level the piece was scaled to lives. Mara's Leggings came with fields
+	-- 3 to 8 all empty, so the id alone was kept and the panel described the base item.
+	if self.Capabilities and self.Capabilities:Has("itemBonuses") then
+		local bonuses = tonumber(parts[14]) or 0
+		if bonuses > 0 or (tonumber(parts[15 + bonuses]) or 0) > 0 then return worth end
+	end
+
 	return nil
 end
 

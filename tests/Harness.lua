@@ -25148,6 +25148,31 @@ print("items an id does not describe")
 	check("the negative suffix survives being read",
 		(Family:ItemString(suffixed) or ""):find("-9", 1, true) ~= nil)
 
+	-- **Midnight's bonus ids and modifiers** (`docs/MIDNIGHT.md` §139), the two links Alberto read
+	-- on Mara: the Leggings with bonus ids and modifiers, the Pauldrons with no context field.
+	local leggings = "item:10252::::::::74:72::3:2:6654:1691:2:9:30:28:1004:::::"
+	local pauldrons = "item:159196::::::::74:72:::2:6654:1692:2:9:60:28:188:::::"
+	local bare = "item:2589::::::::74:72::::::::"
+	local modded = "item:2589::::::::74:72:::0:1:9:30:::::"
+	local caps = Family.Capabilities.can
+	local held = caps.itemBonuses
+	caps.itemBonuses = nil
+	check("off Midnight, a string with only bonus ids is still an id",
+		Family:ItemString(leggings) == nil)
+	caps.itemBonuses = true
+	check("on Midnight, a piece with bonus ids keeps its string",
+		Family:ItemString(leggings) == leggings and Family:ItemString(pauldrons) == pauldrons,
+		tostring(Family:ItemString(pauldrons)))
+	check("and so does one with modifiers and no bonus ids",
+		Family:ItemString(modded) == modded, tostring(Family:ItemString(modded)))
+	check("while one with neither is still an id", Family:ItemString(bare) == nil,
+		tostring(Family:ItemString(bare)))
+	-- Where it came from, the thirteenth field, says nothing about which item it is.
+	local sourced = "item:2589::::::::74:72::3:0:0:::::"
+	check("and one with only where it came from is still an id",
+		Family:ItemString(sourced) == nil, tostring(Family:ItemString(sourced)))
+	caps.itemBonuses = held
+
 	check("nothing at all answers nothing", Family:ItemString(nil) == nil)
 	check("and so does something that is not a link", Family:ItemString("hello") == nil)
 end)()

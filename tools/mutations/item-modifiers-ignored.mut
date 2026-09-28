@@ -1,0 +1,6 @@
+name: a piece with modifiers and no bonus ids is kept as an id
+file: addons/Family/Core.lua
+--- old
+		if bonuses > 0 or (tonumber(parts[15 + bonuses]) or 0) > 0 then return worth end
+--- new
+		if bonuses > 0 then return worth end

@@ -1,0 +1,6 @@
+name: Midnight keeps no item string for a piece with bonus ids
+file: addons/Family/Core.lua
+--- old
+	if self.Capabilities and self.Capabilities:Has("itemBonuses") then
+--- new
+	if false then

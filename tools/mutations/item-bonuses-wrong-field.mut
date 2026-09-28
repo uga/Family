@@ -1,0 +1,6 @@
+name: the bonus count is read from the wrong field
+file: addons/Family/Core.lua
+--- old
+		local bonuses = tonumber(parts[14]) or 0
+--- new
+		local bonuses = tonumber(parts[13]) or 0

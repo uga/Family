@@ -241,6 +241,12 @@ local EXPECTED = {
 	-- §138). Guild share asks *who can make this*, so where this holds a skinner is asked too.
 	skinningRecipes = { [MIDNIGHT] = true },
 
+	-- **An item's suffix and level in its bonus ids and modifiers.** Midnight's link for Mara's
+	-- *Master's Leggings of the Fireflash* has fields 3 to 8 empty, two bonus ids (1691 the suffix)
+	-- and two modifiers (9 = 30, the level it was scaled to) (`docs/MIDNIGHT.md` §139). Where this
+	-- holds the item string is kept for them, as it is for an enchant or a suffix.
+	itemBonuses = { [MIDNIGHT] = true },
+
 	-- Archaeology came with Cataclysm. `GetNumArchaeologyRaces` is absent on Era and Burning
 	-- Crusade and answers 13 on Mists (probe, 2026-09-27; backlog 104). Midnight answers 20, and
 	-- each of the four calls the scanner makes in the shape Mists does: a race's six values, the
@@ -284,6 +290,8 @@ local CONFIRMED = {
 	professionGear = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-28: Mara's Skinning page, twenty recipes (§138).
 	skinningRecipes = { [MIDNIGHT] = true },
+	-- Midnight 2026-09-28: the Leggings' and the Pauldrons' links, of the Fireflash (§139).
+	itemBonuses  = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-26: slot 18 answered nil to `GetInventoryItemID` on Ahia (§110).
 	rangedSlot   = { [MIDNIGHT] = true },
 	-- Midnight 2026-09-27 (§133): Alberto's word for dailies and transmog, the item data for the

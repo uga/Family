@@ -1,0 +1,6 @@
+name: the item string for bonus ids is kept on every client
+file: addons/Family/Core.lua
+--- old
+	if self.Capabilities and self.Capabilities:Has("itemBonuses") then
+--- new
+	if self.Capabilities then

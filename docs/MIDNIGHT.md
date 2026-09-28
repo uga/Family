@@ -5004,3 +5004,29 @@ One of the merge's conditions met; the register, `tools/mutations/caught-by.tsv`
 
 **§122 seen** (Alberto, 2026-09-28, Mana-Tombs): *did all bosses in MT with plenty of combat looting etc,
 no more delayed errors* - the deferred jobs' budget a frame works on live.
+
+## 139. A levelled piece described as its base item on another character's page (2026-09-28)
+
+Alberto's screenshot, Mara's Possessions seen from another character: her *Master's Leggings of the
+Fireflash* drawn as *Master's Leggings*, item level 13, *Binds when equipped*, *Sell Price: 41*, and
+Family's *Sell Price (each)* 41 copper - while CTRL's lot read 15s 58c, the game's own. Hovered in her
+own bag, and on her own page while she is the one logged in, everything reads right: there Family asks
+the slot, not what it stored.
+
+`Family:ItemString` keeps a slot's item string only when a field from 3 to 8 - enchant, four gems,
+suffix - is not nought, and otherwise the id alone. **Read** (Alberto, 2026-09-28, on Mara):
+`item:10252::::::::74:72::3:2:6654:1691:2:9:30:28:1004:::::` and, for the *Brineworks Pauldrons of the
+Fireflash*, `item:159196::::::::74:72:::2:6654:1692:2:9:60:28:188:::::`. Fields 3 to 9 empty; 10 and 11
+the holder's level and specialisation; 13 where it came from; 14 **the number of bonus ids**, then the
+ids - 1691 and 1692 the *of the Fireflash* of each; then **the number of modifiers**, in pairs - 9 = 30 and
+9 = 60, the level each was scaled to, and 28 its scaling. So the suffix and the level both sit past the
+fields the function reads, and the id was all that was kept. The worth was right because the price is
+read from the real link at scan time (§134); the tooltip asked again by the id.
+
+**Built.** A capability, **`itemBonuses`** (Midnight, seen in these two links): where it holds, the
+string is kept also when there are bonus ids or modifiers. Where it came from, alone, is not a reason:
+it says nothing about which item it is. The Classic clients keep exactly what they kept. Six checks,
+four mutations. A slot is right once its character has scanned again - logging that character in does
+it. **Not yet seen.** Not changed: the name Family lists by and the Possessions search go by the id, so
+*Fireflash* finds nothing and two suffixes of one item count as one; that is `main`'s variant rule
+(backlog 67), which knows the suffix field and not the bonus ids.
