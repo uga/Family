@@ -41,14 +41,26 @@ Family.Wide = Wide
 -- specification's (§6) and the mapping is here so that adding a scanner cannot quietly widen
 -- what a link already agreed to: a new payload key shares nothing until it is named below.
 local CATEGORIES = {
-    { id = "possessions", label = L["Possessions"], payload = { "bags", "bank" },
-      meta = { "bagSlots", "bagFree", "bankSlots", "bankFree", "bagsSeen", "bankSeen" } },
+    -- **Five, since 2026-09-28** (Alberto), folded from thirteen: a grid of thirteen columns was
+    -- a decision nobody made thirteen times. Each says which of the old categories it
+    -- `folds`, and that list does two jobs. It is what a grant given under the old ones became
+    -- (`foldGrants`, below: ticked only where every old one it folds was ticked, so nothing is
+    -- shared that was not agreed to), and it is what goes on the wire beside the new id, so an
+    -- older Family on the other side still reads "sharing Auctions" rather than "not sharing
+    -- Auctions" while auctions arrive.
+    --
+    -- What somebody holds, wherever it is: bags and bank, what is up for auction, the gold and
+    -- the currencies.
+    { id = "possessions", label = L["Possessions"], payload = { "bags", "bank", "auctions" },
+      meta = { "bagSlots", "bagFree", "bankSlots", "bankFree", "bagsSeen", "bankSeen",
+               "auctionsSeen", "money", "currencies", "currenciesSeen" },
+      folds = { "possessions", "auctions", "money", "currencies" } },
     -- Its own category rather than part of possessions, and the specification says why (§6):
     -- what somebody is wearing is the thing most often worth showing a friend and the thing
     -- least like a list of what they own. Plenty of people will share one and not the other,
     -- and a category they cannot separate is a decision they cannot make.
     { id = "equipment",   label = L["Equipment"],   payload = { "equipment" },
-      meta = { "itemLevel" } },
+      meta = { "itemLevel" }, folds = { "equipment" } },
     -- The cooldowns travel with the profession rather than in a category of their own, and
     -- that is a widening of a consent already given: a link that granted Professions starts
     -- sending them at the next exchange without being asked again. Alberto's call, and the
@@ -58,46 +70,29 @@ local CATEGORIES = {
     -- timer, `cooldownItems` says which profession an item's timer belongs to, and
     -- `itemCooldowns` is the timer that lives on a carried item like a salt shaker.
     -- Archaeology beside the professions it is one of (backlog 104, Alberto: *shared under
-    -- professions*).
+    -- professions*), and the branch a crafter chose (`specialisations`, Weaponsmith and the
+    -- like) since the fold: the Summary draws it and no category sent it.
     { id = "professions", label = L["Professions"], payload = { "professions", "archaeologySolved" },
       meta = { "skills", "specs", "specsSeen",
                "craftCooldowns", "cooldownItems", "itemCooldowns",
-               "archaeology", "archaeologySeen" } },
-    { id = "talents",     label = L["Talents"],     payload = { "talents", "spells" } },
-    { id = "quests",      label = L["Quests"],      payload = { "quests" },
-      meta = { "questCount", "questMax" } },
+               "archaeology", "archaeologySeen", "specialisations" },
+      folds = { "professions" } },
+    -- With what is in the post, which the Summary's *in post* column reads.
     { id = "mail",        label = L["Mail"],        payload = { "mail" },
-      meta = { "mailCount", "mailSeen", "mailExpiresBy" } },
-    { id = "auctions",    label = L["Auctions"],    payload = { "auctions" },
-      meta = { "auctionsSeen" } },
-    { id = "reputations", label = L["Reputations"], payload = { "reputations" },
-      meta = { "reputationCount" } },
-    { id = "money",       label = L["Money"],       meta = { "money" } },
-
-    -- Three added 2026-09-04, because every one of these was a column a shared character
-    -- could never fill. Their own categories rather than one, for the reason §6 gives for
-    -- keeping Equipment out of Possessions: somebody will happily say where their alts are
-    -- and not how long they have played, and a category that cannot be separated is a
-    -- decision the player cannot make.
-    --
-    -- Nothing widens by itself. A category nobody has granted sends nothing, so every link
-    -- that exists keeps sending exactly what it sent yesterday until these are ticked.
-    { id = "character",   label = L["Character"],
-      meta = { "played", "rested", "restedAt", "resting", "xpMax", "guild", "guildless", "hearth", "hearthID",
-               -- Where they logged out, which belongs with the hearthstone rather than in a
-               -- category of its own: both answer "where is this character", and somebody who
-               -- will tell you one will tell you the other.
+      meta = { "mailCount", "mailSeen", "mailExpiresBy", "mailInPost" }, folds = { "mail" } },
+    -- Everything about the character rather than what they hold: time played and rested, where
+    -- they are bound and stand, how fast they get about, talents and spellbook, quests,
+    -- reputations, world buffs and raid locks. The active specialisation stays at home
+    -- (Alberto); both trees already travel inside `talents`.
+    { id = "character",   label = L["Character"],   payload = { "talents", "spells", "quests",
+                                                                "reputations" },
+      meta = { "played", "playedAtLevel", "playedSeen",
+               "rested", "restedAt", "resting", "xpMax", "guild", "guildless", "hearth", "hearthID",
                "zone", "subzone", "zoneID", "mapID", "zoneLocale",
-               -- And how fast they get there, which is the same question one step on.
-               "mount", "mountFly" } },
-    { id = "currencies",  label = L["Currencies"],
-      meta = { "currencies", "currenciesSeen" } },
-    { id = "worldbuffs",  label = L["World buffs"], meta = { "boons", "banked" } },
-    -- Its own category and not part of Professions, where the crafting cooldowns travel: a
-    -- raid lock says where somebody's alts have been this week and with whom, and that is not
-    -- what granting a recipe list agreed to. Backlog 93, added 2026-09-23; like every category
-    -- before it, it sends nothing until somebody ticks it.
-    { id = "lockouts",    label = L["Lockouts"],    meta = { "lockouts", "lockoutsSeen" } },
+               "mount", "mountFly",
+               "questCount", "questMax", "reputationCount",
+               "boons", "banked", "lockouts", "lockoutsSeen" },
+      folds = { "character", "talents", "quests", "reputations", "worldbuffs", "lockouts" } },
 }
 
 Wide.CATEGORIES = CATEGORIES
@@ -110,6 +105,32 @@ local IDENTITY = { "name", "realm", "classFile", "race", "raceFile", "level", "f
 --------------------------------------------------------------------------------------------
 -- Where all of this lives
 --------------------------------------------------------------------------------------------
+
+-- **Grants given under the thirteen categories, read as the five** - once, and then marked done.
+--
+-- A new category is ticked only where every old one it folds was ticked (Alberto's choice,
+-- 2026-09-28): somebody who shared their bags and not their gold has shared no Possessions until
+-- they tick it again. The other way round would have shared the gold without asking. What stops
+-- being shared is dropped from the other side at the next exchange, as any withdrawn grant is.
+local function foldGrants(wide)
+    if wide.grantsFolded then return end
+
+    for _, link in pairs(wide.links) do
+        for memberKey, old in pairs(link.grants or {}) do
+            local now = {}
+            for _, category in ipairs(CATEGORIES) do
+                local all = true
+                for _, id in ipairs(category.folds) do
+                    if not old[id] then all = false end
+                end
+                if all then now[category.id] = true end
+            end
+            link.grants[memberKey] = next(now) and now or nil
+        end
+    end
+
+    wide.grantsFolded = true
+end
 
 local function store()
     FamilyDB.wide = FamilyDB.wide or {}
@@ -127,6 +148,8 @@ local function store()
     end
 
     if wide.auto == nil then wide.auto = true end
+
+    foldGrants(wide)
 
     return wide
 end
@@ -624,10 +647,15 @@ local function offering(link, memberKey)
     -- auctions were not shared send exactly the same nothing, and telling somebody "they are
     -- not sharing their auctions" when they are sharing an empty auction house is a fact
     -- invented out of an absence (2.2). A few short strings settle it.
+    --
+    -- Each category's own id and the old ones it folds, which is how an older Family reads it.
+    -- Its own id is the first of them.
     out.granted = {}
     for _, category in ipairs(CATEGORIES) do
         if granted[category.id] then
-            out.granted[#out.granted + 1] = category.id
+            for _, id in ipairs(category.folds) do
+                out.granted[#out.granted + 1] = id
+            end
         end
     end
 
@@ -709,11 +737,12 @@ end
 -- what changes is that deciding costs a fold of a few hundred bytes rather than a decode and a
 -- walk of the whole record.
 -- **The meta fields that are moments, left out of a sending mark.** `lastSeen` (every write),
--- `played` and `rested` (they move with time played and time away), `restedAt` (every scan that
+-- `played`, `playedAtLevel` and `rested` (they move with time played and time away), `restedAt` (every scan that
 -- reads `rested`), and every `*Seen` stamp
 -- (`bagsSeen`, `bankSeen`, `questsSeen` and the rest: backlog 72's inventory).
 local function isClock(field)
-    return field == "lastSeen" or field == "played" or field == "playedSeen" or field == "rested"
+    return field == "lastSeen" or field == "played" or field == "playedAtLevel"
+        or field == "playedSeen" or field == "rested"
         or field == "restedAt"
         or (type(field) == "string" and field:find("Seen$") ~= nil)
 end
@@ -2179,6 +2208,13 @@ function Wide:Received(entry)
     if type(entry.granted) == "table" then
         local told = {}
         for _, id in ipairs(entry.granted) do told[id] = true end
+        -- An older Family names the old categories. Any one of those a category folds says
+        -- that some of it is shared, and "not sharing" would be the wrong half.
+        for _, category in ipairs(CATEGORIES) do
+            for _, id in ipairs(category.folds) do
+                if told[id] then told[category.id] = true end
+            end
+        end
         return told, true
     end
 

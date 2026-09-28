@@ -1,0 +1,6 @@
+name: what is in the post is not shared under mail
+file: addons/Family/Wide.lua
+--- old
+      meta = { "mailCount", "mailSeen", "mailExpiresBy", "mailInPost" }, folds = { "mail" } },
+--- new
+      meta = { "mailCount", "mailSeen", "mailExpiresBy" }, folds = { "mail" } },

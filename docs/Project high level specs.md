@@ -698,19 +698,27 @@ members.
 Once linked, each side chooses what the other may see, and the default is nothing.
 
 - Each member is offered to the link individually, and must be approved individually.
-- For each offered member, each **category** of data — possessions, equipment, professions,
-  talents, quests, mail, auctions, reputations, money, character, currencies, world buffs — is
-  granted or withheld separately.
+- For each offered member, each **category** of data is granted or withheld separately. There
+  are five (Alberto, 2026-09-28):
+  - **Possessions** — bags, bank, auctions, money and currencies.
+  - **Equipment** — what they wear.
+  - **Professions** — recipes, skills, crafting cooldowns, archaeology, and the branch a crafter
+    chose (Weaponsmith and the like).
+  - **Mail** — the mailbox, and what is in the post.
+  - **Character** — time played and rested, guild, hearthstone, where they stand and how they
+    travel, talents and spellbook, quests, reputations, world buffs and raid lockouts. The
+    active specialisation is not sent.
+
   Equipment is its own category rather than part of possessions: what somebody is wearing is
   the thing most often worth showing a friend and the thing least like a list of what they
   own, and a player willing to share one is frequently unwilling to share the other.
 
-  The last three were added on 2026-09-04, for the same reason and after the same complaint
-  from play: every column they carry was one a shared character could never fill. **Character**
-  is time played, rested experience, guild and hearthstone; **currencies** is the currency set;
-  **world buffs** is a Chronoboon and what is in it. Kept apart rather than folded into one,
-  because somebody will happily say where their alts are bound and not how long they have
-  played, and a category that cannot be separated is a decision the player cannot make.
+  Until then there were thirteen, one per kind of record. A grid of thirteen columns was a
+  decision nobody took thirteen times, so they were folded into the five. A grant given under
+  the thirteen became a grant of a new category only where **every** old one it took in had
+  been granted: nothing is shared that was not agreed to, and some people tick again. Each new
+  category is said on the wire together with the old ones it took in, so an older Family on the
+  other side still reads what is shared correctly.
 - Grants are revocable at any time. Revoking a grant deletes the data already transferred
   under it from the other side at the next contact, and marks it withdrawn in the meantime.
 

@@ -1,0 +1,6 @@
+name: an offering names only the new category, which an older Family misreads
+file: addons/Family/Wide.lua
+--- old
+                out.granted[#out.granted + 1] = id
+--- new
+                out.granted[#out.granted + 1] = category.id

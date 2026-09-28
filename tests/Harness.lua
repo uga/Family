@@ -7599,9 +7599,9 @@ check("a second scan does not double the log",
 	-- promise - the decision to share them would be an entry in CATEGORIES and a row of its own.
 	do
 		local held = FamilyDB.wide
-		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+		FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["objfam"] = { name = "Nosy-Thunderstrike",
-				grants = { [key] = { quests = true } }, siblings = {}, members = {} } } }
+				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
 	
 		-- The link itself and not its id, and a map keyed by member rather than a list -
 		-- read out of `Wide.lua` rather than assumed, because the first version of this
@@ -8990,7 +8990,7 @@ do
 	-- wrong reason, and the one shape of fault this file exists to refuse.
 	do
 		local held = FamilyDB.wide
-		FamilyDB.wide = {
+		FamilyDB.wide = { grantsFolded = true,
 			enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["saltfam"] = { name = "Brine-Thunderstrike", grants = {},
 				siblings = {},
@@ -12385,7 +12385,7 @@ print("a sibling's things, on the tooltip")
 ;(function()
 	local before = FamilyDB.wide
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["theirs"] = { name = "Ardent", members = {
 			["Rider-FireMaw"] = {
@@ -14724,7 +14724,7 @@ do
 
 	-- **Shared under Equipment**, to a sibling and to the guild (Alberto, 2026-09-28).
 	local heldWide = FamilyDB.wide
-	FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+	FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { gearfam = { name = "Gear", grants = { [me] = { equipment = true } },
 			siblings = {}, members = {} } } }
 	local sent = Family.Wide:Offering(FamilyDB.wide.links.gearfam)[me]
@@ -17702,7 +17702,7 @@ print("the character panel's filters, asked of the widget")
 -- populations apart.
 ;(function()
 	local held = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["farfam"] = { name = "Faraway-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -20260,8 +20260,11 @@ do
 			entry and entry.payload and entry.payload.professions == nil)
 		check("not talents", entry and entry.payload and entry.payload.talents == nil)
 		check("not quests", entry and entry.payload and entry.payload.quests == nil)
-		check("not the money, which is its own category",
-			entry and entry.meta and entry.meta.money == nil,
+		check("not the equipment, which is its own category",
+			entry and entry.payload and entry.payload.equipment == nil)
+		-- Part of Possessions since the fold of 2026-09-28, with auctions and currencies.
+		check("and the money with the bags, as one Possessions",
+			entry and entry.meta and entry.meta.money == 12345678,
 			entry and entry.meta and tostring(entry.meta.money))
 
 		-- And nobody else, however many members this family has.
@@ -20316,8 +20319,9 @@ do
 		time = function() return realTime() + 600 end
 		sent = {}
 		ours = wearing(ours, function()
-			-- Money, which a possessions grant does not carry: only the moment moves.
-			Family.Database:SetMeta(key, { money = 4321 })
+			-- The item level, which a possessions grant does not carry (money did, before the
+			-- fold of 2026-09-28): only the moment moves.
+			Family.Database:SetMeta(key, { itemLevel = 4321 })
 			Family.Wide:ExchangeWith(ourLinkID, "an hour on, nothing shared has changed")
 		end)
 		local stamp = Family.Database:Meta(key).lastSeen
@@ -20540,7 +20544,7 @@ do
 			linkRow.__scripts.OnClick(linkRow)
 			check("and opening it shows the categories to grant",
 				visibleText("Possessions") and visibleText("Professions")
-					and visibleText("Reputations"))
+					and visibleText("Character"))
 			check("and says that nothing is ticked to begin with",
 				visibleText("Nothing is ticked to begin with"))
 			check("and does not claim to be a lock", visibleText("not a lock"))
@@ -21921,7 +21925,7 @@ print("the whole family's gear on one screen")
 			return drawn
 		end
 
-		FamilyDB.wide = {
+		FamilyDB.wide = { grantsFolded = true,
 			-- Switched on, because the feature ships switched off until a real server
 			-- has seen it and everything under it answers nothing while it is off.
 			enabled = true,
@@ -25569,7 +25573,7 @@ print("a linked family's letters, unfolded on the summary")
 -- the line rather than by measuring it, and the backlog says so out loud.
 ;(function()
 	local held = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["postfam"] = { name = "Postal-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -27084,7 +27088,7 @@ print("a family is a person with several characters")
 	}
 
 	local before = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["theirs"] = { name = "Grella-Thunderstrike", grants = {}, members = {},
 			characters = {
@@ -28779,7 +28783,7 @@ print("where a character was when they logged out")
 	-- subzone cannot be, and the check says that out loud rather than leaving it to be noticed.
 	do
 		local heldWide = FamilyDB.wide
-		FamilyDB.wide = {
+		FamilyDB.wide = { grantsFolded = true,
 			enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["zonefam"] = { name = "Wanderer-Thunderstrike", grants = {},
 				siblings = {},
@@ -28826,7 +28830,7 @@ print("where a character was when they logged out")
 	-- question, and the mutation that took them out of it failed nothing at all.
 	do
 		local heldWide = FamilyDB.wide
-		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+		FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["outfam"] = { name = "Nosy-Thunderstrike",
 				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
 
@@ -29039,7 +29043,7 @@ print("one zone, however many languages recorded it")
 	end }
 	FamilyDB.areas = {}
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["langfam"] = { name = "Polyglot-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -29264,7 +29268,7 @@ print("a quest called what this client calls it")
 	end
 
 	-- And on the panel, for a sibling - which is the case all of this is for.
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["namefam"] = { name = "Speaker-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -29396,7 +29400,7 @@ print("a quest heading that is not a zone, in the reader's own words")
 	-- And on the page, for a sibling - which is the case all of this is for.
 	do
 		local heldWide = FamilyDB.wide
-		FamilyDB.wide = {
+		FamilyDB.wide = { grantsFolded = true,
 			enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["sortfam"] = { name = "Sorcier-Thunderstrike", grants = {},
 				siblings = {}, members = {
@@ -30300,7 +30304,7 @@ print("how fast a character can get about")
 		local heldWide = FamilyDB.wide
 		Family.Database:SetMeta(key, { mount = 100, mountFly = 280 })
 
-		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+		FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["mountfam"] = { name = "Rider-Thunderstrike",
 				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
 
@@ -34474,7 +34478,7 @@ print("a linked family's quests, end to end")
 -- about somebody else's records, with the data sitting in memory the whole time.
 ;(function()
 	local held = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["qfam"] = { name = "Questy-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -34533,7 +34537,7 @@ print("a linked family's recipes, in the whole-family search")
 -- is a shared payload, and the summary draws those siblings' skills on the same screen.
 ;(function()
 	local held = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["recfam"] = { name = "Baker-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -34714,7 +34718,7 @@ print("a sibling with a crafting cooldown, on the summary's crafting set")
 -- none that a borrowed one reaches the set that only draws members who have one.
 ;(function()
 	local held = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["cdfam"] = { name = "Brewer-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -34778,7 +34782,7 @@ print("a realm heading on the Wide Family panel is not cut short")
 	Family.Database:SetMeta(ourLong, { name = "Farflung", realm = "Blackrock Spire Depths",
 		classFile = "WARLOCK", level = 60, faction = "Alliance" })
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["widefam"] = { name = "Grella-" .. realm, alias = "Serena",
 			grants = {}, siblings = {},
@@ -35079,7 +35083,7 @@ print("how much of the queue is for one character")
 	-- real and full.
 	do
 		local heldWide = FamilyDB.wide
-		FamilyDB.wide = {
+		FamilyDB.wide = { grantsFolded = true,
 			enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["counted"] = { name = "Counted lot", grants = {}, siblings = {},
 				members = {}, characters = { ["Countone-Fire Maw"] = time() } } },
@@ -35116,7 +35120,7 @@ print("an exchange carries what changed, not everything again")
 	local held = FamilyDB.wide
 	local key = "Shared-Fire Maw"
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["thrifty"] = { name = "Thrifty lot", grants = {}, siblings = {},
 			members = {} } },
@@ -35521,7 +35525,7 @@ print("Update now sends what changed, and resend sends everything")
 	local held = FamilyDB.wide
 	local one, two = "Uno-Fire Maw", "Due-Fire Maw"
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["pressed"] = { name = "Pressed lot", grants = {}, siblings = {},
 			members = {} } },
@@ -35643,7 +35647,7 @@ print("a transfer that stopped half way is picked up, not believed")
 	local held = FamilyDB.wide
 	local keys = {}
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["theirs"] = { name = "Their lot", grants = {}, siblings = {}, members = {},
 			characters = { ["Them-Fire Maw"] = time() } } },
@@ -35943,7 +35947,7 @@ print("they say what they stored, and that is what a mark means afterwards")
 	local realSend = Family.Comm.Send
 	local keys, sent, deliver = {}, {}, true
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, auto = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["acking"] = { name = "Acking-Fire Maw", grants = {}, siblings = {},
 			members = {}, characters = { ["Acking-Fire Maw"] = time() } } },
@@ -36135,7 +36139,7 @@ print("the switch governs what begins, not what has begun")
 	local realSend = Family.Comm.Send
 	local keys, sent = {}, {}
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, auto = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["switched"] = { name = "Switched lot", grants = {}, siblings = {},
 			members = {}, characters = { ["Switch-Fire Maw"] = time() } } },
@@ -36281,7 +36285,7 @@ print("a probe that is not refused becomes an exchange, and one that is answered
 		return false
 	end
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, auto = true, id = "us", requests = {}, pendingOut = {},
 		-- Named with a character of theirs, because that is what a link's name is - `candidates`
 		-- offers it last, as the oldest thing we know, and a fixture that put a family's label
@@ -36424,7 +36428,7 @@ print("two links settle apart from each other")
 	local heldSettle = Family.Wide.GRANT_SETTLE
 	local realExchange = Family.Wide.ExchangeWith
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = {
 			["first"] = { name = "First lot", grants = {}, siblings = {}, members = {} },
@@ -36469,7 +36473,7 @@ print("the Sibling label ticks its own column")
 			level = 60, faction = "Alliance" }, seen = time() }
 	end
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["colfam"] = { name = "Grella-Thunderstrike", alias = "Serena",
 			grants = {}, siblings = {},
@@ -36648,7 +36652,7 @@ print("one linked family, siblings on two realms")
 			faction = "Alliance" }, seen = time() }
 	end
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["twofam"] = { name = "Grella-Thunderstrike", alias = "Serena",
 			grants = {}, siblings = {},
@@ -38392,14 +38396,19 @@ print("what a linked family may be granted")
 		-- is next asked about a key that is not in the table.
 		next((Family.Wide:Offering(store.links["fam-grant"]))) == nil)
 
+	-- The five of 2026-09-28 (Alberto), each with what it took in from the thirteen before it:
+	-- money and currencies under Possessions; quests, world buffs, raid locks and when the
+	-- time played was read under Character; the branch a crafter chose under Professions, and
+	-- what is in the post under Mail - the last two sent by no category before.
 	local expected = {
-		character  = { "played", "rested", "xpMax", "guild", "guildless", "hearth",
-			"hearthID" },
-		currencies = { "currencies", "currenciesSeen" },
-		worldbuffs = { "boons", "banked" },
+		possessions = { "money", "currencies", "currenciesSeen", "auctionsSeen", "bagFree" },
+		equipment  = { "itemLevel" },
+		character  = { "played", "playedAtLevel", "playedSeen", "rested", "xpMax", "guild",
+			"guildless", "hearth", "hearthID", "questCount", "questMax", "reputationCount",
+			"boons", "banked", "lockouts", "lockoutsSeen" },
 		professions = { "skills", "specs", "specsSeen", "craftCooldowns", "cooldownItems",
-			"itemCooldowns" },
-		quests     = { "questCount", "questMax" },
+			"itemCooldowns", "specialisations" },
+		mail       = { "mailCount", "mailInPost" },
 	}
 
 	for id, fields in pairs(expected) do
@@ -38446,6 +38455,67 @@ print("what a linked family may be granted")
 	check("and enough of them for the crafting panel to draw a row",
 		#Family.Cooldowns:Crafting(meta) > 0,
 		tostring(#Family.Cooldowns:Crafting(meta)))
+
+	-- **The fold of 2026-09-28: thirteen categories read as five.** Each new one is ticked
+	-- only where every old one it takes in was (Alberto's choice), so nothing is shared that
+	-- was not agreed to.
+	check("the categories are the five, in Alberto's order", (function()
+		local ids = {}
+		for _, category in ipairs(Family.Wide.CATEGORIES) do ids[#ids + 1] = category.id end
+		return table.concat(ids, " ") == "possessions equipment professions mail character"
+	end)())
+	do
+		local held = FamilyDB.wide
+		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+			links = { old = { name = "Old-FireMaw", siblings = {}, members = {}, grants = {
+				Whole = { possessions = true, auctions = true, money = true, currencies = true,
+					equipment = true, character = true, talents = true },
+				Part = { auctions = true, quests = true },
+				Lived = { character = true, talents = true, quests = true, reputations = true,
+					worldbuffs = true, lockouts = true },
+			} } } }
+		local grants = Family.Wide:Links().old.grants
+		check("a member who had all four of the old possession ticks has Possessions",
+			grants.Whole and grants.Whole.possessions == true and grants.Whole.equipment == true)
+		check("and not Character, having ticked two of its six",
+			grants.Whole and grants.Whole.character == nil and grants.Whole.talents == nil)
+		check("one who had only parts of each has nothing, and is no longer offered",
+			grants.Part == nil)
+		check("one who had all six of the character's has Character and only that",
+			grants.Lived and grants.Lived.character == true and grants.Lived.quests == nil)
+		check("and it is done once: a tick given after the fold stays",
+			(function()
+				grants.Lived.possessions = true
+				return Family.Wide:Links().old.grants.Lived.possessions == true
+					and FamilyDB.wide.grantsFolded == true
+			end)())
+		FamilyDB.wide = held
+	end
+
+	-- **On the wire, each new id with the old ones it takes in**, so an older Family on the
+	-- other side reads "sharing Auctions" while auctions arrive.
+	store.links["fam-grant"].grants["Granted-FireMaw"] = { possessions = true }
+	local told = {}
+	for _, id in ipairs((Family.Wide:Offering(store.links["fam-grant"])["Granted-FireMaw"]
+		or {}).granted or {}) do told[id] = true end
+	check("a Possessions grant is said as itself and as auctions, money and currencies",
+		told.possessions and told.auctions and told.money and told.currencies
+			and not told.character, table.concat((function()
+				local ids = {} for id in pairs(told) do ids[#ids + 1] = id end return ids
+			end)(), ","))
+	local heard = Family.Wide:Received({ granted = { "equipment", "lockouts" } })
+	check("an older Family's old id is heard as the category that took it in",
+		heard.character == true and heard.equipment == true and heard.possessions == nil)
+
+	-- **When the time played was read moves with the clock**, as the time played does: were it
+	-- in the mark, every login would send the member again to every linked family.
+	store.links["fam-grant"].grants["Granted-FireMaw"] = { character = true }
+	Family.Database:SetMeta("Granted-FireMaw", { playedAtLevel = 100 })
+	local before = Family.Wide.SendPiecesForTests(store.links["fam-grant"], "Granted-FireMaw")
+	Family.Database:SetMeta("Granted-FireMaw", { playedAtLevel = 200 })
+	check("the time played at this level does not make a member worth sending again",
+		before ~= nil and Family.Wide.SendPiecesForTests(store.links["fam-grant"],
+			"Granted-FireMaw") == before)
 
 	store.links["fam-grant"] = nil
 	Family.Database:Forget("Granted-FireMaw")
@@ -39670,7 +39740,7 @@ print("a linked family's columns on the summary")
 -- column for this*. L-052's class, and the third time in one day.
 ;(function()
 	local held = FamilyDB.wide
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["cdfam"] = { name = "Brewer-Thunderstrike", grants = {}, siblings = {},
 			members = {
@@ -40111,6 +40181,21 @@ print("archaeology: fragments, the project and the artifacts solved")
 	check("a race with a history says so with a plus", raceRow ~= nil)
 	if raceRow then raceRow.__scripts.OnClick(raceRow) end
 	check("and clicking it opens the artifacts solved", visibleText("Worn Hunting Knife"))
+	-- The rows are pooled, and a recipe drawn in one that was a race heading opened a race
+	-- when clicked instead of choosing the recipe (read in the code, 2026-09-28).
+	Family.UI:ShowProfessionFor(who, "Blacksmithing")
+	Family.UI:Refresh()
+	check("a recipe drawn where a race heading was chooses the recipe, not the race",
+		(function()
+			local drawn, stale = 0, 0
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and f.recipeName then
+					drawn = drawn + 1
+					if f.toggleRace then stale = stale + 1 end
+				end
+			end
+			return drawn > 0 and stale == 0, drawn .. " recipes, " .. stale .. " opening a race"
+		end)())
 	-- Put back before leaving, and the panel drawn once more so that it lets go of
 	-- Archaeology: the checks after this one expect it on a profession with recipes.
 	Family.Database:SetMeta(who, { skills = heldSkills or Family.CLEAR,
@@ -42411,7 +42496,7 @@ print("logging in announces, and pushes nothing")
 	local realSend = Family.Comm.Send
 	local sent = {}
 
-	FamilyDB.wide = {
+	FamilyDB.wide = { grantsFolded = true,
 		enabled = true, id = "us", requests = {}, pendingOut = {},
 		links = { ["afar"] = { name = "Afar lot", grants = {}, siblings = {}, members = {},
 			characters = { ["Afar-Fire Maw"] = time() } } },
@@ -47021,16 +47106,16 @@ print("instance lockouts, read, kept and drawn")
 		local held = FamilyDB.wide
 		Family.Database:SetMeta(key, { lockouts = { { key = "i469:9", name = "BWL",
 			resetAt = time() + 600 } }, lockoutsSeen = time() })
-		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+		FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["lockfam"] = { name = "Nosy-Thunderstrike",
 				grants = { [key] = { professions = true } }, siblings = {}, members = {} } } }
 		local link = FamilyDB.wide.links["lockfam"]
 		local sent = Family.Wide:Offering(link)[key]
 		check("granting professions does not send the lockouts",
 			sent and sent.meta and sent.meta.lockouts == nil)
-		link.grants[key].lockouts = true
+		link.grants[key].character = true
 		sent = Family.Wide:Offering(link)[key]
-		check("granting lockouts does",
+		check("granting the character does, raid locks being part of it since the fold",
 			sent and sent.meta and sent.meta.lockouts ~= nil and sent.meta.lockoutsSeen ~= nil)
 		FamilyDB.wide = held
 	end
@@ -47437,9 +47522,9 @@ print("the quests a character has already handed in")
 	-- Not shared: no category lists it.
 	do
 		local held = FamilyDB.wide
-		FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {},
+		FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {},
 			links = { ["qfam"] = { name = "Nosy-Thunderstrike",
-				grants = { [key] = { quests = true } }, siblings = {}, members = {} } } }
+				grants = { [key] = { character = true } }, siblings = {}, members = {} } } }
 		local sent = Family.Wide:Offering(FamilyDB.wide.links["qfam"])[key]
 		check("granting quests does not send the history",
 			sent and sent.payload and sent.payload.questsDone == nil)
@@ -47478,7 +47563,7 @@ print("a member's mark stays still when nothing changed")
 ;(function()
 	local heldWide, heldSend, heldSettle = FamilyDB.wide, Family.Comm.Send, Family.Wide.GRANT_SETTLE
 	local key = Family:CurrentMember()
-	FamilyDB.wide = { enabled = true, id = "us", requests = {}, pendingOut = {}, auto = false,
+	FamilyDB.wide = { grantsFolded = true, enabled = true, id = "us", requests = {}, pendingOut = {}, auto = false,
 		links = { ["still"] = { name = "Still waters", grants = {}, siblings = {}, members = {} } } }
 	local link = Family.Wide:Links()["still"]
 	Family.Wide.GRANT_SETTLE = 0

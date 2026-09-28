@@ -1,0 +1,6 @@
+name: a pooled profession row keeps the race it was drawn with
+file: addons/Family_UI/Professions.lua
+--- old
+			existing.toggleRace = nil
+--- new
+			-- kept
