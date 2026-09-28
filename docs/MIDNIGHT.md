@@ -4938,3 +4938,8 @@ pretend Midnight and finds no ranged slot, and a mutation takes the filter off.
 
 **Not done: the whole family's search.** Given *Durable*, the whole-family view finds only the recipe
 *Durable Nerubhide Cape* (his screenshot): it searches recipes, and the pack is not one.
+
+**Closed: the whole family's accessories are found by the Possessions search** (Alberto, 2026-09-28: *Possessions
+search does work on accessories, that closes the case*). Worn profession gear is counted by the index
+like any worn piece, so searching the family's possessions names who wears it; the Professions panel's
+whole-family search stays about recipes.
