@@ -427,6 +427,14 @@ take these with it.
 | v4.4.0 | Anniversary | 23/9/26 | Alberto | Pass |
 | v4.4.0 | Era | 23/9/26 | Alberto | Pass |
 | v4.4.0 | Mists | 23/9/26 | Alberto | Pass |
+| v5.0.0 | Anniversary | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Era | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Midnight | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Mists | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Anniversary | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Era | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Mists | 28/9/26 | Alberto | Pass |
+| v5.0.0 | Midnight | 28/9/26 | Alberto | Pass |
 
 *Client* is `Era`, `Anniversary`, `Mists` or, from 5.0.0, `Midnight`. *Result* is `pass`, or what was not run and
 why — the sections needing a guildmate or a second family are the ones that will honestly say
