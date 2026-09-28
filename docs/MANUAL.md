@@ -1,6 +1,7 @@
 # Family — the manual
 
-An alt manager for World of Warcraft Classic. It records what each of your characters owns
+An alt manager for World of Warcraft: Classic Era, Burning Crusade Anniversary, Mists of
+Pandaria and Midnight, all from one download. It records what each of your characters owns
 and knows, and shows it to you while you play a different one. Family calls your characters
 **members**.
 
@@ -46,8 +47,8 @@ time you open the same window again.
 
 | Do this | To record |
 |---|---|
-| open your **bank** | what is in it, and how many slots are free |
-| open the **guild bank** (Burning Crusade and Mists) | what is in each tab you look at |
+| open your **bank** | what is in it, and how many slots are free. On Midnight, the Warband bank too |
+| open the **guild bank** (Burning Crusade, Mists and Midnight) | the name of every tab, and what is in each tab you look at |
 | open your **mailbox** | what is waiting, and when it expires |
 | open the **auction house** | your auctions and your bids |
 | open each **profession** window | its recipes, their difficulty, and its cooldowns |
@@ -135,7 +136,7 @@ The buttons across the top choose which sections are shown:
 | **Professions** | every profession known by each member and its rank, primaries first |
 | **Currencies** | honor, arena points, and anything else your game counts as a currency. Hover a heading cut short to read the whole name |
 | **Cooldowns** | every crafting cooldown in the family, ready or when it comes back, then every instance lockout (§10) |
-| **Miscellaneous** | race, guild, where they logged out, hearthstone location, riding skill, and world buffs stored in a Chronoboon |
+| **Miscellaneous** | race, guild, where they logged out, hearthstone location, riding skill (on Midnight, Skyriding or steady flight), and world buffs stored in a Chronoboon |
 
 **A realm where you play both factions is split in two**, with a subtotal under each. The two
 sides share no mail and no auction house, so each subtotal counts only gold those characters
@@ -261,6 +262,24 @@ charges, in your bags, your bank and the guild bank tabs you have opened.
 **Tooltips match what you see in your own bags.** A bind-on-equip shield you have worn reads
 *Soulbound* here, as it does in your bag.
 
+**Bank tabs carry their names.** On Midnight the character bank's tabs and the Warband bank's
+are drawn under the names you gave them. The Warband bank belongs to the whole account, so it
+is drawn on every character's page and counted once on tooltips.
+
+**Every guild bank tab is listed, with its name**, empty ones included, and drawn at its full
+size with its free slots counted like a bag's. A tab you have not opened yet says *not opened
+yet*, and one you opened empty says *empty*. A tab keeps what it held until you open it again.
+
+**Looks to learn and looks known**, on Mists and Midnight. Two switches beside the search box
+pick out the items whose look your account has not collected yet, and the items whose look it
+already has, which can be sold without losing the look. On one character they dim everything
+else. With **Whole family** they list every such item across bags, banks, mail and guild banks,
+with nothing typed.
+
+**On Midnight, items that scale with level are shown as the copy you hold**: its own name, such
+as *of the Fireflash*, its real item level, and its own sell price, which is also what counts
+towards worth.
+
 **Mail and auctions are drawn as containers too.** Hover a letter to read its subject, who
 sent it, when it expires and the money in it.
 
@@ -268,6 +287,9 @@ sent it, when it expires and the money in it.
 items to one of your own characters, Family records them against that character at once, and
 the mail row says how many letters are *in the post*. When that character opens their mailbox,
 what is really there replaces the lot. Mail sent to anybody else is not recorded.
+
+**Hold CTRL and ALT and click an item** in any of these blocks to open the family's list of
+it, as from the game's own bags (§8).
 
 See §9 for the **Whole family** button.
 
@@ -321,7 +343,17 @@ This works only for the character you are playing.
 **Professions that make nothing are not listed here.** Herbalism, skinning and fishing have no
 recipes. They are on the summary, with their rank. A note under the buttons names any
 profession left out and says why: it makes nothing, or its window was *never opened* on that
-character.
+character. Midnight is different: skinning makes things there, and every profession has tools
+and accessories, so each gets a page of its own.
+
+**Profession tools and accessories**, on Midnight, are a strip at the top of that profession's
+page. The profession's button opens its window in the game.
+
+**Archaeology**, on Mists and Midnight, has a button of its own beside the professions: a line
+per race with its fragments and the project in progress under it. Click a race to open the
+artifacts it has solved, with when each was first solved and how many times. It is read when
+the character logs in and whenever fragments or projects change, without the Archaeology
+window being opened. The summary shows its rank only.
 
 See §9 for the **Whole family** button.
 
@@ -333,7 +365,8 @@ Five sections about one member.
 
 **Equipped gear** is laid out like the character sheet: a column down each side and the
 weapons along the bottom. Each piece shows its item level. The tooltip is the item as it
-really is, with its enchant and its gems.
+really is, with its enchant and its gems. On Midnight, profession tools and accessories follow
+as a row per profession.
 
 ![Character, Equipped gear: the paper-doll layout with item levels](images/character-gear.png)
 
@@ -353,7 +386,11 @@ summary.
 **Currencies**: everything this member holds, with each cap and how far they are from it. A
 currency without a cap says *no cap*. Currencies exist from Burning Crusade on.
 
-**Reputations**, by standing, with progress through the current standing.
+**Reputations**, as the game lists them: under the game's own headings, in the game's order,
+with progress through the current standing. Every heading starts closed. Click one to open it;
+typing in the filter opens whatever matches. A faction the character set inactive is under the
+game's *Inactive* heading. On the **Whole family** view it stays under its real heading, and the
+characters who set it inactive have *inactive* written before their standing.
 
 **Quests**: the quest log, by zone, in the game's difficulty colours for that member's level,
 with progress on each quest. **Click a quest to open it in the game's quest log**, when it
@@ -368,8 +405,8 @@ with the characters who have it underneath, the one furthest along first.
 
 See §9 for more about **Whole family**.
 
-**Achievements**, by category, with points and the progress on unfinished ones. Mists only. On
-the other versions the section is not shown.
+**Achievements**, by category, with points and the progress on unfinished ones. Mists and
+Midnight only. On the other versions the section is not shown.
 
 **Family closes when it opens one of the game's windows for you.** That happens when you click
 a quest, or a worn item on your own character. Family is drawn above the game's panels, so the
@@ -397,6 +434,19 @@ Options and the tooltip names as many as fit on your screen.
 showing everyone who has one. It works in your bags, on a link in chat, and anywhere else the
 game passes the click on. The tooltip mentions the shortcut in grey, under the owners, on any
 item the family holds. It is left off action bar buttons, where those keys belong to the bar.
+
+**Who can learn a look**, on Mists and Midnight. An item whose look your account has not
+collected says which of your characters could learn it, or that none of them can. Items that
+bind on pickup are left out, since nobody else could receive them. Below the names, in grey,
+who could learn it once they reach the item's level, and who has to log in once before Family
+knows what they can wear. The rule differs by version:
+
+- **Mists**: the right class, wearing that armour type as their own, and high enough level.
+- **Midnight**: anybody who can wear that armour type or a heavier one, once at the item's
+  level. A look you already have from another item counts as known.
+
+**A bound item's Auction line says *(unbound)*.** The price is still shown, but it is what an
+unbound copy sells for. A bound item is valued at the vendor price.
 
 **Soulbound copies on your other characters are marked**, in the game's own word. For the
 character you are currently playing the game already says it, and Family does not repeat it.
@@ -571,18 +621,15 @@ grid: your members down the side, categories across the top.
 
 | Category | What it carries |
 |---|---|
-| Possessions | bags and bank, and the slot counts |
-| Equipment | what they are wearing, and their item level |
-| Professions | recipes, ranks, specialisations and cooldowns |
-| Talents | talent trees and the spellbook |
-| Quests | the quest log |
-| Mail | what is waiting, and when it expires |
-| Auctions | what is listed |
-| Reputations | standings |
-| Money | money |
-| Character | time played, rested experience, guild, hearthstone, where they are, mount |
-| Currencies | currencies |
-| World buffs | the buffs they carry and what is stored in a Chronoboon |
+| Possessions | bags and bank, the slot counts, auctions, money and currencies |
+| Equipment | what they are wearing, and their item level. On Midnight, profession tools too |
+| Professions | recipes, ranks, cooldowns, archaeology, and the specialisation chosen, such as Weaponsmith |
+| Mail | what is waiting, when it expires, and what is in the post |
+| Character | time played, rested experience, guild, hearthstone, where they are, mount or flight style, talents and spellbook, the quest log, reputations, world buffs, and instance lockouts |
+
+**Before 5.0.0 there were thirteen categories.** A box ticked then is still ticked only if
+everything it now includes was ticked. Nothing is shared that you had not agreed to, so some
+boxes may need ticking again.
 
 **The grid starts with nothing ticked**, and there is no *share everything*. Offering a member
 at all shares who they are: name, realm, class, race, level and faction. Nothing else is sent
@@ -729,7 +776,8 @@ last time they heard from you, whichever is older. A profession you ticked but n
 shares only its rank, and you are listed as *may know it*.
 
 Professions that make nothing have no tick box: fishing, herbalism, skinning, first aid and
-archaeology. Mining has one, for smelting.
+archaeology. Mining has one, for smelting. On Midnight skinning makes things, so it has one too.
+Midnight's profession tools and accessories are shared with the equipped gear.
 
 Untick a profession and it stops being sent. What guildmates already hold is replaced the next
 time they hear from you. Records from anybody who has not been heard from for two weeks are
