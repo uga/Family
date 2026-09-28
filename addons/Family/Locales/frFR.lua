@@ -552,6 +552,7 @@ Family.locales.frFR = {
 	["|cff888888Other|r"] = "|cff888888Autre|r",
 	["|cff888888of %s|r"] = "|cff888888de %s|r",
 	["|cff9d9d9dempty|r"] = "|cff9d9d9dvide|r",
+	["Profession Accessories"] = "Accessoires de métier",
 	["Average item level"] = "Niveau d'objet moyen",
 	["Points or progress"] = "Points ou progr.",  -- 21
 	["|cff40bf40earned|r"] = "|cff40bf40obtenu|r",

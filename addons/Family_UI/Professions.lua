@@ -937,10 +937,49 @@ local function build(frame)
 		return held > 0, drawn
 	end
 
+	-- **A profession's tools and accessories, as one strip** between the headings and the recipes
+	-- (Alberto 2026-09-28, on three rows that said only *empty*: a leading label and the boxes,
+	-- the item level on the picture, the name on hover). The boxes are built as the gear grid's.
+	local GEAR_BOX = ROW - 4
+	local gearStrip = CreateFrame("Frame", nil, list)
+	gearStrip:SetHeight(ROW)
+	gearStrip.label = gearStrip:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	gearStrip.label:SetPoint("LEFT", 4, 0)
+	gearStrip.label:SetText(L["Profession Accessories"])
+	gearStrip.boxes = {}
+	gearStrip:Hide()
+	UI.__professionGearStrip = gearStrip
+
+	local function gearBox(index)
+		local existing = gearStrip.boxes[index]
+		if existing then return existing end
+
+		local box = CreateFrame("Button", nil, gearStrip)
+		box:SetSize(GEAR_BOX, GEAR_BOX)
+		box:SetPoint("LEFT", gearStrip.label, "RIGHT", 10 + (index - 1) * (GEAR_BOX + 4), 0)
+		box.border = box:CreateTexture(nil, "BACKGROUND")
+		box.border:SetAllPoints()
+		box.icon = box:CreateTexture(nil, "ARTWORK")
+		box.icon:SetPoint("TOPLEFT", 1, -1)
+		box.icon:SetPoint("BOTTOMRIGHT", -1, 1)
+		box.level = box:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+		box.level:SetPoint("BOTTOMRIGHT", -1, 1)
+		box:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square")
+
+		-- The worn piece by its link, which carries the level it was raised to; an empty box
+		-- says it is one.
+		UI:AttachTooltip(box, function(self)
+			if self.gearLink then return "itemlink", self.gearLink, self.lines end
+			return nil, nil, self.lines
+		end)
+
+		gearStrip.boxes[index] = box
+		return box
+	end
+
 	local function row(index)
 		local existing = rows[index]
-		-- A worn tool's link is set only by the rows that draw one, so it is taken off here.
-		if existing then existing.gearLink = nil return existing end
+		if existing then return existing end
 
 		-- An ordinary button, and nothing protected anywhere beneath it.
 		--
@@ -1127,9 +1166,6 @@ local function build(frame)
 		-- Burning Crusade as on Era - reported from play with Lesser Magic Wand, whose row
 		-- showed the spell and so carried none of what Family says about the wand.
 		UI:AttachTooltip(r, function(self)
-			-- A profession's worn tool, as it really is: its link carries the level it was
-			-- raised to, and an id does not.
-			if self.gearLink then return "itemlink", self.gearLink, self.fallback end
 			local made = self.itemID or Family.Recipes:Product(self.spellID)
 			if made then return "item", made, self.fallback end
 			if self.spellID then return "spell", self.spellID, self.fallback end
@@ -1223,6 +1259,9 @@ local function build(frame)
 
 	function frame:Refresh()
 		UI:MarkSelected(everyone, wholeFamily)
+		-- Drawn by the one page that has gear, and put away by every other, boxes and all.
+		gearStrip:Hide()
+		for _, box in ipairs(gearStrip.boxes) do box:Hide() end
 
 		-- A line of its own, with the bars below it moved down to make the room. The search
 		-- box sits beside the member picker rather than under it, so anchoring to the box's
@@ -2196,39 +2235,43 @@ local function build(frame)
 			y = y + ROW
 		end
 
-		-- **Its tools and accessories first**, one row a slot in the game's order - the tool,
-		-- then the accessories - and an empty slot said to be one. Which is which is the game's
-		-- own tooltip's to say. The box filters them by the name on the row, as it does a recipe.
+		-- **Its tools and accessories first**, in the game's order - the tool, then the
+		-- accessories. With something in the box, the strip stays while a piece's name matches.
 		local worn = equipment.worn or {}
-		for _, slot in ipairs(gearOf[chosen] or {}) do
-			local item = worn[slot]
-			local name = item and Family.Names:Item(item.id, "professions", function()
-				if frame:IsShown() then frame:Refresh() end
-			end)
-			if needle == "" or (name and name:lower():find(needle, 1, true)) then
-				used = used + 1
-				local r = row(used)
-				r:SetPoint("TOPLEFT", 0, -y)
-				r:SetPoint("TOPRIGHT", 0, -y)
-				r:Show()
-				y = y + ROW
-
+		local gearSlots = gearOf[chosen] or {}
+		local gearShown = #gearSlots > 0
+		if gearShown and needle ~= "" then
+			gearShown = false
+			for _, slot in ipairs(gearSlots) do
+				local name = worn[slot] and Family.Names:Item(worn[slot].id)
+				if name and name:lower():find(needle, 1, true) then gearShown = true end
+			end
+		end
+		if gearShown then
+			gearStrip:ClearAllPoints()
+			gearStrip:SetPoint("TOPLEFT", 0, -y)
+			gearStrip:SetPoint("TOPRIGHT", 0, -y)
+			gearStrip:Show()
+			y = y + ROW
+			for index, slot in ipairs(gearSlots) do
+				local item, box = worn[slot], gearBox(index)
+				box:Show()
+				local name = item and Family.Names:Item(item.id, "professions", function()
+					if frame:IsShown() then frame:Refresh() end
+				end)
+				box.gearLink = item and item.item
+				box.lines = { { name or L["|cff9d9d9dempty|r"] } }
+				box.icon:SetTexture(item and Family:ItemIcon(item.id) or nil)
+				box.level:SetText(item and item.itemLevel
+					and ("|cffffd700" .. item.itemLevel .. "|r") or "")
 				local quality = item and select(3, Family:ItemInfo(item.id))
 				local colour = quality and _G.ITEM_QUALITY_COLORS
 					and _G.ITEM_QUALITY_COLORS[quality]
-				r.text:SetText(item and ((colour and colour.hex or "|cffdddddd") .. name .. "|r")
-					or L["|cff9d9d9dempty|r"])
-				r.note:SetText(item and item.itemLevel
-					and string.format("|cffffd700%d|r", item.itemLevel) or "")
-				showMaterials(r, {})
-				r.text:SetWidth(math.max(60, UI:ListWidth(scroll) - ROW - 20
-					- MATERIAL_INSET_BARE - NOTE_ROOM - NOTE_GAP))
-				r.spellID, r.itemID, r.gearLink = nil, item and item.id, item and item.item
-				r.memberKey, r.profession, r.recipeName = nil, nil, nil
-				r.waiting:SetShown(false)
-				r.canOpen, r.announce, r.toggleRace, r.expandKey = false, nil, nil, nil
-				r.fallback = { { name or L["|cff9d9d9dempty|r"] } }
-				r.icon:SetTexture(item and Family:ItemIcon(item.id) or nil)
+				if colour then
+					box.border:SetColorTexture(colour.r, colour.g, colour.b, 0.7)
+				else
+					box.border:SetColorTexture(1, 1, 1, 0.08)
+				end
 			end
 		end
 

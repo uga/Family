@@ -552,6 +552,7 @@ Family.locales.deDE = {
 	["|cff888888Other|r"] = "|cff888888Sonstige|r",
 	["|cff888888of %s|r"] = "|cff888888von %s|r",
 	["|cff9d9d9dempty|r"] = "|cff9d9d9dleer|r",
+	["Profession Accessories"] = "Berufszubehör",
 	["Average item level"] = "Durchschn. Gegenstandsstufe",
 	["Points or progress"] = "Punkte/Fortschr.",  -- 21
 	["|cff40bf40earned|r"] = "|cff40bf40errungen|r",

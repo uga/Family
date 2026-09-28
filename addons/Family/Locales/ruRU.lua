@@ -552,6 +552,7 @@ Family.locales.ruRU = {
 	["|cff888888Other|r"] = "|cff888888Прочее|r",
 	["|cff888888of %s|r"] = "|cff888888из %s|r",
 	["|cff9d9d9dempty|r"] = "|cff9d9d9dпусто|r",
+	["Profession Accessories"] = "Аксессуары профессии",
 	["Average item level"] = "Средний уровень предметов",
 	["Points or progress"] = "Очки/прогресс",  -- 21
 	["|cff40bf40earned|r"] = "|cff40bf40получено|r",

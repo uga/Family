@@ -1,6 +1,6 @@
 name: a worn profession tool describes itself by id, without its level
 file: addons/Family_UI/Professions.lua
 --- old
-			if self.gearLink then return "itemlink", self.gearLink, self.fallback end
+			if self.gearLink then return "itemlink", self.gearLink, self.lines end
 --- new
-			if false then return "itemlink", self.gearLink, self.fallback end
+			if false then return "itemlink", self.gearLink, self.lines end

@@ -1,0 +1,6 @@
+name: the gear strip is left on a page that has no gear to show
+file: addons/Family_UI/Professions.lua
+--- old
+		gearStrip:Hide()
+--- new
+		local _ = gearStrip

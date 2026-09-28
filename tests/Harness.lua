@@ -14637,52 +14637,53 @@ do
 		skinButton ~= nil and cookButton ~= nil)
 	if skinButton then skinButton.__scripts.PostClick(skinButton) end
 	Family.UI:Refresh()
-	check("Skinning's page is its tool and accessories, and says it has nothing to make",
-		visibleText("Item #4023") and visibleText("Durable Pack") and visibleText("Item #4025")
-			and visibleText("Skinning: nothing to make"))
-	local packRow, toolRow
-	for _, f in ipairs(frames) do
-		if f.__shown ~= false and f.__familyTooltip and type(f.text) == "table" then
-			if tostring(f.text.__text):find("Durable Pack", 1, true) then packRow = f end
-			if tostring(f.text.__text):find("Item #4023", 1, true) then toolRow = f end
-		end
+	-- One strip, a label and a box a slot (Alberto 2026-09-28): the item level on the picture,
+	-- the name on hover, the tool first.
+	local strip = Family.UI.__professionGearStrip
+	local boxes = strip and strip.boxes or {}
+	local function shownBoxes()
+		local n = 0
+		for _, box in ipairs(boxes) do if box.__shown ~= false then n = n + 1 end end
+		return n
 	end
-	check("the tool first, in the game's order",
-		top(toolRow) and top(packRow) and top(toolRow) > top(packRow),
-		tostring(top(toolRow)) .. " / " .. tostring(top(packRow)))
+	check("Skinning's page is a strip of its tool and accessories, and says it has nothing to make",
+		strip and strip.__shown == true and strip.label.__text == "Profession Accessories"
+			and shownBoxes() == 3 and visibleText("Skinning: nothing to make"),
+		tostring(shownBoxes()))
+	check("the tool first, in the game's order, and the name only on hover",
+		boxes[1] and tostring(boxes[1].gearLink):find("item:4023", 1, true)
+			and boxes[2].lines[1][1] == "Durable Pack" and not visibleText("Durable Pack"))
 	local kind, what
-	if packRow then kind, what = packRow.__familyTooltip(packRow) end
+	if boxes[2] then kind, what = boxes[2].__familyTooltip(boxes[2]) end
 	check("and a worn piece describes itself by its link",
 		kind == "itemlink" and what == "item:4024:0:0:0:0:0:0:0:60", tostring(kind) .. " " .. tostring(what))
 	_G.FamilyProfessionsSearch:SetText("durable")
 	Family.UI:Refresh()
-	check("the box keeps the pieces whose name it finds and drops the others",
-		visibleText("Durable Pack") and not visibleText("Item #4023"))
+	check("the box keeps the strip while a piece's name matches",
+		strip and strip.__shown == true)
+	_G.FamilyProfessionsSearch:SetText("nothing by this name")
+	Family.UI:Refresh()
+	check("and puts it away when none does", strip and strip.__shown == false)
 	_G.FamilyProfessionsSearch:SetText("")
 	if cookButton then cookButton.__scripts.PostClick(cookButton) end
 	Family.UI:Refresh()
-	check("Cooking's page says it was never opened",
-		visibleText("Cooking never opened") and visibleText("Item #4026"))
-	-- A recipe drawn in the row a piece of gear had is asked about by what it makes, not by the
-	-- piece's link: rows are pooled, and Skinning's third row is Cooking's first recipe.
+	check("Cooking's page says it was never opened, with two boxes",
+		visibleText("Cooking never opened") and shownBoxes() == 2, tostring(shownBoxes()))
+	-- Between the headings and the recipes: the strip above the first recipe.
 	local stored = Family.Database:Payload(me) or {}
 	local heldProfessions = stored.professions
 	stored.professions = { [185] = { recipes = { { name = "Spiced Bread", itemID = 4541 } },
 		recipesSeen = time() } }
 	Family.Database:SetPayload(me, stored, { "professions" })
-	if skinButton then skinButton.__scripts.PostClick(skinButton) end
 	Family.UI:Refresh()
-	if cookButton then cookButton.__scripts.PostClick(cookButton) end
-	Family.UI:Refresh()
-	local breadKind
+	local bread
 	for _, f in ipairs(frames) do
 		if f.__shown ~= false and f.__familyTooltip and type(f.text) == "table"
-			and tostring(f.text.__text):find("Spiced Bread", 1, true) then
-			breadKind = f.__familyTooltip(f)
-		end
+			and tostring(f.text.__text):find("Spiced Bread", 1, true) then bread = f end
 	end
-	check("and a recipe drawn where a worn piece was describes what it makes",
-		breadKind == "item", tostring(breadKind))
+	check("the strip sits above the recipes",
+		top(strip) and top(bread) and top(strip) > top(bread),
+		tostring(top(strip)) .. " / " .. tostring(top(bread)))
 	stored.professions = heldProfessions
 	Family.Database:SetPayload(me, stored, { "professions" })
 	Family.Database:SetMeta(me, { skills = heldSkills or Family.CLEAR })
@@ -22205,6 +22206,50 @@ print("guild share")
 		and theirMain.talents.groupCount == 2)
 	check("and nothing that was never in the offer",
 		theirMain and theirMain.bags == nil and theirMain.meta.money == nil)
+
+	-- **No ranged slot on Midnight on the guild's gear rows either** (Alberto's screenshot,
+	-- 2026-09-28): found by the name an empty slot carries, first shown there on this client.
+	do
+		local rangedName = _G.RANGEDSLOT or "RANGEDSLOT"
+		local function rangedCells()
+			local found = 0
+			for _, f in ipairs(frames) do
+				local lines = rawget(f, "lines")
+				if f.__shown == true and rawget(f, "border") and type(lines) == "table"
+					and lines[1] and lines[1][1] == rangedName then
+					found = found + 1
+				end
+			end
+			return found
+		end
+		Family.UI:Show()
+		Family.UI:ShowTab("guild")
+		Family.UI:Refresh()
+		-- A player's characters are drawn once their row is clicked open, and shut again after.
+		local function toggleFaraway()
+			for _, f in ipairs(frames) do
+				if f.__shown ~= false and type(rawget(f, "text")) == "table"
+					and tostring(f.text.__text):find("Faraway", 1, true) and f.__scripts.OnClick then
+					f.__scripts.OnClick(f)
+					break
+				end
+			end
+			Family.UI:Refresh()
+		end
+		toggleFaraway()
+		local here = rangedCells()
+		local heldBuild = GetBuildInfo
+		GetBuildInfo = function() return "12.1.0", "69933", "Sep 18 2026", 120100 end
+		Family.Capabilities:Detect()
+		Family.UI:Refresh()
+		local midnight = rangedCells()
+		check("a guildmate's gear row leaves the ranged slot out on Midnight",
+			here > 0 and midnight == 0, tostring(here) .. " / " .. tostring(midnight))
+		GetBuildInfo = heldBuild
+		Family.Capabilities:Detect()
+		Family.UI:Refresh()
+		toggleFaraway()
+	end
 
 	Family.Database:Forget("Faraway-FireMaw")
 

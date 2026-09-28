@@ -552,6 +552,7 @@ Family.locales.esES = {
 	["|cff888888Other|r"] = "|cff888888Otros|r",
 	["|cff888888of %s|r"] = "|cff888888de %s|r",
 	["|cff9d9d9dempty|r"] = "|cff9d9d9dvacío|r",
+	["Profession Accessories"] = "Accesorios de profesión",
 	["Average item level"] = "Nivel de objeto medio",
 	["Points or progress"] = "Puntos o progr.",  -- 21
 	["|cff40bf40earned|r"] = "|cff40bf40obtenido|r",

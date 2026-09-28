@@ -4919,3 +4919,22 @@ no skills; the guild's and the sibling's offerings carry the pieces.
 Eleven checks, seven mutations. **Not yet seen in game.** Found on the way and not touched: the rows are
 pooled and the recipe rows do not clear an archaeology race's `toggleRace`, so a recipe drawn where a
 race heading was may open and shut a race when clicked.
+
+**Seen** (Alberto's screenshots, 2026-09-28, Mara): Enchanting, Skinning, Archaeology, Cooking and Fishing
+on the bar; Skinning's page with the *Durable Pack* at 70 and two rows saying *empty*; the box, given
+*Durable*, keeping the pack's row. And the fault he named: *we have to explain much better what those
+"empty" lines are for* - Enchanting's page opened with three rows saying only *empty*.
+
+**Redrawn as one strip**, his design: between the headings and the recipes, a leading label, *Profession
+Accessories*, and a box a slot - the item's picture or an empty frame, its item level on the picture,
+the name only on hover, the tool first. The box keeps the strip while a piece's name matches and puts
+it away when none does. The label is the one new sentence, translated in the four locales. Checks
+rewritten for the strip; the gear rows' mutations re-anchored to it and two added.
+
+**The guild's gear rows kept the ranged slot** (Alberto's screenshot of the guild share, 2026-09-28): the
+guild panel has its own slot list and did not ask `UI:GearSlotsHere`. It does now, with the ranged slot
+marked `needs = "rangedSlot"` as the character sheet's is; a check opens a guildmate's row on the
+pretend Midnight and finds no ranged slot, and a mutation takes the filter off.
+
+**Not done: the whole family's search.** Given *Durable*, the whole-family view finds only the recipe
+*Durable Nerubhide Cape* (his screenshot): it searches recipes, and the pack is not one.

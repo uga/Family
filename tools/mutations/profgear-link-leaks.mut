@@ -1,6 +1,6 @@
-name: a pooled row keeps a worn tool's link after it is given a recipe
+name: the gear strip's boxes stay shown under a strip put away
 file: addons/Family_UI/Professions.lua
 --- old
-		if existing then existing.gearLink = nil return existing end
+		for _, box in ipairs(gearStrip.boxes) do box:Hide() end
 --- new
-		if existing then return existing end
+		local _ = gearStrip.boxes

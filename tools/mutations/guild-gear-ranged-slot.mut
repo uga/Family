@@ -1,0 +1,6 @@
+name: the guild's gear rows draw a ranged slot the game does not have
+file: addons/Family_UI/Guild.lua
+--- old
+								for index, slot in ipairs(UI:GearSlotsHere(SLOT_ORDER)) do
+--- new
+								for index, slot in ipairs(SLOT_ORDER) do

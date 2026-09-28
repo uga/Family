@@ -54,7 +54,7 @@ local SLOT_ORDER = {
 	{ 13, "TRINKET0SLOT", "Trinket" }, { 14, "TRINKET1SLOT", "Trinket" },
 	{ 16, "MAINHANDSLOT", "MainHand" },
 	{ 17, "SECONDARYHANDSLOT", "SecondaryHand" },
-	{ 18, "RANGEDSLOT", "Ranged" },
+	{ 18, "RANGEDSLOT", "Ranged", needs = "rangedSlot" },
 }
 
 --------------------------------------------------------------------------------------------
@@ -850,7 +850,8 @@ local function build(frame)
 								or L["|cff9d9d9dno gear recorded|r"])
 
 							if gear and gear.worn then
-								for index, slot in ipairs(SLOT_ORDER) do
+								-- The slots this client's game has: Midnight has no ranged one.
+								for index, slot in ipairs(UI:GearSlotsHere(SLOT_ORDER)) do
 									local c = placeCell(
 										24 + (index - 1) * (GRID + GRID_GAP), y)
 									local item = gear.worn[slot[1]]
