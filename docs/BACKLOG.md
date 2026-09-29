@@ -4433,7 +4433,9 @@ Settled on the way:
 **Still to look at, with eyes rather than a check:** whether eight sixteen-pixel pictures and a
 recipe name both fit at the narrow end of the panel, in German and Russian as well as English.
 
-## 70. One bag for everything a character carries, and a search box over the whole family — DEFERRED 2026-09-12
+## 70. One bag for everything a character carries, and a search box over the whole family — DROPPED 2026-09-29
+
+**Dropped by Alberto 2026-09-29**: *we won't do it*. Kept below as it was written, for the record.
 
 **Asked for 2026-09-12**, as an extra rather than as part of what Family is.
 
@@ -7501,7 +7503,10 @@ checks (`Tooltip.lua:704-730`), `Family:BoundIn(bag, slot, itemID)` and `Family:
 
 ---
 
-## 107. The Professions window, for more than four professions with something to show — Mists seen fine 2026-09-27, Midnight open
+## 107. The Professions window, for more than four professions with something to show — DONE 2026-09-29, seen fine on Mists and Midnight
+
+**Seen in the game on Midnight, 2026-09-29** (Alberto: *seen in game, works ok (all professions get
+a button)*). Nothing to do on either client.
 
 **Seen in the game on Mists, 2026-09-27** (Alberto: *more than 4 professions with "lists" seen in
 game, panel adjusts OK*): Luga's five - Enchanting, Leatherworking, Archaeology, Cooking, First Aid -
