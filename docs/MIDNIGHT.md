@@ -5049,3 +5049,16 @@ Until now this branch wrote none, and *Unreleased* held only `main`'s 4.x entrie
 **Still before the merge**: a Midnight row in `docs/SMOKE.md` (Alberto's to play); the Leggings fix
 (§139) and Skinning on the guild grid (§138) seen; `tools/release.sh` asking a full release for a
 Midnight row, which is `main`'s and sent to DEV; `main`'s commits pushed.
+
+## 141. 5.0.0 released (2026-09-28)
+
+**Out**, by DEV at Alberto's word: `main` fast-forwarded to `midnight` (`22f119a`), the live check written
+for all four clients - Era, Anniversary, Mists and **Midnight**, *Pass*, Alberto, 28/9/26 (`docs/SMOKE.md`)
+- then `tools/release.sh 5.0.0`: `8ff343e` *Release 5.0.0* and tag `v5.0.0`, the harness green and the
+full mutation run 896 of 896 caught; `main` and the tag pushed, and GitHub's *Release* and *Checks*
+workflows succeeded (DEV's report; the commits, the tag and the rows read here). It went out as 5.0.0
+directly, not first as `5.0.0-beta.1` as the decision of the same day planned: Alberto's release.
+`midnight` fast-forwarded to `8ff343e`.
+
+Not seen in the game before the release, of what this file lists as built: the Leggings' item string
+from another character (§139) and Skinning on the guild grid (§138).
