@@ -1,0 +1,7 @@
+name: show me leaves the mail window open
+file: addons/Family_UI/Slash.lua
+--- old
+		dialog:Hide()
+		UI:ShowSummarySet("activity")
+--- new
+		UI:ShowSummarySet("activity")

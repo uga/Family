@@ -29,6 +29,14 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Mail
+
+- **A window at login when mail is about to run out**: in the middle of the screen, it says how
+  many characters in the family have letters about to be returned or lost, with a button that
+  opens Family on the Summary's *Activity* page. It shows once a session, never in combat, and
+  can be switched off in *Options*. Before, the only warning was a line in the chat frame, which
+  other messages could scroll away.
+
 ## 5.0.0 — 2026-09-28
 
 **Family now runs on World of Warcraft: Midnight**, beside Classic Era, Burning Crusade Anniversary

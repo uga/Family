@@ -37579,6 +37579,104 @@ print("the notice about mail that is about to go")
 		saidAtLogin() == nil)
 	FamilyDB.mailNotice = nil
 
+	--------------------------------------------------------------------------------------
+	-- The same warning as a window in the middle of the screen
+	--------------------------------------------------------------------------------------
+
+	-- Counted without the ones already gone: the window sends somebody to a mailbox, and
+	-- mail that has run out is not in one.
+	local listed, gone = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400), 0
+	for _, member in ipairs(listed) do
+		if member.expired then gone = gone + 1 end
+	end
+	check("the window counts the characters whose mail can still be saved",
+		gone > 0 and Family.UI:MailNoticeCount() == #listed - gone,
+		string.format("%d of %d, %d gone", Family.UI:MailNoticeCount(), #listed, gone))
+
+	local function noticeDialog()
+		for _, f in ipairs(frames) do
+			if f.__name == "FamilyMailNoticeDialog" then return f end
+		end
+	end
+
+	local function windowAtLogin()
+		local dialog = noticeDialog()
+		if dialog then dialog:Hide() end
+		fire("PLAYER_ENTERING_WORLD")
+		for _ = 1, 4 do advance(4) end
+		dialog = noticeDialog()
+		return dialog and dialog:IsShown() and dialog or nil
+	end
+
+	Family.UI:ForgetMailNoticeShownForTests()
+	local shown = windowAtLogin()
+	check("logging in opens the window", shown ~= nil)
+	check("saying how many, and not who", shown and shown.text:GetText()
+		== string.format("%d characters in the family have mail about to run out.",
+			Family.UI:MailNoticeCount())
+		and not shown.text:GetText():find("Postie", 1, true),
+		tostring(shown and shown.text:GetText()))
+	check("in the middle of the screen", shown and shown.__points
+		and shown.__points.CENTER == true)
+	check("and Escape closes it", (function()
+		for _, name in ipairs(UISpecialFrames) do
+			if name == "FamilyMailNoticeDialog" then return true end
+		end
+		return false
+	end)())
+
+	check("once a session, not at every loading screen", windowAtLogin() == nil)
+
+	Family.UI:ForgetMailNoticeShownForTests()
+	check("one character is a sentence of its own",
+		Family.UI:ShowMailNoticeDialog(1).text:GetText()
+			== "One character in the family has mail about to run out.")
+	check("and nobody at all opens nothing", Family.UI:ShowMailNoticeDialog(0) == nil)
+	noticeDialog():Hide()
+
+	-- Close does only that.
+	if Family.UI:IsShown() then Family.UI:Toggle() end
+	shown = windowAtLogin()
+	if shown then fireClick(shown.close) end
+	check("Close closes it", shown and not shown:IsShown())
+	check("and opens nothing", shown and not Family.UI:IsShown())
+
+	-- Show me lands on Activity, from another set, with Family shut.
+	Family.UI:Show()
+	Family.UI:ShowTab("summary")
+	for id, button in pairs(Family.UI.__summarySets or {}) do
+		if id ~= "activity" then fireClick(button) break end
+	end
+	local before = Family.UI.__summarySet
+	Family.UI:Toggle()
+	Family.UI:ForgetMailNoticeShownForTests()
+	shown = windowAtLogin()
+	if shown then fireClick(shown.show) end
+	check("Show me closes the window", shown and not shown:IsShown())
+	check("and opens Family on the Summary's Activity page",
+		before ~= "activity" and Family.UI:IsShown() and Family.UI:CurrentTab() == "summary"
+		and Family.UI.__summarySet == "activity",
+		tostring(before) .. " -> " .. tostring(Family.UI.__summarySet))
+	Family.UI:Toggle()
+
+	-- §4.7: never in a fight. The chat line says it instead, even with the chat notice
+	-- switched off, because the window was what was asked for and something has to arrive.
+	local heldCombat = InCombatLockdown
+	InCombatLockdown = function() return true end
+	FamilyDB.mailNotice = false
+	Family.UI:ForgetMailNoticeShownForTests()
+	check("in combat there is no window", windowAtLogin() == nil)
+	Family.UI:ForgetMailNoticeShownForTests()
+	check("and the chat line says it instead", saidAtLogin() ~= nil)
+	InCombatLockdown = heldCombat
+	FamilyDB.mailNotice = nil
+
+	FamilyDB.mailNoticeWindow = false
+	Family.UI:ForgetMailNoticeShownForTests()
+	check("switched off, no window", windowAtLogin() == nil)
+	check("while the chat line goes on by itself", saidAtLogin() ~= nil)
+	FamilyDB.mailNoticeWindow = nil
+
 	-- The control in the options panel, driven the way a player drives it.
 	Family.UI:Show()
 	Family.UI:ShowTab("options")

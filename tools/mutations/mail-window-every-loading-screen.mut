@@ -1,0 +1,6 @@
+name: the mail window comes back at every loading screen
+file: addons/Family_UI/Slash.lua
+--- old
+				noticeWindowShown = true
+--- new
+				noticeWindowShown = nil

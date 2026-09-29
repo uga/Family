@@ -1,0 +1,6 @@
+name: the mail window ignores its switch
+file: addons/Family_UI/Slash.lua
+--- old
+			local count = (FamilyDB.mailNoticeWindow ~= false and not noticeWindowShown)
+--- new
+			local count = (not noticeWindowShown)

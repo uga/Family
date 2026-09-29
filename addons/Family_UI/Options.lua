@@ -103,6 +103,15 @@ local SWITCHES = {
 			set = function(days) return UI:SetMailNoticeDays(days) end,
 		},
 	},
+	-- Asked for by Alberto, 2026-09-29. On unless unticked, like the chat notice above: the
+	-- window counts the characters and the chat line names them, and each can go on its own.
+	{
+		label = L["Show a window when mail is running out"],
+		note = L["Once a session, at login: how many characters have mail about to run out, "
+			.. "with a button that opens the Summary's Activity page. Not in combat."],
+		get = function() return FamilyDB.mailNoticeWindow ~= false end,
+		set = function(on) FamilyDB.mailNoticeWindow = on and true or false end,
+	},
 	{
 		label = L["Say which crafting cooldowns are ready when you log in"],
 		note = L["Transmutes, mooncloth, salt shakers. Crafting only - instance lockouts "

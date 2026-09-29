@@ -3290,18 +3290,125 @@ function UI:MailNotice()
 	return lines
 end
 
+-- How many characters have letters that can still be saved, for the window below.
+--
+-- **Not the ones already gone.** The window is there to send somebody to a mailbox, and mail
+-- that has run out is not in one any more; the chat notice still says so, by name.
+function UI:MailNoticeCount()
+	local count = 0
+	for _, member in ipairs(Family.Mail:Expiring(UI:MailNoticeDays() * 86400)) do
+		if not member.expired then count = count + 1 end
+	end
+	return count
+end
+
+-- The same warning as a window in the middle of the screen (§4.7: "a line in the chat frame,
+-- or a dialog if you prefer one"). Asked for by Alberto, 2026-09-29, because a chat line at
+-- login scrolls away under everything else the game says there.
+--
+-- **A count, not the names.** The names are in the chat notice and on the Summary's Activity
+-- page, which is where the second button goes; a window listing forty characters is the wall
+-- the chat notice was split into lines to avoid.
+--
+-- Built the first time it is needed rather than at load, as the panels are. Not the game's
+-- StaticPopup, which sits at the top of the screen and is shared with every other addon.
+local noticeDialog
+
+local function buildNoticeDialog()
+	local dialog = CreateFrame("Frame", "FamilyMailNoticeDialog", UIParent,
+		"BasicFrameTemplateWithInset")
+	dialog:SetSize(340, 130)
+	dialog:SetPoint("CENTER")
+	dialog:SetFrameStrata("DIALOG")
+	dialog:SetToplevel(true)
+	dialog:EnableMouse(true)
+	dialog:SetClampedToScreen(true)
+	dialog:Hide()
+
+	if dialog.TitleText then dialog.TitleText:SetText(L["Family"]) end
+
+	local text = dialog:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+	text:SetPoint("TOPLEFT", 16, -36)
+	text:SetPoint("TOPRIGHT", -16, -36)
+	text:SetJustifyH("CENTER")
+	dialog.text = text
+
+	local show = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+	show:SetSize(130, 22)
+	show:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -4, 14)
+	show:SetText(L["Show me"])
+	show:SetScript("OnClick", function()
+		dialog:Hide()
+		UI:ShowSummarySet("activity")
+	end)
+	dialog.show = show
+
+	local close = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+	close:SetSize(130, 22)
+	close:SetPoint("BOTTOMLEFT", dialog, "BOTTOM", 4, 14)
+	close:SetText(_G.CLOSE or L["Close"])
+	close:SetScript("OnClick", function() dialog:Hide() end)
+	dialog.close = close
+
+	-- Escape closes it, as it closes everything else in the game.
+	if type(UISpecialFrames) == "table" then
+		table.insert(UISpecialFrames, "FamilyMailNoticeDialog")
+	end
+
+	return dialog
+end
+
+function UI:ShowMailNoticeDialog(count)
+	if not count or count < 1 then return nil end
+	noticeDialog = noticeDialog or buildNoticeDialog()
+
+	if count == 1 then
+		noticeDialog.text:SetText(L["One character in the family has mail about to run out."])
+	else
+		noticeDialog.text:SetText(string.format(
+			L["%d characters in the family have mail about to run out."], count))
+	end
+
+	noticeDialog:Show()
+	return noticeDialog
+end
+
+-- Once a session, not once a loading screen. `PLAYER_ENTERING_WORLD` fires on every one, and
+-- a window that comes back at each dungeon door is one that gets switched off.
+local noticeWindowShown
+
 Family:OnDatabaseReady("mail.notice", function()
 	Family:RegisterEvent("PLAYER_ENTERING_WORLD", "mail.notice", function()
 		Family:After(9, "mail.notice", function()
-			if FamilyDB.mailNotice == false then return end
-
 			local lines = UI:MailNotice()
 			if not lines then return end
 
-			for _, line in ipairs(lines) do Family:Print(line) end
+			local chat = FamilyDB.mailNotice ~= false
+			local count = (FamilyDB.mailNoticeWindow ~= false and not noticeWindowShown)
+				and UI:MailNoticeCount() or 0
+
+			-- §4.7: the dialog is suppressed in combat and falls back to the chat line,
+			-- because nothing Family has to say is worth interrupting a fight.
+			if count > 0 and Family:TryCall(InCombatLockdown) then
+				count, chat = 0, true
+			end
+
+			if chat then
+				for _, line in ipairs(lines) do Family:Print(line) end
+			end
+
+			if count > 0 then
+				noticeWindowShown = true
+				UI:ShowMailNoticeDialog(count)
+			end
 		end)
 	end)
 end)
+
+-- For the harness: a new session, without reloading the file.
+function UI:ForgetMailNoticeShownForTests()
+	noticeWindowShown = nil
+end
 
 SLASH_FAMILY1 = "/family"
 SLASH_FAMILY2 = "/fam"

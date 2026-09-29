@@ -1,0 +1,6 @@
+name: one character is counted in the plural
+file: addons/Family_UI/Slash.lua
+--- old
+	if count == 1 then
+--- new
+	if false then

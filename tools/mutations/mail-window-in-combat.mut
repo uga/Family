@@ -1,0 +1,6 @@
+name: the mail window opens in combat
+file: addons/Family_UI/Slash.lua
+--- old
+			if count > 0 and Family:TryCall(InCombatLockdown) then
+--- new
+			if false then

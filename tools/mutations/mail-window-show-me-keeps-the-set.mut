@@ -1,0 +1,7 @@
+name: show me opens the summary on whatever set it was on
+file: addons/Family_UI/Summary.lua
+--- old
+	currentSet = wanted
+	UI.__summarySet = wanted.id
+--- new
+	UI.__summarySet = UI.__summarySet

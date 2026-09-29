@@ -4500,3 +4500,23 @@ local function build(frame)
 end
 
 UI:RegisterTab("summary", L["Summary"], build)
+
+-- Open Family on the Summary with one set showing, for anything that sends somebody there -
+-- the mail window's *Show me*, which wants Activity. The set is chosen after the panel is
+-- shown rather than before, because building it for the first time picks the starred set and
+-- would put back whatever had been chosen.
+function UI:ShowSummarySet(id)
+	local wanted
+	for _, set in ipairs(SETS) do
+		if set.id == id then wanted = set end
+	end
+
+	UI:Show()
+	UI:ShowTab("summary")
+	if not wanted then return end
+
+	currentSet = wanted
+	UI.__summarySet = wanted.id
+	UI:RefreshStars()
+	UI:Refresh()
+end

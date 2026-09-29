@@ -1,0 +1,6 @@
+name: the mail window counts letters already gone
+file: addons/Family_UI/Slash.lua
+--- old
+		if not member.expired then count = count + 1 end
+--- new
+		count = count + 1
