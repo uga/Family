@@ -1,0 +1,8 @@
+name: a bag named late is not drawn again
+file: addons/Family_UI/Contents.lua
+--- old
+				title = containerName(container, container.bag, container.where, function()
+					if frame:IsShown() then frame:Refresh() end
+				end)
+--- new
+				title = containerName(container, container.bag, container.where, function() end)

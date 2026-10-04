@@ -1,0 +1,8 @@
+name: a bag's name is only looked up, never asked for
+file: addons/Family_UI/Contents.lua
+--- old
+		local name, known = Family.Names:Item(entry.itemID, "contents.bag", onNamed)
+		if known then return name end
+--- new
+		local name = Family.Names:CachedItem(entry.itemID)
+		if name then return name end

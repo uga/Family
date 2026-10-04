@@ -102,7 +102,7 @@ local function containerIcon(entry)
 	return CONTAINER_ICON[entry.where] or CONTAINER_ICON.fallback
 end
 
-local function containerName(entry, bag, where)
+local function containerName(entry, bag, where, onNamed)
 	if where == "bags" and bag == BACKPACK then
 		return _G.BACKPACK_TOOLTIP or L["Backpack"]
 	end
@@ -117,9 +117,14 @@ local function containerName(entry, bag, where)
 	-- client's placeholder there, so the name comes first.
 	if entry.name then return entry.name end
 
+	-- **Asked for, not only looked up.** This read the name cache alone, which never asks the
+	-- client: a bag whose item the client had not loaded this session - a bank bag on Era,
+	-- whose bank had not been opened - was *Bank bag 1* for the whole session, while the
+	-- picture beside it was the right one (Alberto, a Demon Hide Sack, 2026-10-04). Asked by
+	-- id now, with the panel drawn again when the client answers, as the item cells are.
 	if entry.itemID then
-		local name = Family.Names:CachedItem(entry.itemID)
-		if name then return name end
+		local name, known = Family.Names:Item(entry.itemID, "contents.bag", onNamed)
+		if known then return name end
 	end
 
 	if where == "bank" then
@@ -1476,7 +1481,9 @@ local function build(frame)
 			elseif container.merged then
 				title = container.where == "bank" and (_G.BANK or L["Bank"]) or L["Bags"]
 			else
-				title = containerName(container, container.bag, container.where)
+				title = containerName(container, container.bag, container.where, function()
+					if frame:IsShown() then frame:Refresh() end
+				end)
 				if container.where == "bank" then
 					title = title .. "  " .. LABEL.bank
 				end

@@ -37,6 +37,12 @@ is a decision rather than an afternoon of archaeology.
   can be switched off in *Options*. Before, the only warning was a line in the chat frame, which
   other messages could scroll away.
 
+### Possessions
+
+- **A bag is called by its name even when the game had not loaded it yet**, such as a Demon Hide
+  Sack in a bank not visited this session. Before, it could stay *Bank bag 1* until the next
+  login.
+
 ## 5.0.0 — 2026-09-28
 
 **Family now runs on World of Warcraft: Midnight**, beside Classic Era, Burning Crusade Anniversary

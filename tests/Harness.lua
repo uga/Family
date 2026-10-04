@@ -13685,6 +13685,26 @@ do
 		bagTooltip("Bank bag 1") ~= nil, "it is numbered by its container id")
 	check("and the one after it the second", bagTooltip("Bank bag 2") ~= nil)
 
+	-- **A bag the client has not loaded is asked for, and named when it answers.** The title
+	-- read the name cache alone, which never asks: a Demon Hide Sack in an Era bank was *Bank
+	-- bag 1* for the whole session, its picture right beside it (Alberto, 2026-10-04).
+	payload.bank.containers[5].itemID = 10959
+	Family.Database:SetPayload(who, payload)
+
+	local heldRequest, asked = C_Item.RequestLoadItemDataByID, {}
+	C_Item.RequestLoadItemDataByID = function(id) asked[id] = true end
+	Family.UI:Refresh()
+	C_Item.RequestLoadItemDataByID = heldRequest
+
+	check("a bank bag whose item the client has not loaded asks the client for it",
+		asked[10959] == true)
+
+	ITEM_NAMES[10959] = "Demon Hide Sack"
+	fire("GET_ITEM_INFO_RECEIVED", 10959, true)
+	check("and is called by its name once the client answers, without anything reopened",
+		bagTooltip("Demon Hide Sack") ~= nil and bagTooltip("Bank bag 1") == nil)
+	ITEM_NAMES[10959] = nil
+
 	payload.bank = held
 	Family.Database:SetPayload(who, payload)
 end
