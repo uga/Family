@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 5.1.0 — 2026-10-13
+
 ### Mail
 
 - **A window at login when mail is about to run out**: in the middle of the screen, it says how
