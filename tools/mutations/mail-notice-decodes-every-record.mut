@@ -1,0 +1,6 @@
+name: the login mail warning decodes every record still compressed in one frame
+file: addons/Family/Scanners/Mail.lua
+--- old
+		consider(key, entry.meta or {}, entry.payload, nil)
+--- new
+		consider(key, entry.meta or {}, Family.Database:Payload(key), nil)

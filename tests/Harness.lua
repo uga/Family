@@ -45446,6 +45446,21 @@ print("records are unpacked a little at a time after logging in, not all at the 
 	check("a record from before backlog 74 is counted as still compressed",
 		Family.Database:StillCompressed() >= #keys, tostring(Family.Database:StillCompressed()))
 
+	-- **The login warnings about mail decode nothing.** Both run at every login, and through
+	-- `Payload` they would unpack every record still compressed in one frame - found when they
+	-- did, and the warm-up's own checks went on passing with the warm-up switched off.
+	Family.Database:SetMeta(keys[1], { mailExpiresBy = time() + 3600 })
+	local warned = Family.Mail:Expiring(3 * 86400)
+	Family.UI:UpdateBroker()
+	brokerTooltipText()
+	local named = false
+	for _, member in ipairs(warned) do
+		if member.key == keys[1] then named = true end
+	end
+	check("the mail warnings decode no record still compressed, and read its meta instead",
+		#decodes == 0 and named, string.format("%d decoded, named: %s", #decodes, tostring(named)))
+	Family.Database:SetMeta(keys[1], { mailExpiresBy = Family.CLEAR })
+
 	-- One record a step, not all of them.
 	Family.Database:WarmPayloads()
 	local afterOne = 0

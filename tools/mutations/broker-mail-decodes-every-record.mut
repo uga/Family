@@ -1,0 +1,6 @@
+name: the minimap tooltip's mail count decodes every record still compressed
+file: addons/Family_UI/Broker.lua
+--- old
+		local expiresBy = Family.Mail:NextExpiry(meta, entry.payload)
+--- new
+		local expiresBy = Family.Mail:NextExpiry(meta, Family.Database:Payload(key))

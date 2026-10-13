@@ -1,6 +1,6 @@
 name: the mail warning reads only meta and misses a letter behind one already gone
 file: addons/Family/Scanners/Mail.lua
 --- old
-		consider(key, entry.meta or {}, Family.Database:Payload(key), nil)
+		consider(key, entry.meta or {}, entry.payload, nil)
 --- new
 		consider(key, entry.meta or {}, nil, nil)

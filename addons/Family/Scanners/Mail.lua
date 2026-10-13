@@ -445,8 +445,9 @@ end
 --
 -- From the letters when the record carries them, since `mailExpiresBy` is only the soonest as of
 -- the last look and is in the past once that one has gone, whatever is behind it. A record
--- without letters - a linked family that sends the meta fields and not the mail - has the field
--- and nothing better, and there a moment already passed says nothing about what is left.
+-- without letters - a linked family that sends the meta fields and not the mail, or a payload
+-- still stored compressed, which is a string and not read here - has the field and nothing
+-- better, and there a moment already passed says nothing about what is left.
 function Mail:NextExpiry(meta, payload)
 	local now = time()
 	local letters = type(payload) == "table" and type(payload.mail) == "table"
@@ -506,8 +507,12 @@ function Mail:Expiring(within)
 		}
 	end
 
+	-- The record as stored, never through `Payload`: this runs at every login, and a record still
+	-- compressed from before backlog 74 would be decoded here, all of them in one frame - the
+	-- *script ran too long* the warm-up in Database.lua exists to prevent. A compressed one is a
+	-- string, which `NextExpiry` passes over for the meta field until the warm-up unpacks it.
 	for key, entry in pairs(Family.Database:Members()) do
-		consider(key, entry.meta or {}, Family.Database:Payload(key), nil)
+		consider(key, entry.meta or {}, entry.payload, nil)
 	end
 
 	-- Nothing at all when Wide Family is switched off, which `Siblings` answers for us, and

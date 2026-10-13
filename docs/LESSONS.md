@@ -5029,3 +5029,24 @@ it is drawn, colour codes and all, never as a bare substring.
 
 **Caught by:** `currency-family-total-last`, which survives a bare-number check, and the member-page
 check's `not visibleText("with currencies recorded")`, which fails in the wrong reading.
+
+## L-215 — a login warning that read every record through `Payload`, and hid the warm-up's checks
+
+**2026-10-13.** To stop warning about mail already gone, `Mail:Expiring` and the minimap tooltip's
+count were taught to read each member's letters through `Database:Payload`. Both run at every
+login, so any record still compressed from before backlog 74 was decoded there, every one in the
+same frame - the *script ran too long* that the warm-up in `Database.lua` exists to spread out. The
+harness stayed green and `mutate.py --changed` stayed green, because neither file the mutations
+`login-decodes-nothing-ahead` and `warm-up-stops-after-one` point at had changed. The full run in
+`tools/release.sh` found them surviving: the mail warning now decoded everything, so switching the
+warm-up off changed nothing the warm-up's check could see. It cost a refused release and a second
+eight-minute run.
+
+**Anything that reads every member at login or on a redraw reads the record as stored**
+(`entry.payload` from `Database:Members()`), and treats a string as not there - never `Payload`,
+which decodes.
+
+**Caught by:** the harness check *the mail warnings decode no record still compressed, and read its
+meta instead*, and the mutations `mail-notice-decodes-every-record` and
+`broker-mail-decodes-every-record`. And a survivor in a file the diff did not touch is still the
+diff's: the full run is what sees the coupling.

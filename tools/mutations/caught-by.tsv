@@ -161,6 +161,8 @@ tools/mutations/auction-tab-assumes-three.mut	and it takes the number after the 
 tools/mutations/auction-tab-hides-nothing.mut	clicking it shows our panel and puts the client's own away	a Family tab on the auction window
 tools/mutations/auction-unbound-copy-marked.mut	an unbound copy is not marked	vendor prices: one from the client, one learned from merchants
 tools/mutations/auction-worn-not-bound.mut	a worn copy is marked too	vendor prices: one from the client, one learned from merchants
+tools/mutations/bag-name-not-redrawn.mut	and is called by its name once the client answers, without anything reopened	what a recipe is made of, beside the recipe
+tools/mutations/bag-name-only-looked-up.mut	a bank bag whose item the client has not loaded asks the client for it	what a recipe is made of, beside the recipe
 tools/mutations/bags-brief-cooldown-not-marked.mut	and marked brief	crafting cooldowns
 tools/mutations/bags-brief-floor-admits-global-cooldown.mut	but a second and a half of global cooldown is not recorded	crafting cooldowns
 tools/mutations/bags-brief-floor-for-every-item.mut	and so is a thing in a bag with a long cooldown of its own	what is ready, and what is not ready yet
@@ -193,6 +195,7 @@ tools/mutations/broker-character-shows-no-bags.mut	and the character scope shows
 tools/mutations/broker-character-shows-unread-bags-as-empty.mut	and only its money while its bags have never been read	what the broker and the minimap button say and do
 tools/mutations/broker-cooldowns-lists-every-name.mut	the ready cooldowns line is there, with the count	what the broker and the minimap button say and do
 tools/mutations/broker-count-without-an-icon.mut	the realm scope counts this side of this realm and not the other side of it	what the broker and the minimap button say and do
+tools/mutations/broker-counts-gone-mail.mut	and does not count a member whose mail has already gone	what the broker and the minimap button say and do
 tools/mutations/broker-defaults-to-the-whole-family.mut	the bar counts this character until asked otherwise	what the broker and the minimap button say and do
 tools/mutations/broker-line-hidden-in-the-default-mode.mut	the whole-family mode says the bar shows money on the whole family	what the broker and the minimap button say and do
 tools/mutations/broker-tooltip-says-money-only-on-a-character.mut	and still names what the bar shows money on	what the broker and the minimap button say and do
@@ -411,6 +414,8 @@ tools/mutations/mail-close-passes-event-arguments.mut	and a request left unanswe
 tools/mutations/mail-empty-ignores-attachments.mut	while a letter still has something in it the total waits	the money that came out of the mailbox
 tools/mutations/mail-empty-ignores-the-server.mut	and a mailbox the server still holds letters for is not empty yet	the money that came out of the mailbox
 tools/mutations/mail-in-post-not-shared.mut	mail carries everything the panels read for it	what a linked family may be granted
+tools/mutations/mail-notice-ignores-the-letters.mut	and one whose soonest letter has gone is in it by the next, which has not	the notice about mail that is about to go
+tools/mutations/mail-notice-names-the-gone-by-meta.mut	and does not count a member whose mail has already gone	what the broker and the minimap button say and do
 tools/mutations/mail-report-counts-a-returned-letter.mut	money leaving the inbox with nothing asked for is not reported	the money that came out of the mailbox
 tools/mutations/mail-report-counts-the-same-money-twice.mut	money leaving the inbox with nothing asked for is not reported	the money that came out of the mailbox
 tools/mutations/mail-report-forgets-a-take-on-the-next-update.mut	money answered one update late is still said when it arrives  ->	the money that came out of the mailbox
@@ -425,12 +430,19 @@ tools/mutations/mail-return-outlives-the-mailbox.mut	and closing the mailbox let
 tools/mutations/mail-total-beats-the-client.mut	the total waits a moment after the mailbox empties, for the client's own last line	the money that came out of the mailbox
 tools/mutations/mail-total-said-twice.mut	and closing it straight after does not say it again	the money that came out of the mailbox
 tools/mutations/mail-total-waits-for-the-close.mut	emptying the mailbox says the total there and then, with the box still open	the money that came out of the mailbox
+tools/mutations/mail-window-counts-the-gone.mut	nor one whose letters all say they have gone	the notice about mail that is about to go
+tools/mutations/mail-window-every-loading-screen.mut	once a session, not at every loading screen	the notice about mail that is about to go
+tools/mutations/mail-window-ignores-its-switch.mut	switched off, no window	the notice about mail that is about to go
+tools/mutations/mail-window-in-combat.mut	in combat there is no window	the notice about mail that is about to go
+tools/mutations/mail-window-names-nobody-singular.mut	one character is a sentence of its own	the notice about mail that is about to go
+tools/mutations/mail-window-show-me-keeps-the-set.mut	the Summary says when the next letter goes, not that the first has gone	the notice about mail that is about to go
+tools/mutations/mail-window-show-me-stays-open.mut	Show me closes the window	the notice about mail that is about to go
 tools/mutations/maker-block-asks-no-table-first.mut	a product whose spell the shipped tables name is drawn with its maker	a tooltip and a one-member page ask about no more than they show
 tools/mutations/marking-reads-a-field-nothing-writes.mut	a member sent and changed since is counted as changed, by name	wide family
 tools/mutations/material-picture-uses-the-old-global.mut	a material's picture is drawn through C_Item where GetItemIcon is gone	what a recipe is made of, beside the recipe
 tools/mutations/may-ride-names-the-general-riding-skill.mut	while a character whose only riding skill is the general one is told nothing extra	what a character may ride, beside what they can
 tools/mutations/member-recipe-row-picture-is-the-recorded-one.mut	a member's recipe row wears the picture of what it makes	what a recipe is made of, beside the recipe
-tools/mutations/migration-goes-through-setpayload.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
+tools/mutations/migration-goes-through-setpayload.mut	a warm-up step decodes one record, not every record at once	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/migration-stamps-a-new-mark.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
 tools/mutations/minimap-refill-not-followed.mut	on Midnight's minimap the block is written inside the round that refills the tooltip	the possessions block on a game tooltip
 tools/mutations/money-cell-keeps-a-spare-place-showing.mut	a figure with no copper uses one place and puts the other away	money lines up by gold, silver and copper
@@ -703,6 +715,7 @@ tools/mutations/summary-hint-missing-under-a-tooltip.mut	a member's tooltip on t
 tools/mutations/summary-hint-only-where-a-tooltip-was.mut	a member's tooltip on the bags set offers both clicks, in grey  ->	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-hint-promises-alt-to-everyone.mut	and one with no profession recorded is not offered ALT on the bags set	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-line-keeps-last-member-keys.mut	a Cooldowns line's tooltip is about its own member, after Miscellaneous	instance lockouts, read, kept and drawn
+tools/mutations/summary-mail-expiry-reads-meta.mut	the Summary says when the next letter goes, not that the first has gone	the notice about mail that is about to go
 tools/mutations/summary-name-both-held-is-control.mut	and both held is an ordinary click, not either gesture	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-name-ignores-modifiers.mut	and ALT and a click opens that character's professions	CTRL or ALT and a click on a Summary name goes to that character
 tools/mutations/summary-name-misses-in-silence.mut	and says why, by name  ->	CTRL or ALT and a click on a Summary name goes to that character
@@ -852,7 +865,7 @@ tools/mutations/warband-tooltip-as-guild.mut	the possessions block names the War
 tools/mutations/warband-word-english-only.mut	in the client's own word for it where the client has one	the possessions block on a game tooltip
 tools/mutations/warm-up-decodes-everything-at-once.mut	a warm-up step decodes one record, not every record at once	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/warm-up-stops-after-one.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
-tools/mutations/warm-up-visits-plain-records.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
+tools/mutations/warm-up-visits-plain-records.mut	and a warm-up in the next session finds nothing to do and decodes nothing	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/warmode-flag-event-ignored.mut	switching War Mode off is read when the game says a flag changed	Midnight's talents: one tree of nodes, drawn as a list
 tools/mutations/warmode-flag-rescans-trees.mut	and without reading the talents again	Midnight's talents: one tree of nodes, drawn as a list
 tools/mutations/warmode-writes-unchanged.mut	a flag that changed without War Mode moving writes nothing	Midnight's talents: one tree of nodes, drawn as a list

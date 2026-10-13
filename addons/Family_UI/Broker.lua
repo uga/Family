@@ -117,7 +117,9 @@ local function summary()
 		-- realms away is exactly the thing somebody is not looking at, and narrowing what
 		-- the bar counts must not narrow what it warns about. Not mail already destroyed,
 		-- which no visit to a mailbox can save, as the login notice does not count it either.
-		local expiresBy = Family.Mail:NextExpiry(meta, Family.Database:Payload(key))
+		-- The record as stored, as the notice reads it: through `Payload` this would decode
+		-- every record still compressed in one frame, on a bar that redraws at login.
+		local expiresBy = Family.Mail:NextExpiry(meta, entry.payload)
 		if expiresBy and expiresBy - time() < 3 * 86400 then
 			needsAttention = needsAttention + 1
 		end
