@@ -1,0 +1,6 @@
+name: the Summary's Expires in reads the stored soonest letter and says gone over a live one
+file: addons/Family_UI/Summary.lua
+--- old
+	return Family.Mail:NextExpiry(meta, UI:Payload(key))
+--- new
+	return tonumber(meta.mailExpiresBy)

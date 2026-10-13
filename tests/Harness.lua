@@ -37564,6 +37564,44 @@ print("the notice about mail that is about to go")
 	check("one with ten days left is not", within["Latera"] == nil)
 	check("and one with nothing in the post is not", within["Nomail"] == nil)
 
+	-- The Summary's *Expires in* says the same: the next letter that can still be collected,
+	-- and nothing where nothing can, rather than *gone* over a letter still due in two days.
+	;(function()
+		local wasSet = Family.UI.__summarySet
+		Family.UI:ShowSummarySet("activity")
+		Family.UI:Refresh()
+
+		local function expiresCell(memberKey)
+			local at
+			for index, column in ipairs(Family.UI.__summaryColumns or {}) do
+				if column.key == "mailexp" then at = index end
+			end
+			if not at then return nil end
+			for _, f in ipairs(frames) do
+				if f.cells and f.__shown == true and f.memberKey == memberKey
+						and not f.__letter and f.cells[at] then
+					return tostring(f.cells[at].__text)
+				end
+			end
+			return nil
+		end
+
+		local twoletter = expiresCell("Twoletter-Fire Maw")
+		local allgone = expiresCell("Allgone-Fire Maw")
+		local losted = expiresCell("Losted-Fire Maw")
+		check("the Summary says when the next letter goes, not that the first has gone",
+			twoletter ~= nil and twoletter:find("gone", 1, true) == nil
+				and twoletter:find("2", 1, true) ~= nil, tostring(twoletter))
+		check("and nothing where every letter has gone, as where there is no mail",
+			allgone ~= nil and losted ~= nil and allgone == losted
+				and allgone == expiresCell("Nomail-Fire Maw"),
+			string.format("%s / %s / %s", tostring(allgone), tostring(losted),
+				tostring(expiresCell("Nomail-Fire Maw"))))
+
+		if wasSet then Family.UI:ShowSummarySet(wasSet) end
+		Family.UI:Hide()
+	end)()
+
 	-- Soonest first, so the one with least time left reads first.
 	local order = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)
 	local place = {}

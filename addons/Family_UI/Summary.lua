@@ -1104,10 +1104,19 @@ local function letterMoney(letter)
 	return nil
 end
 
-CELL.mailexp = function(meta)
-	local remaining = Family.Mail:TimeToExpiry(meta)
-	if not remaining then return UNKNOWN end
-	if remaining <= 0 then return L["|cffff4444gone|r"] end
+-- When the next letter still in the box goes, which is the same letter the login warning would
+-- name and the first one this member's unfolded mail lists. Nothing left to save shows as no
+-- mail does: a letter already gone is in no mailbox (Alberto, 2026-10-13), and *gone* here once
+-- stood over a letter still due tomorrow, because the stored figure is only the soonest at the
+-- last look.
+local function nextLetter(meta, key)
+	return Family.Mail:NextExpiry(meta, UI:Payload(key))
+end
+
+CELL.mailexp = function(meta, key)
+	local expiresBy = nextLetter(meta, key)
+	if not expiresBy then return UNKNOWN end
+	local remaining = expiresBy - time()
 
 	local text = duration(remaining) or L["soon"]
 	if remaining < 3 * 86400 then return "|cffff4444" .. text .. "|r" end
@@ -1580,7 +1589,7 @@ local SORT = {
 	bankseen  = function(meta) return meta.bankSeen end,
 	mail      = function(meta) return meta.mailCount end,
 	inpost    = function(meta) return meta.mailInPost end,
-	mailexp   = function(meta) return meta.mailExpiresBy end,
+	mailexp   = function(meta, key) return nextLetter(meta, key) end,
 	mailseen  = function(meta) return meta.mailSeen end,
 	aucseen   = function(meta) return meta.auctionsSeen end,
 	guild     = function(meta) return meta.guild end,

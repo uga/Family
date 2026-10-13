@@ -37,9 +37,10 @@ is a decision rather than an afternoon of archaeology.
   can be switched off in *Options*. Before, the only warning was a line in the chat frame, which
   other messages could scroll away.
 - **Mail that has already gone is no longer announced.** The login message, the window and the
-  minimap tooltip count only letters that can still be collected. Before, a character whose
-  letters had been returned or destroyed was named at every login until their mailbox was
-  opened, and a letter still waiting behind them could go unmentioned.
+  minimap tooltip count only letters that can still be collected, and the Summary's *Expires in*
+  shows when the next of them goes. Before, a character whose letters had been returned or
+  destroyed was named at every login until their mailbox was opened, and marked *gone* even with
+  another letter still waiting.
 
 ### Possessions
 
