@@ -145,6 +145,12 @@ can send one another. A realm where you play one faction is not split.
 **The two banners** at the right of the section buttons filter by faction. Both are on to
 begin with, and you can switch either off.
 
+**When mail is about to run out, a window says so at login**, in the middle of the screen: how
+many members have letters about to be returned or destroyed, with **Show me**, which opens this
+panel on Activity. It comes once a session and never in combat, when the chat line goes out
+instead. It warns as many days ahead as the chat line does, and can be switched off in Options
+(§13).
+
 What you can click:
 
 - **A member's name, holding CTRL**, opens their Possessions panel, and **holding ALT** their
@@ -816,6 +822,7 @@ What you share still reaches any guildmate whose Family announces itself first.
 | Draw the carried bags as one block, and the bank as another | Possessions shows one run of slots for the bags and one for the bank |
 | Fold long lists to fit the page | on to begin with. Untick it to see every name in every group (§9) |
 | Say whose mail is running out when you log in | with how many days' warning you want |
+| Show a window when mail is running out | once a session, at login, with a button that opens the Summary on Activity (§3). Not in combat |
 | Say which crafting cooldowns are ready when you log in | the login message in §10 |
 | Share gear and talents with your guild | Guild share (§12), in both directions at once |
 | Share with families you link to | Wide Family (§11) |
