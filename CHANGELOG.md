@@ -36,6 +36,10 @@ is a decision rather than an afternoon of archaeology.
   opens Family on the Summary's *Activity* page. It shows once a session, never in combat, and
   can be switched off in *Options*. Before, the only warning was a line in the chat frame, which
   other messages could scroll away.
+- **Mail that has already gone is no longer announced.** The login message, the window and the
+  minimap tooltip count only letters that can still be collected. Before, a character whose
+  letters had been returned or destroyed was named at every login until their mailbox was
+  opened, and a letter still waiting behind them could go unmentioned.
 
 ### Possessions
 

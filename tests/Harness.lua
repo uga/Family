@@ -18760,6 +18760,23 @@ do
 		Family.Database:SetMeta("Other-FireMaw", { faction = Family.CLEAR })
 		Family.Database:SetMeta("Formulaic-FireMaw", { faction = Family.CLEAR })
 		Family.Database:SetMeta("Tester-Auberdine", { mailExpiresBy = Family.CLEAR })
+
+		-- Mail already destroyed is no warning: no visit to a mailbox saves it, and the login
+		-- notice leaves it out for the same reason.
+		;(function()
+			local function warned()
+				return tonumber(brokerTooltipText():match("Mail expiring soon[^%d]*(%d+)")) or 0
+			end
+			local before = warned()
+			Family.Database:SetMeta("Tester-Auberdine", { mailExpiresBy = time() + 3600 })
+			local soon = warned()
+			Family.Database:SetMeta("Tester-Auberdine", { mailExpiresBy = time() - 3600 })
+			local gone = warned()
+			Family.Database:SetMeta("Tester-Auberdine", { mailExpiresBy = Family.CLEAR })
+			check("and does not count a member whose mail has already gone",
+				soon == before + 1 and gone == before,
+				string.format("%d without, %d about to go, %d gone", before, soon, gone))
+		end)()
 		Family.UI:CycleBrokerScope()
 
 		-- The button somebody actually presses, rather than the function behind it.
@@ -37508,6 +37525,23 @@ print("the notice about mail that is about to go")
 			mailExpiresBy = member.expires })
 	end
 
+	-- The soonest letter gone and the next going in two days. The meta field still says the
+	-- first, as it would until this character opened the box again; the letters say better.
+	Family.Database:SetMeta("Twoletter-Fire Maw", { name = "Twoletter", realm = "Fire Maw",
+		level = 60, classFile = "MAGE", faction = "Alliance", mailExpiresBy = now - 7200 })
+	Family.Database:SetPayload("Twoletter-Fire Maw", { mail = { letters = {
+		{ subject = "gone", expiresBy = now - 7200 },
+		{ subject = "kept", expiresBy = now + 2 * 86400 },
+	} } }, "mail")
+
+	-- And every letter gone, with the letters to say so.
+	Family.Database:SetMeta("Allgone-Fire Maw", { name = "Allgone", realm = "Fire Maw",
+		level = 60, classFile = "MAGE", faction = "Alliance", mailExpiresBy = now - 7200 })
+	Family.Database:SetPayload("Allgone-Fire Maw", { mail = { letters = {
+		{ subject = "gone", expiresBy = now - 7200 },
+		{ subject = "gone too", expiresBy = now - 60 },
+	} } }, "mail")
+
 	check("three days is what it warns at until somebody says otherwise",
 		Family.UI:MailNoticeDays() == 3, tostring(Family.UI:MailNoticeDays()))
 
@@ -37521,15 +37555,22 @@ print("the notice about mail that is about to go")
 
 	local within = named()
 	check("a character whose letters go tomorrow is in it", within["Postie"] ~= nil)
-	check("and one whose letters have already gone", within["Losted"] ~= nil)
-	check("marked as gone rather than as expiring now, which are different facts",
-		within["Losted"] and within["Losted"].expired == true)
+	-- Mail already gone is in no mailbox, so a warning about it sends nobody anywhere.
+	check("but not one whose letters have already gone", within["Losted"] == nil)
+	check("nor one whose letters all say they have gone", within["Allgone"] == nil)
+	check("and one whose soonest letter has gone is in it by the next, which has not",
+		within["Twoletter"] ~= nil and within["Twoletter"].expiresBy == now + 2 * 86400,
+		tostring(within["Twoletter"] and within["Twoletter"].expiresBy))
 	check("one with ten days left is not", within["Latera"] == nil)
 	check("and one with nothing in the post is not", within["Nomail"] == nil)
 
-	-- Soonest first, so the one that cannot be saved reads before the one that can.
+	-- Soonest first, so the one with least time left reads first.
 	local order = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)
-	check("soonest first", order[1] and order[1].name == "Losted", order[1] and order[1].name)
+	local place = {}
+	for index, member in ipairs(order) do place[member.name] = index end
+	check("soonest first", place["Postie"] and place["Twoletter"]
+		and place["Postie"] < place["Twoletter"],
+		string.format("%s before %s", tostring(place["Postie"]), tostring(place["Twoletter"])))
 
 	-- One character to a line, under a heading, so the notice is a list rather than a wall.
 	local function noticeText()
@@ -37545,15 +37586,16 @@ print("the notice about mail that is about to go")
 
 	local said = noticeText()
 	check("the notice names them", said:find("Postie", 1, true)
-		and said:find("Losted", 1, true), said)
+		and said:find("Twoletter", 1, true), said)
 
 	-- Same-named alts on two realms are ordinary, and a line that names one names neither.
 	check("with the realm beside the name",
 		said:find("Postie-Fire Maw", 1, true) ~= nil, said)
 	check("and leaves out the one that is not running out",
 		said:find("Latera", 1, true) == nil, said)
-	check("saying outright that one of them is already lost",
-		said:find("already gone", 1, true) ~= nil, said)
+	check("and never one whose mail has already gone",
+		said:find("Losted", 1, true) == nil and said:find("Allgone", 1, true) == nil
+			and said:find("gone", 1, true) == nil, said)
 
 	-- The number is the player's, inside bounds it is worth having.
 	check("a longer warning takes in more of them", Family.UI:SetMailNoticeDays(14) == 14
@@ -37603,15 +37645,12 @@ print("the notice about mail that is about to go")
 	-- The same warning as a window in the middle of the screen
 	--------------------------------------------------------------------------------------
 
-	-- Counted without the ones already gone: the window sends somebody to a mailbox, and
-	-- mail that has run out is not in one.
-	local listed, gone = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400), 0
-	for _, member in ipairs(listed) do
-		if member.expired then gone = gone + 1 end
-	end
+	-- The same characters the chat line names, which leaves out the ones already gone: the
+	-- window sends somebody to a mailbox, and mail that has run out is not in one.
+	local listed = Family.Mail:Expiring(Family.UI:MailNoticeDays() * 86400)
 	check("the window counts the characters whose mail can still be saved",
-		gone > 0 and Family.UI:MailNoticeCount() == #listed - gone,
-		string.format("%d of %d, %d gone", Family.UI:MailNoticeCount(), #listed, gone))
+		#listed >= 2 and Family.UI:MailNoticeCount() == #listed,
+		string.format("%d of %d", Family.UI:MailNoticeCount(), #listed))
 
 	local function noticeDialog()
 		for _, f in ipairs(frames) do
@@ -37751,7 +37790,8 @@ print("the notice about mail that is about to go")
 	check("under the name of the family it belongs to",
 		withSibling:find("Spazzacamino", 1, true) ~= nil, withSibling)
 	check("and still in urgency order, ours and theirs together",
-		withSibling:find("Losted", 1, true) < withSibling:find("Tossica", 1, true),
+		(withSibling:find("Postie", 1, true) or math.huge)
+			< (withSibling:find("Tossica", 1, true) or 0),
 		withSibling)
 
 	-- Wide Family off is not "no siblings today", it is nothing shared at all.
@@ -37803,7 +37843,8 @@ print("the notice about mail that is about to go")
 	end)())
 
 	check("and the most urgent still at the top",
-		crowded:find("Losted", 1, true) < crowded:find("Crowder01", 1, true), crowded)
+		(crowded:find("Postie", 1, true) or math.huge)
+			< (crowded:find("Crowder01", 1, true) or 0), crowded)
 
 	for _, key in ipairs(crowd) do Family.Database:Forget(key) end
 	Family.Wide:SetSibling("fam-post", "Tossica-Auberdine", false)
@@ -37811,6 +37852,8 @@ print("the notice about mail that is about to go")
 
 	Family.UI:SetMailNoticeDays(3)
 	for _, member in ipairs(roster) do Family.Database:Forget(member.key) end
+	Family.Database:Forget("Twoletter-Fire Maw")
+	Family.Database:Forget("Allgone-Fire Maw")
 end)()
 
 --------------------------------------------------------------------------------------------

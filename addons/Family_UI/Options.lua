@@ -89,7 +89,7 @@ local SWITCHES = {
 	},
 	{
 		label = L["Say whose mail is running out when you log in"],
-		note = L["Names the characters holding letters that have expired or are about to. "
+		note = L["Names the characters holding letters about to run out. "
 			.. "The game puts an envelope on your minimap and never says when what is in "
 			.. "it goes away."],
 		get = function() return FamilyDB.mailNotice ~= false end,

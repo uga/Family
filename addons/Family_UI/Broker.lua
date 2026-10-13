@@ -115,9 +115,10 @@ local function summary()
 		-- because it is the one thing that gets worse while you are not looking.
 		-- Deliberately outside the scope test above. Mail rotting on a character three
 		-- realms away is exactly the thing somebody is not looking at, and narrowing what
-		-- the bar counts must not narrow what it warns about.
-		local remaining = Family.Mail:TimeToExpiry(meta)
-		if remaining and remaining < 3 * 86400 then
+		-- the bar counts must not narrow what it warns about. Not mail already destroyed,
+		-- which no visit to a mailbox can save, as the login notice does not count it either.
+		local expiresBy = Family.Mail:NextExpiry(meta, Family.Database:Payload(key))
+		if expiresBy and expiresBy - time() < 3 * 86400 then
 			needsAttention = needsAttention + 1
 		end
 	end

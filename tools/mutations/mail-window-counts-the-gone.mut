@@ -1,6 +1,6 @@
-name: the mail window counts letters already gone
-file: addons/Family_UI/Slash.lua
+name: the mail warning counts letters already gone
+file: addons/Family/Scanners/Mail.lua
 --- old
-		if not member.expired then count = count + 1 end
+			if by and by > now and (not soonest or by < soonest) then soonest = by end
 --- new
-		count = count + 1
+			if by and (not soonest or by < soonest) then soonest = by end

@@ -441,8 +441,32 @@ function Mail:TimeToExpiry(meta)
 	return remaining
 end
 
--- Everybody holding something that has expired or will within `within` seconds, soonest
--- first.
+-- When this member's next letter still in the box runs out, as a moment, or nil when none will.
+--
+-- From the letters when the record carries them, since `mailExpiresBy` is only the soonest as of
+-- the last look and is in the past once that one has gone, whatever is behind it. A record
+-- without letters - a linked family that sends the meta fields and not the mail - has the field
+-- and nothing better, and there a moment already passed says nothing about what is left.
+function Mail:NextExpiry(meta, payload)
+	local now = time()
+	local letters = type(payload) == "table" and type(payload.mail) == "table"
+		and payload.mail.letters
+
+	if type(letters) == "table" and #letters > 0 then
+		local soonest
+		for _, letter in ipairs(letters) do
+			local by = tonumber(letter.expiresBy)
+			if by and by > now and (not soonest or by < soonest) then soonest = by end
+		end
+		return soonest
+	end
+
+	local by = meta and tonumber(meta.mailExpiresBy)
+	if by and by > now then return by end
+	return nil
+end
+
+-- Everybody holding a letter that will run out within `within` seconds, soonest first.
 --
 -- **Siblings as well as our own**, each carrying the name of the family it belongs to. This
 -- was built the other way first, on the reasoning that a mailbox in somebody else's family is
@@ -454,29 +478,36 @@ end
 -- The realm travels with every one of them. Same-named alts on different realms are ordinary,
 -- and a notice that names one of them names neither.
 --
--- `expired` rather than a time of nought, because the two are different facts and the caller
--- has to be able to say so: mail whose moment has passed is mail already lost, and telling
--- somebody it expires "now" invites them to run for a mailbox that has nothing in it.
+-- **Never the ones already gone** (Alberto, 2026-10-13). Mail whose moment has passed is not in
+-- any mailbox, so a warning about it sends nobody anywhere useful; it was named at every login
+-- as *already gone* until that character next opened the box, which was noise that never
+-- stopped. The warning is about what can still be saved.
+--
+-- **By the letters where they are known**, not by `mailExpiresBy` alone. That field is the
+-- soonest letter as of the last look at the box, so once that one runs out it says *gone* for a
+-- character whose next letter goes tomorrow - and leaving out the gone would have hidden that
+-- one too. The field is the fallback for a record carrying no letters.
 function Mail:Expiring(within)
 	local found = {}
 
-	local function consider(key, meta, familyName)
-		local left = Mail:TimeToExpiry(meta)
-		if not left or left > (within or 0) then return end
+	local function consider(key, meta, payload, familyName)
+		local expiresBy = Mail:NextExpiry(meta, payload)
+		if not expiresBy then return end
+		local left = expiresBy - time()
+		if left > (within or 0) then return end
 
 		found[#found + 1] = {
 			key = key,
 			name = meta.name or key,
 			realm = meta.realm,
 			family = familyName,
-			expiresBy = meta.mailExpiresBy,
+			expiresBy = expiresBy,
 			left = left,
-			expired = left <= 0,
 		}
 	end
 
 	for key, entry in pairs(Family.Database:Members()) do
-		consider(key, entry.meta or {}, nil)
+		consider(key, entry.meta or {}, Family.Database:Payload(key), nil)
 	end
 
 	-- Nothing at all when Wide Family is switched off, which `Siblings` answers for us, and
@@ -484,7 +515,7 @@ function Mail:Expiring(within)
 	-- exchanged before that field was sent by the right name has no such figure, and an
 	-- absence is not a nought (§2.2).
 	for _, member in ipairs(Family.Wide and Family.Wide:Siblings() or {}) do
-		consider(member.key, member.meta or {}, member.familyName)
+		consider(member.key, member.meta or {}, member.payload, member.familyName)
 	end
 
 	table.sort(found, function(a, b)

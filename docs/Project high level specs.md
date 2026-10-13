@@ -529,6 +529,11 @@ Expiry itself is always announced regardless of lead times. Something that expir
 were away is reported once, as having expired, rather than announced late as though it were
 news.
 
+Mail is the exception: mail that has already been returned or destroyed is not announced at
+all, since it is in no mailbox and no visit can save it. The warning counts only letters that
+can still be collected, and a character whose soonest letter has gone is warned about by the
+next one.
+
 A cooldown appears only if it was seen (§2.2).
 
 ### 4.8 Options

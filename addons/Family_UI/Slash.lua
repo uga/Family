@@ -3273,16 +3273,12 @@ function UI:MailNotice()
 			shown = string.format("%s |cff888888[%s]|r", shown, member.family)
 		end
 
-		if member.expired then
-			return string.format(L["%s |cffff4444(already gone)|r"], shown)
-		end
 		return string.format("%s |cff888888(%s)|r", shown, UI:In(member.expiresBy))
 	end
 
 	local lines = { L["mail running out:"] }
 
-	-- Urgency order, so the ones that can still be saved read after the ones that cannot and
-	-- the eye stops at the right place going down.
+	-- Urgency order, so the one with least time left is read first.
 	for _, member in ipairs(waiting) do
 		lines[#lines + 1] = "  " .. entryFor(member)
 	end
@@ -3290,16 +3286,11 @@ function UI:MailNotice()
 	return lines
 end
 
--- How many characters have letters that can still be saved, for the window below.
---
--- **Not the ones already gone.** The window is there to send somebody to a mailbox, and mail
--- that has run out is not in one any more; the chat notice still says so, by name.
+-- How many characters have letters about to run out, for the window below. Never the ones
+-- already gone, which `Mail:Expiring` leaves out for the chat notice as well: mail that has run
+-- out is not in a mailbox any more, and the warning is there to send somebody to one.
 function UI:MailNoticeCount()
-	local count = 0
-	for _, member in ipairs(Family.Mail:Expiring(UI:MailNoticeDays() * 86400)) do
-		if not member.expired then count = count + 1 end
-	end
-	return count
+	return #Family.Mail:Expiring(UI:MailNoticeDays() * 86400)
 end
 
 -- The same warning as a window in the middle of the screen (§4.7: "a line in the chat frame,

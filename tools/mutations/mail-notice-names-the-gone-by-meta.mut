@@ -1,0 +1,6 @@
+name: the mail warning names a character whose soonest letter has gone, read from meta
+file: addons/Family/Scanners/Mail.lua
+--- old
+	if by and by > now then return by end
+--- new
+	if by then return by end
