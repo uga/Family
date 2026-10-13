@@ -431,7 +431,10 @@ take these with it.
 | v5.0.0 | Era | 28/9/26 | Alberto | Pass |
 | v5.0.0 | Mists | 28/9/26 | Alberto | Pass |
 | v5.0.0 | Midnight | 28/9/26 | Alberto | Pass |
-
+| v5.1.0 | Anniversary | 13/10/26 | Alberto | Pass |
+| v5.1.0 | Era | 13/10/26 | Alberto | Pass |
+| v5.1.0 | Mists | 13/10/26 | Alberto | Pass |
+| v5.1.0 | Midnight | 13/10/26 | Alberto | Pass |
 
 
 *Client* is `Era`, `Anniversary`, `Mists` or, from 5.0.0, `Midnight`. *Result* is `pass`, or what was not run and
