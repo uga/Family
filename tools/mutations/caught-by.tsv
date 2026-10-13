@@ -198,6 +198,7 @@ tools/mutations/broker-count-without-an-icon.mut	the realm scope counts this sid
 tools/mutations/broker-counts-gone-mail.mut	and does not count a member whose mail has already gone	what the broker and the minimap button say and do
 tools/mutations/broker-defaults-to-the-whole-family.mut	the bar counts this character until asked otherwise	what the broker and the minimap button say and do
 tools/mutations/broker-line-hidden-in-the-default-mode.mut	the whole-family mode says the bar shows money on the whole family	what the broker and the minimap button say and do
+tools/mutations/broker-mail-decodes-every-record.mut	the mail warnings decode no record still compressed, and read its meta instead	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/broker-tooltip-says-money-only-on-a-character.mut	and still names what the bar shows money on	what the broker and the minimap button say and do
 tools/mutations/buyout-written-with-copper.mut	coins: and so is a buyout	what the broker and the minimap button say and do
 tools/mutations/cached-item-asks-again-after-a-miss.mut	an item no one can name is asked of the client once, however often it is wanted	what each client calls a recipe
@@ -414,6 +415,7 @@ tools/mutations/mail-close-passes-event-arguments.mut	and a request left unanswe
 tools/mutations/mail-empty-ignores-attachments.mut	while a letter still has something in it the total waits	the money that came out of the mailbox
 tools/mutations/mail-empty-ignores-the-server.mut	and a mailbox the server still holds letters for is not empty yet	the money that came out of the mailbox
 tools/mutations/mail-in-post-not-shared.mut	mail carries everything the panels read for it	what a linked family may be granted
+tools/mutations/mail-notice-decodes-every-record.mut	the mail warnings decode no record still compressed, and read its meta instead	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/mail-notice-ignores-the-letters.mut	and one whose soonest letter has gone is in it by the next, which has not	the notice about mail that is about to go
 tools/mutations/mail-notice-names-the-gone-by-meta.mut	and does not count a member whose mail has already gone	what the broker and the minimap button say and do
 tools/mutations/mail-report-counts-a-returned-letter.mut	money leaving the inbox with nothing asked for is not reported	the money that came out of the mailbox
@@ -442,7 +444,7 @@ tools/mutations/marking-reads-a-field-nothing-writes.mut	a member sent and chang
 tools/mutations/material-picture-uses-the-old-global.mut	a material's picture is drawn through C_Item where GetItemIcon is gone	what a recipe is made of, beside the recipe
 tools/mutations/may-ride-names-the-general-riding-skill.mut	while a character whose only riding skill is the general one is told nothing extra	what a character may ride, beside what they can
 tools/mutations/member-recipe-row-picture-is-the-recorded-one.mut	a member's recipe row wears the picture of what it makes	what a recipe is made of, beside the recipe
-tools/mutations/migration-goes-through-setpayload.mut	a warm-up step decodes one record, not every record at once	records are unpacked a little at a time after logging in, not all at the first question
+tools/mutations/migration-goes-through-setpayload.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
 tools/mutations/migration-stamps-a-new-mark.mut	and keeping the fold of that string as its mark	a record from before backlog 74 keeps its mark when it is rewritten plain
 tools/mutations/minimap-refill-not-followed.mut	on Midnight's minimap the block is written inside the round that refills the tooltip	the possessions block on a game tooltip
 tools/mutations/money-cell-keeps-a-spare-place-showing.mut	a figure with no copper uses one place and puts the other away	money lines up by gold, silver and copper
@@ -865,7 +867,7 @@ tools/mutations/warband-tooltip-as-guild.mut	the possessions block names the War
 tools/mutations/warband-word-english-only.mut	in the client's own word for it where the client has one	the possessions block on a game tooltip
 tools/mutations/warm-up-decodes-everything-at-once.mut	a warm-up step decodes one record, not every record at once	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/warm-up-stops-after-one.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
-tools/mutations/warm-up-visits-plain-records.mut	and a warm-up in the next session finds nothing to do and decodes nothing	records are unpacked a little at a time after logging in, not all at the first question
+tools/mutations/warm-up-visits-plain-records.mut	after logging in every stored record is decoded once, a little at a time	records are unpacked a little at a time after logging in, not all at the first question
 tools/mutations/warmode-flag-event-ignored.mut	switching War Mode off is read when the game says a flag changed	Midnight's talents: one tree of nodes, drawn as a list
 tools/mutations/warmode-flag-rescans-trees.mut	and without reading the talents again	Midnight's talents: one tree of nodes, drawn as a list
 tools/mutations/warmode-writes-unchanged.mut	a flag that changed without War Mode moving writes nothing	Midnight's talents: one tree of nodes, drawn as a list
