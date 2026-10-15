@@ -7691,3 +7691,16 @@ Burning Crusade with one if convenient; Era has none.
 **Also seen in the same screenshots, not this entry:** *Test Your Strength* reads *0 of 1* on the page and
 *Grisly Trophy: 0/250* in the game. The page counts objectives finished, not the count inside one; the
 objective's own text is on the row's tooltip. Left as it is unless Alberto asks otherwise.
+
+## 110. The lesson hook falls silent within the first sixty events of a session — OPEN 2026-10-15
+
+**Measured 2026-10-15** by replaying the 25 Family transcripts on this machine through
+`tools/lesson-hook.py` as it stands at `34986c2`, in process, with a fresh state for each: 18 of them
+reach the session cap of 30 lessons and decisions, every one between its 23rd and its 88th event
+(prompts, edits and commands); one of 19,909 events reaches it at the 33rd. After that a session is
+told nothing, whatever it touches. What the cap buys is small: a session is handed 4,276 characters
+in the median, 4,930 at most, lessons and decisions together.
+
+**To decide with Alberto:** whether the cap stays, rises, or becomes a cap per stretch of work rather
+than per session. The replay script is not in the tree; it reads each transcript's prompts and its
+`Edit`, `Write`, `NotebookEdit` and `Bash` calls and hands them to `answer()` in file order.
