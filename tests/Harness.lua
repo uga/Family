@@ -48124,6 +48124,40 @@ end
 	check("and one that writes to it through the shell does", status == 0
 		and text:find("L-011", 1, true) ~= nil, text)
 
+	-- `cmd:` is about what a step runs, not about every word of the command: a grep that only names
+	-- the release script is not a release (reported by the VARIE session, 2026-10-15).
+	status, text = said('{"session_id":"steps","hook_event_name":"PreToolUse","tool_name":"Bash",'
+		.. '"tool_input":{"command":"grep -n foo tools/release.sh"}}')
+	check("a command that only names a script as an argument does not bring its lessons",
+		status == 0 and text:find("L-009", 1, true) == nil, text)
+	status, text = said('{"session_id":"steps","hook_event_name":"PreToolUse","tool_name":"Bash",'
+		.. '"tool_input":{"command":"cd /x && tools/release.sh 5.1.0"}}')
+	check("and a step that runs it does, wherever it stands in the command",
+		status == 0 and text:find("L-009", 1, true) ~= nil, text)
+
+	-- A file brings its share once a session: the best few, the first time it is touched. The
+	-- second of two identical edits used to bring the next five (VARIE, 2026-10-15).
+	local summary = string.format('{"session_id":"share","hook_event_name":"PreToolUse",'
+		.. '"tool_name":"Edit","tool_input":{"file_path":"%s/addons/Family_UI/Summary.lua",'
+		.. '"old_string":"a","new_string":"b"}}', root)
+	status, text = said(summary)
+	local first = select(2, text:gsub("\\nL%-%d+", ""))
+	check("a file's first touch brings a few of its lessons, not as many as fit",
+		status == 0 and first >= 1 and first <= 5, first .. " lessons: " .. text)
+	status, text = said(summary)
+	check("and touching it again brings none of the rest", status == 0 and text == "", text)
+
+	-- And a session is told so many lessons in all. Three here, so three events can show it.
+	local capped = 'FAMILY_LESSON_SESSION_CAP=3'
+	for _, command in ipairs({ "git checkout -- a", "tools/release.sh 1.0.0", "git commit -m x",
+			"python3 tools/mutate.py --changed" }) do
+		said('{"session_id":"cap","hook_event_name":"PreToolUse","tool_name":"Bash",'
+			.. '"tool_input":{"command":"' .. command .. '"}}', capped)
+	end
+	local held = slurp(state .. "/cap.json")
+	local count = select(2, held:gsub('"L%-%d+#%d+"', ""))
+	check("a session is told no more lessons than its cap", count == 3, count .. " in " .. held)
+
 	-- A script fed in on a heredoc is how most edits through the shell are made, and also how most
 	-- reading is done: only the one that writes is an edit.
 	status, text = said(string.format('{"session_id":"five","hook_event_name":"PreToolUse",'

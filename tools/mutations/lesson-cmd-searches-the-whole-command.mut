@@ -1,0 +1,6 @@
+name: a cmd trigger fires on any word of a command, a path in a grep included
+file: tools/lesson-hook.py
+--- old
+        if lesson["cmd"] and any(lesson["cmd"].match(step) for step in run):
+--- new
+        if lesson["cmd"] and command and lesson["cmd"].search(command):

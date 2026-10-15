@@ -53,6 +53,14 @@ LESSONS = "docs/LESSONS.md"
 # that in a file the model sees a preview of; a few lessons are worth reading, and twenty are a wall.
 LIMIT = 1500
 
+# How many lessons one session is told in all, and how many of those a file alone may bring - the
+# best ranked, the first time the file is touched. A file named by forty lessons otherwise hands out
+# the next fifteen on every edit until all forty are said (2026-10-15: a second identical edit to
+# Summary.lua brought five more). Lessons a command or the words being written match are not held to
+# the file's share, only to the session's. The session's can be lowered for the harness's checks.
+FILE_CAP = 5
+SESSION_CAP = int(os.environ.get("FAMILY_LESSON_SESSION_CAP") or 30)
+
 # Longest rule the index may hold. It is the rule and not the story, and the story is one link away.
 RULE_MAX = 160
 
@@ -145,6 +153,20 @@ def relative(path, cwd):
         return None
 
 
+# The commands a Bash call runs, one a step. `cmd:` triggers are about what is run - a push, a
+# release, a commit, a grep written as an audit - so they match a step from its first word, and a
+# path that only appears as an argument (`grep -n foo tools/release.sh`) brings nothing. A heredoc's
+# body is a script, not commands, and goes; so do the prefixes that only set up the run.
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)(\w+)\1[^\n]*\n.*?\n\s*\2\s*(?:\n|$)", re.S)
+STEP = re.compile(r"\s*(?:;|&&|\|\||\n)\s*")
+PREFIX = re.compile(r"^(?:[!({]\s*|\w+=\S*\s+|(?:env|sudo|nohup|time|exec)\s+|timeout\s+\S+\s+)+")
+
+
+def steps(command):
+    body = HEREDOC.sub("\n", command)
+    return [PREFIX.sub("", step).strip() for step in STEP.split(body) if step.strip()]
+
+
 PATHISH = re.compile(r"""[\w./~-]*[\w-]\.[A-Za-z]{1,5}\b|[\w.-]+/[\w./-]+""")
 
 
@@ -174,14 +196,15 @@ def paths_in(command, cwd):
 
 
 def matches(lessons, event):
-    """The lessons this event touches, best first."""
+    """The lessons this event touches, best first, each with its score: 3 or more means a command
+    or words matched, less means the file alone."""
     name = event.get("hook_event_name")
     tool = event.get("tool_name")
     given = event.get("tool_input") or {}
     found = []
 
     path = text = command = prompt = None
-    named = []
+    named, run = [], []
     if name == "UserPromptSubmit":
         prompt = event.get("prompt") or ""
     elif tool in EDITS:
@@ -190,6 +213,7 @@ def matches(lessons, event):
         text = given.get("new_string") or given.get("content") or given.get("new_source") or ""
     elif tool == "Bash":
         command = given.get("command") or ""
+        run = steps(command)
         # Edits made through the shell are edits too - a heredoc into python, a sed - so a command
         # that writes has its paths matched like an edit's and its text like what an edit writes.
         # One that only reads or runs - a grep, the harness twenty times a session - matches on
@@ -200,6 +224,8 @@ def matches(lessons, event):
             named = paths_in(command, event.get("cwd"))
         else:
             named = paths_in(" ".join(REDIRECT.findall(command)), event.get("cwd"))
+
+    event["_targets"] = ([path] if path else []) + named
 
     # Writing the index or the triggers is writing every trigger word there is, and is answered with
     # the lessons about documents rather than with all of them.
@@ -217,7 +243,7 @@ def matches(lessons, event):
                 if compiled.match(target):
                     place = max(place, 0.5 if "**" in glob else 1 if "*" in glob else 2)
         score = place
-        if command and lesson["cmd"] and lesson["cmd"].search(command):
+        if lesson["cmd"] and any(lesson["cmd"].match(step) for step in run):
             score += 4
         if any(words and lesson["words"] and lesson["words"].search(words)
                for words in (prompt, text)):
@@ -225,7 +251,7 @@ def matches(lessons, event):
         if score:
             found.append((-score, order, lesson))
 
-    return [lesson for _, _, lesson in sorted(found, key=lambda t: t[:2])]
+    return [(-minus, lesson) for minus, _, lesson in sorted(found, key=lambda t: t[:2])]
 
 
 def key(lesson, lessons):
@@ -234,8 +260,8 @@ def key(lesson, lessons):
     return "%s#%d" % (lesson["id"], same.index(lesson))
 
 
-def remember(session, keys):
-    """What this session has already been told, with the new keys added. Old sessions forgotten."""
+def remember(session):
+    """What this session has been told, and which files have had their share. Old sessions go."""
     STATE.mkdir(parents=True, exist_ok=True)
     now = time.time()
     for old in STATE.glob("*.json"):
@@ -246,17 +272,33 @@ def remember(session, keys):
             pass
     safe = re.sub(r"[^A-Za-z0-9_-]", "_", session or "none")
     where = STATE / ("%s.json" % safe)
-    told = set()
+    state = {"said": [], "files": []}
     if where.exists():
-        told = set(json.loads(where.read_text(encoding="utf-8")))
-    return told, where
+        held = json.loads(where.read_text(encoding="utf-8"))
+        # A list is the shape before the caps (2026-10-15): all of it was said, no file had a share.
+        state = {"said": held, "files": []} if isinstance(held, list) else held
+    return set(state["said"]), set(state["files"]), where
 
 
 def answer(event, lessons):
     """The text to hand back, or None, and the keys it says - given what was said already."""
-    told, where = remember(event.get("session_id"), [])
-    fresh = [l for l in matches(lessons, event) if key(l, lessons) not in told]
+    told, files, where = remember(event.get("session_id"))
+    ranked = [(score, l) for score, l in matches(lessons, event) if key(l, lessons) not in told]
+    targets = event.get("_targets") or []
+    shared = bool(targets) and all(t in files for t in targets)
+
+    fresh, by_file = [], 0
+    for score, lesson in ranked:
+        if len(told) + len(fresh) >= SESSION_CAP:
+            break
+        if score < 3:
+            if shared or by_file >= FILE_CAP:
+                continue
+            by_file += 1
+        fresh.append(lesson)
+    files.update(targets)
     if not fresh:
+        where.write_text(json.dumps({"said": sorted(told), "files": sorted(files)}), encoding="utf-8")
         return None
 
     head = "Lessons from docs/LESSONS.md that apply here (the entry has the story):"
@@ -274,7 +316,7 @@ def answer(event, lessons):
         lines.append("Also: %s - one line each in docs/LESSONS-INDEX.md." % ", ".join(left))
 
     told.update(said)
-    where.write_text(json.dumps(sorted(told)), encoding="utf-8")
+    where.write_text(json.dumps({"said": sorted(told), "files": sorted(files)}), encoding="utf-8")
     return "\n".join(lines)
 
 
