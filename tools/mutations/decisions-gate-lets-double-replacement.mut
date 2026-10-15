@@ -1,0 +1,6 @@
+name: the decisions gate lets one decision be replaced twice
+file: tools/decisions.py
+--- old
+        if not part and old in replaced:
+--- new
+        if False:

@@ -1,0 +1,6 @@
+name: a name that leaves the start of the path off names nothing
+file: tools/decisions.py
+--- old
+        elif named == path or ("/" in named and path.endswith("/" + named)):
+--- new
+        elif named == path:

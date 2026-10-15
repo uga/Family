@@ -1,0 +1,6 @@
+name: an amended decision is taken out of force like a replaced one
+file: tools/decisions.py
+--- old
+            amended.setdefault(old, []).append(new)
+--- new
+            replaced[old] = new

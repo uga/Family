@@ -31,6 +31,8 @@ one decision is hashed whole, exactly as it stands.
 
 `docs/DECISIONS-SUPERSEDED.md` is the judgement of which decision replaced which, written by hand,
 one `- D-old → D-new` line each with its reason. A decision named on the left is no longer in force.
+A line ending `(in part)` is an amendment: the old decision stays in force, and every answer that
+shows it names the row that changed part of it.
 """
 
 import argparse
@@ -49,8 +51,10 @@ ROW = re.compile(r"\| (\d{4}-\d{2}-\d{2}) \|")
 # Where a line holds more than one decision: the literal backslash-n before the next row's date.
 JOINED = re.compile(r"\\n(?=\| \d{4}-\d{2}-\d{2} \|)")
 REPLACED = re.compile(r"^- (D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?) → "
-                      r"(D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?)\b")
+                      r"(D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?)( \(in part\))?$")
 TICKED = re.compile(r"`([^`]+)`")
+# What follows a path to say which part of it was meant: `:12`, ` §3`, `#anchor`.
+QUALIFIED = re.compile(r"[:# §]")
 
 
 def read_decisions(root=ROOT):
@@ -87,30 +91,44 @@ def read_decisions(root=ROOT):
 
 
 def read_superseded(root=ROOT):
-    """The pairs in file order, old id and new id. No file yet means nothing has been replaced."""
+    """The pairs in file order: old id, new id, and whether only part of the old was changed.
+    No file yet means nothing has been replaced."""
     path = root / SUPERSEDED
     if not path.exists():
         return []
-    return [REPLACED.match(line).groups() for line in path.read_text(encoding="utf-8").splitlines()
-            if REPLACED.match(line)]
+    pairs = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = REPLACED.match(line)
+        if m:
+            pairs.append((m.group(1), m.group(2), bool(m.group(3))))
+        elif line.startswith("- D-"):
+            raise ValueError("%s: a line that is not a pair: %s" % (SUPERSEDED, line))
+    return pairs
 
 
 def landed_in(decision, path):
     """Whether the decision names this file where it landed: the path between backticks, or a
-    folder holding it, or the path followed by what part of it was meant (`tests/Harness.lua:12`)."""
+    folder holding it, or the path followed by what part of it was meant (`tests/Harness.lua:12`).
+
+    A name may leave the start of the path off, as a fifth of them do (`Family_UI/Slash.lua`), and
+    still names the file while it keeps a folder; a bare file name does not, because seven of them
+    name two files each (`Guild.lua`)."""
     for named in TICKED.findall(decision["where"]):
-        named = named.strip()
-        if named == path or (named.endswith("/") and path.startswith(named)):
-            return True
-        if named.startswith(path) and named[len(path):len(path) + 1] in (":", " ", "#", "§"):
+        named = QUALIFIED.split(named.strip(), 1)[0]
+        if named.endswith("/"):
+            if path.startswith(named):
+                return True
+        elif named == path or ("/" in named and path.endswith("/" + named)):
             return True
     return False
 
 
-def show(decision, why, replaced_by=None):
+def show(decision, why, replaced_by=None, amended_by=()):
     out = "%s — %s" % (decision["id"], decision["decision"])
     if replaced_by:
         out += "  [replaced by %s]" % replaced_by
+    if amended_by:
+        out += "  [amended by %s]" % ", ".join(amended_by)
     if why:
         out += "\n    Why: %s\n    Where: %s" % (decision["why"], decision["where"])
     return out
@@ -120,10 +138,35 @@ def check(root=ROOT):
     """The gate. Every reason it is red, one line each, and exit 1; or one line and exit 0."""
     try:
         decisions = read_decisions(root)
+        pairs = read_superseded(root)
     except (OSError, ValueError) as error:
         print("decisions: %s" % error)
         return 1
-    print("decisions: %d decisions, every row read" % len(decisions))
+
+    problems = []
+    order = {d["id"]: i for i, d in enumerate(decisions)}
+    replaced = {}
+    for old, new, part in pairs:
+        missing = [i for i in (old, new) if i not in order]
+        if missing:
+            problems.append("%s names %s, which no row has" % (SUPERSEDED, " and ".join(missing)))
+            continue
+        if order[new] <= order[old]:
+            problems.append("%s: %s is not below %s, so it cannot have replaced it"
+                            % (SUPERSEDED, new, old))
+        # Replaced twice is two answers to what is in force; a chain says it once: A → B, B → C.
+        if not part and old in replaced:
+            problems.append("%s: %s is replaced twice, by %s and by %s"
+                            % (SUPERSEDED, old, replaced[old], new))
+        if not part:
+            replaced.setdefault(old, new)
+
+    for problem in problems:
+        print("decisions: %s" % problem)
+    if problems:
+        return 1
+    print("decisions: %d decisions, every row read; %d replaced and %d amended, every id a row's"
+          % (len(decisions), len(replaced), sum(1 for p in pairs if p[2])))
     return 0
 
 
@@ -140,14 +183,19 @@ def main(argv=None):
         return check()
 
     decisions = read_decisions()
-    replaced = dict(read_superseded())
+    replaced, amended = {}, {}
+    for old, new, part in read_superseded():
+        if part:
+            amended.setdefault(old, []).append(new)
+        else:
+            replaced[old] = new
 
     if args.id:
         found = [d for d in decisions if d["id"] == args.id]
         if not found:
             print("no decision has the id %s" % args.id)
             return 1
-        print(show(found[0], True, replaced.get(args.id)))
+        print(show(found[0], True, replaced.get(args.id), amended.get(args.id, ())))
         return 0
 
     if args.file:
@@ -156,13 +204,13 @@ def main(argv=None):
             path = path.resolve().relative_to(ROOT)
         found = [d for d in decisions if d["id"] not in replaced and landed_in(d, path.as_posix())]
         for d in found:
-            print(show(d, args.why))
+            print(show(d, args.why, None, amended.get(d["id"], ())))
         return 0
 
     pattern = re.compile(args.grep, re.IGNORECASE)
     for d in decisions:
         if pattern.search(d["decision"]) or pattern.search(d["why"]) or pattern.search(d["where"]):
-            print(show(d, args.why, replaced.get(d["id"])))
+            print(show(d, args.why, replaced.get(d["id"]), amended.get(d["id"], ())))
     return 0
 
 

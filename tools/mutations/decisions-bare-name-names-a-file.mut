@@ -1,0 +1,6 @@
+name: a bare file name is taken for every file of that name
+file: tools/decisions.py
+--- old
+        elif named == path or ("/" in named and path.endswith("/" + named)):
+--- new
+        elif named == path or path.endswith("/" + named):

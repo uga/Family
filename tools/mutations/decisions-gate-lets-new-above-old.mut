@@ -1,0 +1,6 @@
+name: the decisions gate lets a pair through whose new row is above its old
+file: tools/decisions.py
+--- old
+        if order[new] <= order[old]:
+--- new
+        if False:

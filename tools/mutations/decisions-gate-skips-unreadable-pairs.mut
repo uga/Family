@@ -1,0 +1,6 @@
+name: the decisions gate skips a line that looks like a pair and is not one
+file: tools/decisions.py
+--- old
+        elif line.startswith("- D-"):
+--- new
+        elif False:

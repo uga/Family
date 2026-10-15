@@ -1,0 +1,6 @@
+name: the decisions gate lets a pair through that names no row
+file: tools/decisions.py
+--- old
+        if missing:
+--- new
+        if False:

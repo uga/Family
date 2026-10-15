@@ -1,0 +1,6 @@
+name: a path followed by the part of it meant is not read as the path
+file: tools/decisions.py
+--- old
+        named = QUALIFIED.split(named.strip(), 1)[0]
+--- new
+        named = named.strip()

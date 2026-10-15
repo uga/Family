@@ -1,0 +1,6 @@
+name: the reader never sees that a pair is only in part
+file: tools/decisions.py
+--- old
+            pairs.append((m.group(1), m.group(2), bool(m.group(3))))
+--- new
+            pairs.append((m.group(1), m.group(2), False))

@@ -1,0 +1,6 @@
+name: an amended decision is shown without the row that changed it
+file: tools/decisions.py
+--- old
+        out += "  [amended by %s]" % ", ".join(amended_by)
+--- new
+        pass

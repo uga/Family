@@ -1,6 +1,6 @@
 name: a decision found by --grep does not say what replaced it
 file: tools/decisions.py
 --- old
-            print(show(d, args.why, replaced.get(d["id"])))
+            print(show(d, args.why, replaced.get(d["id"]), amended.get(d["id"], ())))
 --- new
-            print(show(d, args.why))
+            print(show(d, args.why, None, amended.get(d["id"], ())))

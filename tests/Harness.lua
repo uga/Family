@@ -48261,11 +48261,33 @@ end)()
 	local midnight = "| 2026-09-19 | Midnight row | Reads it. `docs/MIDNIGHT.md` §36. |"
 	local decoy = "| 2026-08-10 | Decoy | Why | `addons/Family/Core.lua.orig` |"
 	local new = "| 2026-08-11 | New rule | Because | `tests/Harness.lua` |"
+	local short = "| 2026-08-12 | Short path | Why | `Family_UI/Short.lua:40` |"
+	local bare = "| 2026-08-12 | Bare name | Why | `Short.lua` |"
 	spill(register .. "/docs/DECISIONS.md", table.concat({"# Family - decisions", "",
 		"| Date | Decision | Why, in one line | Where it landed |", "|---|---|---|---|",
-		old, old, first .. "\\n" .. second, midnight, decoy, new, ""}, "\n"))
-	spill(register .. "/docs/DECISIONS-SUPERSEDED.md", string.format(
-		"# Replaced decisions\n\n- %s → %s\n  The new rule says it better.\n", id(old), id(new)))
+		old, old, first .. "\\n" .. second, midnight, decoy, new, short, bare, ""}, "\n"))
+	local superseded = string.format("# Replaced decisions\n\n- %s → %s\n  The new rule says it better.\n"
+		.. "- %s → %s (in part)\n  The second row changed half of the first.\n",
+		id(old), id(new), id(first), id(second))
+	spill(register .. "/docs/DECISIONS-SUPERSEDED.md", superseded)
+
+	status, text = asked(register, "--check")
+	check("the gate passes a register whose pairs all name rows, each new row below its old one",
+		status == 0, text)
+	local function refused(pairs, says)
+		spill(register .. "/docs/DECISIONS-SUPERSEDED.md", superseded .. pairs)
+		local status, text = asked(register, "--check")
+		spill(register .. "/docs/DECISIONS-SUPERSEDED.md", superseded)
+		return status ~= 0 and text:find(says, 1, true) ~= nil, text
+	end
+	check("and refuses a pair naming an id no row has",
+		refused("- D-2026-08-08-000000 → " .. id(new) .. "\n", "which no row has"))
+	check("a pair whose new row is above its old one",
+		refused("- " .. id(new) .. " → " .. id(midnight) .. " (in part)\n", "is not below"))
+	check("a decision replaced twice, which is two answers to what is in force",
+		refused("- " .. id(old) .. " → " .. id(midnight) .. "\n", "replaced twice"))
+	check("and a line that looks like a pair and does not read as one",
+		refused("- " .. id(old) .. " -> " .. id(new) .. "\n", "not a pair"))
 
 	status, text = asked(register, "--id " .. id(old) .. ".2")
 	check("an id is the date and six hex of the row's SHA-1, and a row present twice is told "
@@ -48278,6 +48300,12 @@ end)()
 	check("and a name that only begins with the path is not the path", text:find("Decoy", 1, true) == nil,
 		text)
 
+	status, text = asked(register, "--file addons/Family_UI/Short.lua")
+	check("a name that leaves the start of the path off still names the file, while it keeps a folder",
+		status == 0 and text:find(id(short), 1, true) ~= nil, text)
+	check("and a bare file name does not, since seven of them name two files",
+		text:find("Bare name", 1, true) == nil, text)
+
 	status, text = asked(register, "--file docs/MIDNIGHT.md")
 	check("a row of three cells landed where its reasoning says",
 		status == 0 and text:find(id(midnight), 1, true) ~= nil, text)
@@ -48289,6 +48317,11 @@ end)()
 	status, text = asked(register, "--grep 'old rule'")
 	check("and --grep still finds it, saying what replaced it",
 		status == 0 and text:find("replaced by " .. id(new), 1, true) ~= nil, text)
+
+	status, text = asked(register, "--file docs/BACKLOG.md")
+	check("an amended decision stays in force, and names the row that changed part of it",
+		status == 0 and text:find(id(first) .. " — First joined  [amended by " .. id(second) .. "]", 1, true)
+			~= nil, text)
 
 	shell("rm -rf " .. register)
 	os.remove(out)
