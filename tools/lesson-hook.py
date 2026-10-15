@@ -30,6 +30,11 @@ session state, outside the tree.
 back reaches the model with the tool's result, after the edit or the command has happened. That
 makes it a review of what was just done. The same rules on `UserPromptSubmit` arrive before any
 work, keyed on the words of the request.
+
+**A file's first touch brings its decisions too**: the rows of `docs/DECISIONS.md` still in force
+whose Where cell names it, read by `tools/decisions.py`. They share the file's lessons' cap and the
+session's, because both are what one session is handed; a register that cannot be read is only
+decisions not said, and the lessons still go.
 """
 
 import json
@@ -53,13 +58,19 @@ LESSONS = "docs/LESSONS.md"
 # that in a file the model sees a preview of; a few lessons are worth reading, and twenty are a wall.
 LIMIT = 1500
 
-# How many lessons one session is told in all, and how many of those a file alone may bring - the
-# best ranked, the first time the file is touched. A file named by forty lessons otherwise hands out
-# the next fifteen on every edit until all forty are said (2026-10-15: a second identical edit to
-# Summary.lua brought five more). Lessons a command or the words being written match are not held to
+# How many lessons and decisions one session is told in all, and how many of those a file alone may
+# bring - the best ranked, the first time the file is touched. A file named by forty lessons
+# otherwise hands out the next fifteen on every edit until all forty are said (2026-10-15: a second
+# identical edit to Summary.lua brought five more), and `tests/Harness.lua` has four hundred
+# decisions. The share takes a lesson and a decision in turn, a lesson first, and whichever runs out
+# leaves its turns to the other. Lessons a command or the words being written match are not held to
 # the file's share, only to the session's. The session's can be lowered for the harness's checks.
 FILE_CAP = 5
 SESSION_CAP = int(os.environ.get("FAMILY_LESSON_SESSION_CAP") or 30)
+
+# Longest a decision is quoted. A Decision cell runs to five hundred characters, and one in seven is
+# over this; the id fetches the rest.
+DECISION_MAX = 200
 
 # Longest rule the index may hold. It is the rule and not the story, and the story is one link away.
 RULE_MAX = 160
@@ -232,6 +243,7 @@ def matches(lessons, event):
     own = (INDEX, TRIGGERS)
     if (path in own) or any(f in own for f in named):
         text = prompt = None
+    event["_written"] = text or ""
 
     # The reasons add up. A command or the words being written say *this* outright; a file says
     # *about here* - and `tests/Harness.lua` alone is named by forty lessons, so the one whose
@@ -260,6 +272,30 @@ def key(lesson, lessons):
     return "%s#%d" % (lesson["id"], same.index(lesson))
 
 
+def decided(targets, written, root=ROOT):
+    """The decisions in force that landed in these files, best first, each with the rows that
+    amended it. First a decision naming between backticks something the edit writes - `Payload`,
+    `FitColumns` - since that is the one the edit is about; then the latest written, because the
+    register is appended to and a later row is the nearer to the code as it stands."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import decisions as register
+
+    replaced, amended = set(), {}
+    for old, new, part in register.read_superseded(root):
+        if part:
+            amended.setdefault(old, []).append(new)
+        else:
+            replaced.add(old)
+    found = []
+    for order, d in enumerate(register.read_decisions(root)):
+        if d["id"] in replaced or not any(register.landed_in(d, t) for t in targets):
+            continue
+        named = [n.strip() for n in register.TICKED.findall(d["decision"]) if len(n.strip()) >= 3]
+        about = any(n in written for n in named)
+        found.append((not about, -order, d, amended.get(d["id"], [])))
+    return [(d, notes) for _, _, d, notes in sorted(found, key=lambda f: f[:2])]
+
+
 def remember(session):
     """What this session has been told, and which files have had their share. Old sessions go."""
     STATE.mkdir(parents=True, exist_ok=True)
@@ -285,35 +321,62 @@ def answer(event, lessons):
     told, files, where = remember(event.get("session_id"))
     ranked = [(score, l) for score, l in matches(lessons, event) if key(l, lessons) not in told]
     targets = event.get("_targets") or []
-    shared = bool(targets) and all(t in files for t in targets)
+    first = [t for t in targets if t not in files]
 
-    fresh, by_file = [], 0
-    for score, lesson in ranked:
-        if len(told) + len(fresh) >= SESSION_CAP:
-            break
-        if score < 3:
-            if shared or by_file >= FILE_CAP:
-                continue
-            by_file += 1
-        fresh.append(lesson)
+    # The file's share, on its first touch only: a lesson and a decision in turn.
+    placed = [l for score, l in ranked if score < 3] if first else []
+    rows = []
+    if first:
+        try:
+            rows = [(d, notes) for d, notes in decided(first, event.get("_written") or "")
+                    if d["id"] not in told]
+        except Exception as error:  # a register that cannot be read leaves the lessons to go
+            log("decisions: %s: %s" % (type(error).__name__, error))
+    share = []
+    while len(share) < FILE_CAP and (placed or rows):
+        if placed and (len(share) % 2 == 0 or not rows):
+            share.append(("lesson", placed.pop(0)))
+        else:
+            share.append(("decision", rows.pop(0)))
+
+    fresh = [("lesson", l) for score, l in ranked if score >= 3] + share
+    fresh = fresh[:max(0, SESSION_CAP - len(told))]
     files.update(targets)
     if not fresh:
         where.write_text(json.dumps({"said": sorted(told), "files": sorted(files)}), encoding="utf-8")
         return None
 
-    head = "Lessons from docs/LESSONS.md that apply here (the entry has the story):"
-    lines, said, left = [head], [], []
-    size = len(head)
-    for lesson in fresh:
-        line = "%s — %s" % (lesson["id"], lesson["rule"])
-        if size + 1 + len(line) <= LIMIT - 60:
-            lines.append(line)
-            said.append(key(lesson, lessons))
-            size += 1 + len(line)
-        else:
-            left.append(lesson["id"])
+    lines, said, left = [], [], []
+    size = 0
+    for head, kind in (
+            ("Lessons from docs/LESSONS.md that apply here (the entry has the story):", "lesson"),
+            ("Decisions in force that landed here (python3 tools/decisions.py --id <id> for the row):",
+             "decision")):
+        items = [item for which, item in fresh if which == kind]
+        if not items:
+            continue
+        lines.append(head)
+        size += 1 + len(head)
+        for item in items:
+            if kind == "lesson":
+                name, line = key(item, lessons), "%s — %s" % (item["id"], item["rule"])
+            else:
+                d, notes = item
+                text = d["decision"]
+                if len(text) > DECISION_MAX:
+                    text = text[:DECISION_MAX - 1].rstrip() + "…"
+                name, line = d["id"], "%s — %s" % (d["id"], text)
+                if notes:
+                    line += "  [amended by %s]" % ", ".join(notes)
+            if size + 1 + len(line) <= LIMIT - 60:
+                lines.append(line)
+                said.append(name)
+                size += 1 + len(line)
+            else:
+                left.append(name.split("#")[0])
     if left:
-        lines.append("Also: %s - one line each in docs/LESSONS-INDEX.md." % ", ".join(left))
+        lines.append("Also: %s - in docs/LESSONS-INDEX.md and tools/decisions.py --id."
+                     % ", ".join(left))
 
     told.update(said)
     where.write_text(json.dumps({"said": sorted(told), "files": sorted(files)}), encoding="utf-8")

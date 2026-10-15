@@ -1,0 +1,6 @@
+name: the hook heads a list it has nothing to put in
+file: tools/lesson-hook.py
+--- old
+        if not items:
+--- new
+        if False:

@@ -1,0 +1,6 @@
+name: the lesson hook brings a file's oldest decisions first
+file: tools/lesson-hook.py
+--- old
+        found.append((not about, -order, d, amended.get(d["id"], [])))
+--- new
+        found.append((not about, order, d, amended.get(d["id"], [])))

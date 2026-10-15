@@ -1,0 +1,6 @@
+name: a decision is quoted whole however long it is
+file: tools/lesson-hook.py
+--- old
+                if len(text) > DECISION_MAX:
+--- new
+                if False:

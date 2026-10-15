@@ -1,0 +1,6 @@
+name: a file brings the next of its decisions on every touch
+file: tools/lesson-hook.py
+--- old
+    first = [t for t in targets if t not in files]
+--- new
+    first = targets

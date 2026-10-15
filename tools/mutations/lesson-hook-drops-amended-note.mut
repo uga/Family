@@ -1,0 +1,6 @@
+name: an amended decision is brought without the row that changed it
+file: tools/lesson-hook.py
+--- old
+                if notes:
+--- new
+                if False:

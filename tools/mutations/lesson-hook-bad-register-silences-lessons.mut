@@ -1,0 +1,6 @@
+name: a register that cannot be read takes the lessons down with it
+file: tools/lesson-hook.py
+--- old
+        except Exception as error:  # a register that cannot be read leaves the lessons to go
+--- new
+        except ImportError as error:

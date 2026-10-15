@@ -1,0 +1,6 @@
+name: the lesson hook brings a decision a later row replaced
+file: tools/lesson-hook.py
+--- old
+        if d["id"] in replaced or not any(register.landed_in(d, t) for t in targets):
+--- new
+        if not any(register.landed_in(d, t) for t in targets):

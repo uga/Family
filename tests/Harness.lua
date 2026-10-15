@@ -48327,6 +48327,159 @@ end)()
 	os.remove(out)
 end)()
 
+-- **A file's first touch brings its decisions as well as its lessons** (phase 3 of the lessons
+-- brief, 2026-10-15): `tools/lesson-hook.py` asks `tools/decisions.py` for the rows in force that
+-- landed in the file, and hands them back inside the same caps as the lessons, since both are what
+-- one session is handed. Driven as Claude Code drives it, on a tree written for the purpose: four
+-- lessons naming one file, and a register whose ids are computed by `sha1sum`.
+;(function()
+	-- Once, on the compressed pass: nothing here reads storage.
+	if not (RUN.storage == "compressed") then return end
+	print()
+	print("the lesson hook, bringing the decisions in force at a file's first touch")
+
+	local function shell(command)
+		local ok, how, code = os.execute(command)
+		if type(ok) == "number" then return ok end
+		return (ok and 0) or (how == "exit" and code) or 1
+	end
+
+	local function slurp(path)
+		local handle = io.open(path, "r")
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+		return text
+	end
+
+	local function spill(path, text)
+		local handle = io.open(path, "w")
+		handle:write(text)
+		handle:close()
+	end
+
+	local here = io.popen("cd " .. ROOT .. " && pwd")
+	local root = here and here:read("*l") or ROOT
+	if here then here:close() end
+	local hook = root .. "/tools/lesson-hook.py"
+	local out = os.tmpname()
+
+	local function id(row)
+		local file = os.tmpname()
+		spill(file, row)
+		shell(string.format("sha1sum %s > %s", file, out))
+		os.remove(file)
+		return "D-" .. row:sub(3, 12) .. "-" .. slurp(out):sub(1, 6)
+	end
+
+	local tree, state = os.tmpname(), os.tmpname()
+	os.remove(tree)
+	os.remove(state)
+	shell("mkdir -p " .. tree .. "/docs " .. state)
+	spill(tree .. "/docs/LESSONS-INDEX.md", table.concat({ "# Lessons", "",
+		"- **L-901** First lesson about the fixture", "- **L-902** Second lesson about the fixture",
+		"- **L-903** Third lesson about the fixture", "- **L-904** Fourth lesson, also about a plain file",
+		"" }, "\n"))
+	spill(tree .. "/docs/LESSONS-TRIGGERS.md", table.concat({ "# Triggers", "",
+		"- L-901 «files: addons/Family_UI/Fixture.lua»", "- L-902 «files: addons/Family_UI/Fixture.lua»",
+		"- L-903 «files: addons/Family_UI/Fixture.lua»",
+		"- L-904 «files: addons/Family_UI/Fixture.lua, addons/Family/Plain.lua»", "" }, "\n"))
+
+	-- Four rows in force in Fixture.lua, one of them through its folder and one long; elsewhere, a
+	-- replaced row, an amended one, and the two rows that changed them.
+	local replaced = "| 2026-01-01 | Replaced rule | Why | `docs/Other.md` |"
+	local waldo = "| 2026-01-02 | About `Waldo` | Why | `addons/Family_UI/Fixture.lua` |"
+	local amended = "| 2026-01-03 | Amended rule | Why | `docs/Other.md` |"
+	local folder = "| 2026-01-05 | Folder rule | Why | `addons/Family_UI/` |"
+	local amending = "| 2026-01-06 | Amending rule | Why | `docs/Other.md` |"
+	local replacing = "| 2026-01-07 | Replacing rule | Why | `docs/Other.md` |"
+	local long = "| 2026-01-08 | Long rule " .. string.rep("word ", 60) .. "end | Why | "
+		.. "`addons/Family_UI/Fixture.lua` |"
+	local register = table.concat({ "# Family - decisions", "",
+		"| Date | Decision | Why, in one line | Where it landed |", "|---|---|---|---|",
+		replaced, waldo, amended, folder, amending, replacing, long, "" }, "\n")
+	spill(tree .. "/docs/DECISIONS.md", register)
+	spill(tree .. "/docs/DECISIONS-SUPERSEDED.md", string.format("# Replaced decisions\n\n"
+		.. "- %s → %s\n  Replaced.\n- %s → %s (in part)\n  Amended.\n",
+		id(replaced), id(replacing), id(amended), id(amending)))
+
+	local function touched(session, file, written, extra)
+		local input = os.tmpname()
+		spill(input, string.format('{"session_id":"%s","hook_event_name":"PreToolUse","tool_name":"Edit",'
+			.. '"tool_input":{"file_path":"%s/%s","old_string":"a","new_string":"%s"}}',
+			session, tree, file, written))
+		local status = shell(string.format("%s FAMILY_LESSON_ROOT=%s FAMILY_LESSON_STATE=%s python3 %s "
+			.. "< %s > %s 2>&1", extra or "", tree, state, hook, input, out))
+		os.remove(input)
+		return status, slurp(out)
+	end
+	local function lessons(text) return select(2, text:gsub("\\nL%-9%d%d", "")) end
+	local function decisions(text) return select(2, text:gsub("\\nD%-%d", "")) end
+	-- The answer is JSON, which writes a dash and an ellipsis as escapes.
+	local dash, cut = " \\u2014 ", "\\u2026"
+
+	local status, text = touched("first", "addons/Family_UI/Fixture.lua", "b")
+	check("a file's first touch brings the decisions in force that landed there, the latest first",
+		status == 0 and (text:find(id(long), 1, true) or math.huge) < (text:find(id(folder), 1, true) or 0),
+		text)
+	check("inside the file's share, taken in turn with its lessons",
+		lessons(text) == 3 and decisions(text) == 2, lessons(text) .. " lessons and "
+			.. decisions(text) .. " decisions: " .. text)
+	check("and a decision longer than a line is cut, the id fetching the rest",
+		text:find(id(long) .. dash .. "Long rule word", 1, true) ~= nil and text:find(cut, 1, true) ~= nil
+			and text:find("word end", 1, true) == nil, text)
+
+	status, text = touched("first", "addons/Family_UI/Fixture.lua", "b")
+	check("touching the file again brings none of the decisions left", status == 0 and text == "", text)
+	status, text = touched("first", "addons/Family_UI/Second.lua", "b")
+	check("nor does another file's first touch repeat one the session was told",
+		status == 0 and text:find(id(folder), 1, true) == nil, text)
+
+	status, text = touched("words", "addons/Family_UI/Fixture.lua", "Waldo()")
+	check("a decision naming something the edit writes comes before the latest",
+		status == 0 and (text:find(id(waldo), 1, true) or math.huge) < (text:find(id(long), 1, true) or 0),
+		text)
+
+	status, text = touched("other", "docs/Other.md", "b")
+	check("a replaced decision is not brought", status == 0 and text:find(id(replacing), 1, true) ~= nil
+		and text:find(id(replaced), 1, true) == nil, text)
+	check("and an amended one is brought with the row that changed part of it",
+		text:find(id(amended) .. dash .. "Amended rule  [amended by " .. id(amending) .. "]", 1, true) ~= nil,
+		text)
+
+	status, text = touched("plain", "addons/Family/Plain.lua", "b")
+	check("a file no decision landed in brings its lessons and nothing about decisions",
+		status == 0 and text:find("L-904", 1, true) ~= nil and text:find("Decisions", 1, true) == nil, text)
+
+	-- The session's cap counts both: three here, so the second file has nothing left to bring.
+	status, text = touched("cap", "addons/Family_UI/Fixture.lua", "b", "FAMILY_LESSON_SESSION_CAP=3")
+	local first = lessons(text) + decisions(text)
+	status, text = touched("cap", "docs/Other.md", "b", "FAMILY_LESSON_SESSION_CAP=3")
+	check("a session is told no more lessons and decisions together than its cap",
+		first == 3 and text == "", first .. " on the first touch, then: " .. text)
+
+	-- A register it cannot read loses the decisions and keeps the lessons; input it cannot read
+	-- loses everything and stops nothing.
+	spill(tree .. "/docs/DECISIONS.md", register .. "| 2026-01-09 | one | two | three | four | five |\n")
+	status, text = touched("broken", "addons/Family_UI/Fixture.lua", "b")
+	check("a register it cannot read stops nothing and still lets the lessons through",
+		status == 0 and lessons(text) >= 1 and decisions(text) == 0, text)
+	check("and is written down where it can be found",
+		slurp(state .. "/errors.log"):find("decisions: ValueError", 1, true) ~= nil,
+		slurp(state .. "/errors.log"))
+	spill(tree .. "/docs/DECISIONS.md", register)
+	local input = os.tmpname()
+	spill(input, '{"session_id": ')
+	status = shell(string.format("FAMILY_LESSON_ROOT=%s FAMILY_LESSON_STATE=%s python3 %s < %s > %s 2>&1",
+		tree, state, hook, input, out))
+	os.remove(input)
+	check("input that is not JSON stops nothing and says nothing, and is written down",
+		status == 0 and slurp(out) == "" and slurp(state .. "/errors.log"):find("JSONDecodeError", 1, true)
+			~= nil, slurp(out) .. slurp(state .. "/errors.log"))
+
+	shell("rm -rf " .. tree .. " " .. state)
+	os.remove(out)
+end)()
+
 -- **A case that throws is a case, and a bare name is a name.** Both reported by another session
 -- on 2026-09-21, from one incident: it ran `mutate.py nome.mut` with the name and not the path,
 -- `parse` raised, the worker died, `results[index]` stayed nil and the run fell over far away in

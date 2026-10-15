@@ -1,0 +1,6 @@
+name: a decision the session was told is told again on another file
+file: tools/lesson-hook.py
+--- old
+                    if d["id"] not in told]
+--- new
+                    if True]

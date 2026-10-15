@@ -1,6 +1,6 @@
 name: a session is told every lesson there is, with no cap
 file: tools/lesson-hook.py
 --- old
-        if len(told) + len(fresh) >= SESSION_CAP:
+    fresh = fresh[:max(0, SESSION_CAP - len(told))]
 --- new
-        if False:
+    fresh = fresh[:]

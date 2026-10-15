@@ -1,0 +1,6 @@
+name: the hook never hands what an edit writes to the decisions
+file: tools/lesson-hook.py
+--- old
+    event["_written"] = text or ""
+--- new
+    event["_written"] = ""

@@ -1,0 +1,6 @@
+name: a decision naming what the edit writes ranks no higher than any other
+file: tools/lesson-hook.py
+--- old
+        about = any(n in written for n in named)
+--- new
+        about = False

@@ -1,6 +1,6 @@
 name: a file brings the next of its lessons on every touch
 file: tools/lesson-hook.py
 --- old
-            if shared or by_file >= FILE_CAP:
+    while len(share) < FILE_CAP and (placed or rows):
 --- new
-            if False:
+    while placed or rows:

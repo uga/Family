@@ -1,0 +1,6 @@
+name: a file's lessons take its whole share and leave no room for its decisions
+file: tools/lesson-hook.py
+--- old
+        if placed and (len(share) % 2 == 0 or not rows):
+--- new
+        if placed:

@@ -112,3 +112,5 @@ the rows that cite another row or call themselves a correction, and from no othe
   The lessons gate has eight recorded mutations, not nine.
 - D-2026-10-15-916f20 → D-2026-10-15-32fd67 (in part)
   What the hook row says of `cmd:` triggers: they match the command a step runs, from its first word.
+- D-2026-10-15-2d9681 → D-2026-10-15-890482 (in part)
+  The five a file and thirty a session count decisions as well as lessons, a file's five taken one of each in turn.
