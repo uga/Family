@@ -47991,6 +47991,168 @@ if RUN.storage == "compressed" then
 		whole)
 end
 
+-- **The lessons index and the hook that brings it**, asked for 2026-10-15: a lesson in LESSONS.md
+-- was found only by a session that went looking for it, and the transcripts showed 407 greps of that
+-- file and not one reading. `tools/lesson-hook.py` matches what a session touches against
+-- `docs/LESSONS-TRIGGERS.md` and hands back the rules from `docs/LESSONS-INDEX.md`; `--check` is the
+-- gate that keeps those two and LESSONS.md listing the same lessons. Driven here as Claude Code
+-- drives it - JSON on stdin, JSON on stdout - with the state it keeps per session in a scratch
+-- directory, never the real one.
+;(function()
+	-- Once, on the compressed pass: nothing here reads storage.
+	if not (RUN.storage == "compressed") then return end
+	print()
+	print("the lessons index, and the hook that puts a lesson in front of a session")
+
+	local function shell(command)
+		local ok, how, code = os.execute(command)
+		if type(ok) == "number" then return ok end
+		return (ok and 0) or (how == "exit" and code) or 1
+	end
+
+	local function slurp(path)
+		local handle = io.open(path, "r")
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+		return text
+	end
+
+	local here = io.popen("cd " .. ROOT .. " && pwd")
+	local root = here and here:read("*l") or ROOT
+	if here then here:close() end
+	local hook = root .. "/tools/lesson-hook.py"
+
+	local state = os.tmpname()
+	os.remove(state)
+	shell("mkdir -p " .. state)
+
+	local function said(event, extra)
+		local input, out = os.tmpname(), os.tmpname()
+		local handle = io.open(input, "w")
+		handle:write(event)
+		handle:close()
+		local status = shell(string.format("%s FAMILY_LESSON_STATE=%s python3 %s < %s > %s 2>&1",
+			extra or "", state, hook, input, out))
+		local text = slurp(out)
+		os.remove(input)
+		os.remove(out)
+		return status, text
+	end
+
+	-- The gate, on the tree as it is: the three files list the same lessons.
+	local gateOut = os.tmpname()
+	check("the lessons index lists every lesson, and every trigger can fire",
+		shell(string.format("python3 %s --check %s > %s 2>&1", hook, root, gateOut)) == 0,
+		slurp(gateOut))
+
+	-- And it can say no, three ways, each on a copy of the three files beside the real tree's list.
+	local function broken(edit)
+		local copy = os.tmpname()
+		os.remove(copy)
+		shell(string.format("mkdir -p %s/docs && cp %s/docs/LESSONS.md %s/docs/LESSONS-INDEX.md "
+			.. "%s/docs/LESSONS-TRIGGERS.md %s/docs/", copy, root, root, root, copy))
+		local listed = os.getenv("FAMILY_TRACKED")
+		if not listed or listed == "" then
+			listed = os.tmpname()
+			shell(string.format("git -C %s ls-files --cached --others --exclude-standard > %s",
+				root, listed))
+		end
+		shell(string.format(edit, copy))
+		local status = shell(string.format("FAMILY_TRACKED=%s python3 %s --check %s > %s 2>&1",
+			listed, hook, copy, gateOut))
+		shell("rm -rf " .. copy)
+		return status, slurp(gateOut)
+	end
+
+	local status, text = broken("sed -i '/^- \\*\\*L-029\\*\\*/d' %s/docs/LESSONS-INDEX.md")
+	check("a lesson missing from the index turns the gate red", status ~= 0, text)
+	status, text = broken("sed -i 's/^- L-029 /- L-029 «cmd: (unclosed» /' %s/docs/LESSONS-TRIGGERS.md")
+	check("and so does a trigger that is not a regular expression", status ~= 0, text)
+	status, text = broken("sed -i 's/^- L-001 .*/- L-001 «files: addons\\/Nowhere\\/*.lua»/' "
+		.. "%s/docs/LESSONS-TRIGGERS.md")
+	check("and a glob that names no file in the tree, which is a trigger that cannot fire",
+		status ~= 0 and text:find("matches no file", 1, true) ~= nil, text)
+	os.remove(gateOut)
+
+	-- The hook. An edit to a file, writing the thing L-215 is about.
+	status, text = said(string.format('{"session_id":"one","hook_event_name":"PreToolUse",'
+		.. '"tool_name":"Edit","tool_input":{"file_path":"%s/addons/Family/Scanners/Mail.lua",'
+		.. '"old_string":"a","new_string":"local p = Family.Database:Payload(key)"}}', root))
+	check("an edit that writes what a lesson is about is answered with that lesson",
+		status == 0 and text:find('"additionalContext"', 1, true) ~= nil
+			and text:find("L-215", 1, true) ~= nil, text)
+	check("as context for the model and never as a permission decision",
+		text:find("permissionDecision", 1, true) == nil and #text < 1800, #text .. " characters")
+
+	-- Forty lessons name the harness file. The one whose words are also in the edit comes first:
+	-- replayed from 2026-09-23, when L-125 was a day old and its own author moved the clock by
+	-- seventy-two seconds in the next edit.
+	status, text = said(string.format('{"session_id":"rank","hook_event_name":"PreToolUse",'
+		.. '"tool_name":"Edit","tool_input":{"file_path":"%s/tests/Harness.lua","old_string":"a",'
+		.. '"new_string":"advance(72) tonumber(Family:TryCall(x))"}}', root))
+	local shown = text:match('"additionalContext": "(.-)Also:') or text
+	check("a lesson whose words are in the edit comes before the ones that only share its file",
+		status == 0 and shown:find("L-125", 1, true) ~= nil, text)
+	-- And the reasons add up: the file and the words together beat the words alone, which L-031
+	-- has here and which an earlier place in the index would otherwise win the tie for.
+	check("and a lesson with two reasons comes before one with either of them",
+		(shown:find("L-125", 1, true) or math.huge) < (shown:find("L-031", 1, true) or 0), text)
+
+	status, text = said('{"session_id":"one","hook_event_name":"PreToolUse","tool_name":"Edit",'
+		.. '"tool_input":{"file_path":"/nowhere/at/all.txt","old_string":"a","new_string":"b"}}')
+	check("a file outside the tree that no lesson is about is answered with nothing",
+		status == 0 and text == "", text)
+
+	status, text = said('{"session_id":"one","hook_event_name":"PreToolUse","tool_name":"Bash",'
+		.. '"tool_input":{"command":"git checkout -- tests/Harness.lua"}}')
+	check("a command a lesson is about is answered with it", status == 0
+		and text:find("L-029", 1, true) ~= nil, text)
+	status, text = said('{"session_id":"one","hook_event_name":"PreToolUse","tool_name":"Bash",'
+		.. '"tool_input":{"command":"git checkout -- tests/Harness.lua"}}')
+	check("and the same session is not told the same lesson twice", status == 0
+		and text:find("L-029", 1, true) == nil, text)
+
+	-- Running the harness writes nothing, so it brings no lesson about the harness file - only the
+	-- ones whose command it is. Writing to the file through the shell is an edit, and does.
+	status, text = said('{"session_id":"four","hook_event_name":"PreToolUse","tool_name":"Bash",'
+		.. '"tool_input":{"command":"lua5.1 tests/Harness.lua . > /tmp/out.txt"}}')
+	check("a command that only runs a file brings none of that file's lessons",
+		status == 0 and text:find("L-011", 1, true) == nil, text)
+	status, text = said(string.format('{"session_id":"four","hook_event_name":"PreToolUse",'
+		.. '"tool_name":"Bash","cwd":"%s","tool_input":{"command":"sed -i s/a/b/ tests/Harness.lua"}}',
+		root))
+	check("and one that writes to it through the shell does", status == 0
+		and text:find("L-011", 1, true) ~= nil, text)
+
+	-- A script fed in on a heredoc is how most edits through the shell are made, and also how most
+	-- reading is done: only the one that writes is an edit.
+	status, text = said(string.format('{"session_id":"five","hook_event_name":"PreToolUse",'
+		.. '"tool_name":"Bash","cwd":"%s","tool_input":{"command":"python3 - <<EOF\\n'
+		.. 'print(open(\\"tests/Harness.lua\\").read()[:10])\\nEOF"}}', root))
+	check("a script that only reads a file brings none of its lessons",
+		status == 0 and text:find("L-011", 1, true) == nil, text)
+	status, text = said(string.format('{"session_id":"five","hook_event_name":"PreToolUse",'
+		.. '"tool_name":"Bash","cwd":"%s","tool_input":{"command":"python3 - <<EOF\\n'
+		.. 'open(\\"tests/Harness.lua\\", \\"w\\").write(s)\\nEOF"}}', root))
+	check("and one that writes it does", status == 0 and text:find("L-011", 1, true) ~= nil, text)
+
+	status, text = said('{"session_id":"two","hook_event_name":"UserPromptSubmit",'
+		.. '"prompt":"give me a /run line to print it"}')
+	check("a prompt is answered before the work, under its own event name", status == 0
+		and text:find("L-127", 1, true) ~= nil
+		and text:find('"hookEventName": "UserPromptSubmit"', 1, true) ~= nil, text)
+
+	-- An index it cannot read is a lesson not said: exit 0, nothing out, a line in its own log.
+	status, text = said('{"session_id":"three","hook_event_name":"PreToolUse","tool_name":"Bash",'
+		.. '"tool_input":{"command":"git checkout -- x"}}', "FAMILY_LESSON_ROOT=/nowhere")
+	check("an index it cannot read stops nothing and says nothing",
+		status == 0 and text == "", text)
+	check("and is written down where it can be found",
+		slurp(state .. "/errors.log"):find("LESSONS%-INDEX") ~= nil, slurp(state .. "/errors.log"))
+
+	shell("rm -rf " .. state)
+end)()
+
 -- **A case that throws is a case, and a bare name is a name.** Both reported by another session
 -- on 2026-09-21, from one incident: it ran `mutate.py nome.mut` with the name and not the path,
 -- `parse` raised, the worker died, `results[index]` stayed nil and the run fell over far away in

@@ -1,0 +1,5 @@
+name: a lesson is dropped from the index and nothing notices
+file: docs/LESSONS-INDEX.md
+--- old
+- **L-029** `git checkout --` is not an undo: it reverts to HEAD; git status first, restore from a scratch copy
+--- new

@@ -1,0 +1,6 @@
+name: the lessons gate lets a glob through that matches no file
+file: tools/lesson-hook.py
+--- old
+            if not any(compiled.match(f) for f in files):
+--- new
+            if False:

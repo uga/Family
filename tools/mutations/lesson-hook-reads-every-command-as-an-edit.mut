@@ -1,0 +1,6 @@
+name: the lesson hook matches the paths of a command that only reads or runs them
+file: tools/lesson-hook.py
+--- old
+        if writes(command):
+--- new
+        if True:

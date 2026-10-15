@@ -1,0 +1,158 @@
+# Family — lessons, one rule each
+
+One line per lesson in `docs/LESSONS.md`, in that file's order: the rule, and nothing of the story,
+which stays there. Read the entry for the story before relying on a rule you do not recognise.
+`tools/lesson-hook.py` puts the ones that apply in front of a session when it touches a file or runs
+a command named in `docs/LESSONS-TRIGGERS.md`; the harness fails if this file, that one and
+`LESSONS.md` do not list the same lessons. **A new lesson lands with its line here and its line
+there, in the same commit.**
+
+**Always, whatever is being touched** - the one this project keeps making: a check modelled on the
+instance rather than on the rule. Of any check: what would a weakened version look like, and who
+calls the thing under test - is that caller in the check?
+
+- **L-001** Every capability probe gets a check asserting its answer on each client, not only that it runs
+- **L-002** A stub that answers everything proves nothing: record what was drawn or called, and assert that
+- **L-003** Open: an API nobody stubbed answers noop, so a panel calling it passes vacuously
+- **L-004** Project state has one record, DECISIONS.md; a second list of it is a defect
+- **L-005** An event handler is tested by firing the event through the dispatcher, never by calling it
+- **L-006** A drawn button may not take clicks: set its level above full-width rows; a row with no handler EnableMouse(false)
+- **L-007** A sweep match is a question: before removing a term, ask whether the client's own API uses that name
+- **L-008** A file that changes mid-run is the human: never discard or sweep it in; compare the staged diff to your own work
+- **L-009** A publish is steps with no transaction: a red run may be half-public, so read what landed before any retry
+- **L-010** A mirroring copy deletes what the source lacks: check the source holds the git-ignored Libs before copying
+- **L-011** A check reading state another call changed must address the same object; a panel loaded twice is two panels
+- **L-012** A document saying another file enforces a rule is a claim about that file: the harness reads both
+- **L-013** A capability a document claims needs a check that the tree produces it
+- **L-014** A bulk edit covers the call shapes you thought of: check the rule over the sources, not a pattern list
+- **L-015** Data keyed by a localised name breaks when the client's language changes: key it by id
+- **L-016** A check that reproduces a reported fault passes once it is fixed: check the rule underneath
+- **L-017** An optimisation choosing what to send may not decide what the other end already knows
+- **L-018** A number that cannot be true is upstream; a client constant is not a capability; make the client answer per case
+- **L-019** Recording from an absence writes a plausible empty record: check the source was there, not that the result looks like data
+- **L-020** A fact the same on every client is data: read DATASOURCES first; probe the client only for capability
+- **L-021** A fluent answer is the signal to open the file: route by the question's shape, count what can be counted
+- **L-022** A check matching a substring finds the wrong widget: match on something only the intended one has
+- **L-023** A merging SetMeta skips nil: a client field that answers late needs named, not-yet and none told apart
+- **L-024** When a handler decides not to act, it still owes the waiting end an answer: silence is never a message
+- **L-025** Who calls this, and is that caller in the check? A check that pulls the trigger itself proves only the mechanism
+- **L-026** What an API returns is measured in DATASOURCES, not in a design document's summary or in the code
+- **L-027** A limit bounds one attempt: whatever starts a new attempt resets its counter; a diagnosis names the realm
+- **L-028** A player's verb names an outcome, not an API: write the mechanism only where it was named to you
+- **L-029** `git checkout --` is not an undo: it reverts to HEAD; git status first, restore from a scratch copy
+- **L-030** A check sited at a filename is a proxy; ask what a weakened version would look like, and grep for the fault
+- **L-031** Bracket a variadic client answer before tonumber, select, find or gsub: extra returns change meaning
+- **L-032** Lua handed to a person has no runs of `_,_` (markdown eats them); ask for scriptErrors 1 before probing
+- **L-033** "No route works" is never measured: a negative finding lists every route tried and what each answered
+- **L-034** Read a tooltip line with GetText() in full and split it; NumLines is not the number of things said
+- **L-035** When a measurement contradicts what was seen, suspect the instrument; a probe reports bytes, builds a pipe with string.char(124)
+- **L-036** string.lower is ASCII: text the game supplies is compared in every shipped alphabet, measured from client tables
+- **L-037** A fixture's ids and field types come from the client's tables and the real recorder, not the keyboard
+- **L-038** A build artifact is unverified until something looks inside it; a fact in two files needs a check reading both
+- **L-039** If a stored value breaks a bound you already hold, the bound is the check; refuse it rather than clamp
+- **L-040** A fake that records calls proves the caller only: let it refuse, and check the resulting state
+- **L-041** A check finding a widget by its label finds whichever panel says it first; a fixture resets every control it set
+- **L-042** A hand-written list naming fields needs a whole-word check that something writes each name
+- **L-043** A tie-break is tested only by the case that breaks it the other way; read git show --stat after committing
+- **L-044** A count is not a layout: walk every slot the client defines, and record when found and claimed disagree
+- **L-045** No real clock in a check; a gate's exit status never comes through a pipeline
+- **L-046** "Is this on screen" walks every ancestor; a helper every check stands on gets a check of its own
+- **L-047** A gate written from an assumption pins the assumption; a check reading a file anchors on its structure, not on words
+- **L-048** A fixture simpler than the caller is a different test: use the kind of value the helper exists to normalise
+- **L-049** A check on an answer-or-fallback uses a value the two disagree about; a mutation that fails nothing is a report on the checks
+- **L-050** A fixture puts back every control it changed; a picker left set leaks silently into every later check
+- **L-051** Adding to a fixture edits every check that reads it: rerun the mutations after fixture changes too
+- **L-052** Any reader of "the family" is asked which family: UI:Payload/UI:Meta, not Family.Database, for a borrowed key
+- **L-053** A stub written from the same reading as the code is a second copy of it: let the client's own answer break the tie
+- **L-054** A rule collapsing several into one needs a fixture with two of them; one of a thing proves no grouping rule
+- **L-055** Back up by whole path, never basename; a mutation that fails nothing must first be shown to have applied
+- **L-056** A focused EditBox eats MODIFIER_STATE_CHANGED: watch modifier state while hovered instead of the event
+- **L-057** Two failing calls with one precondition are one negative: look for a route already working in our own code
+- **L-058** A paragraph summarising a list is a cache: read the headings of the entries themselves
+- **L-059** Ask which client a report came from first; a symbol answering is not a build fact, ask Capabilities
+- **L-060** Cells are measured against the width they are given after FitColumns, in every language, with no cutoff
+- **L-061** A fingerprint that samples is a different fingerprint: fold the whole record
+- **L-062** A probe prints type(fn) on its own line before calling fn; a guarded call cannot tell missing from nil
+- **L-063** A scanning tooltip that was not filled answers the previous row: ask NumLines() before GetSpell()
+- **L-064** An acknowledgement invented locally is not one: mark sent from the strongest signal, never from queued
+- **L-065** A panel can witness only facts it could not be drawn without: ask what it would show if the claim were false
+- **L-066** Two lists of one manifest drift silently: a new .lua goes in the .toc and the harness load list together
+- **L-067** A runner that reads only FAIL lines calls a crash a survivor: read the exit status; assert a mutation matched
+- **L-068** An instrument in the mechanism's slot measures itself: never file a probe under a key the addon already uses
+- **L-069** Anything one panel offers another exists before either is drawn: no public entry point inside a builder
+- **L-070** A probe never offers a second try after silence: aimed by a person, refused while the first is unanswered
+- **L-071** 0 is true in Lua; a check from the code's own guess restates it; copy a shape the client already sends
+- **L-072** A stub silent by default cannot test silence: answer like the client, with the measured exceptions only
+- **L-073** Anchor to a control the client sized, never a corner of a frame nobody measured
+- **L-074** A call answering is not an answer you can use: check what it contains; fixtures return the real string
+- **L-075** A sentence claiming scope needs something that established the scope
+- **L-076** Deduplicating by timer replacement covers events not yet handled, never ones handled: leave a marker
+- **L-077** A residual is a residual: total minus what you measured is not named until it is measured
+- **L-078** When a fix speaks when nothing else will, the test arranges that nothing else does
+- **L-079** When an entry point gets an outside caller, list what every earlier caller had already done for it
+- **L-080** A lesson is learned only when the next thing built has it: tell absence from emptiness at every call that can be absent
+- **L-081** A guard and a call on one line keep one value: a call whose second return matters gets a line of its own
+- **L-082** Name what varied: a reading on one machine is of the client plus its addons; say "there" or find a control
+- **L-083** A clock the harness does not move is a clock no check reaches: elapsed time uses GetTime, never time()
+- **L-084** When a fix makes a fault impossible, its check proves the fix still holds: re-aim it, never delete it
+- **L-085** Until you see a state where candidates disagree, name the effect and not the cause
+- **L-086** Before writing a guard, say what must happen for it to fire; an unreachable guard is new behaviour bought for nothing
+- **L-087** When a check compares against a list, ask what else in the list passes; "fails safe" is a claim to construct
+- **L-088** A new check is finished only once seen to fail: take the fix out, run, put it back, record the mutation
+- **L-089** A watcher can match itself: wait on an artefact or a held PID; inspect with grep "[m]utate.py"
+- **L-090** A fixture may write only what the code writes: if the check needs a field, find the line that produces it
+- **L-091** A risk named is a check owed: write it now, or into the backlog in the same turn, never only in chat
+- **L-092** An optimisation sharing state between reader and writer is not one until the writer is shown unseen; distrust the tool first
+- **L-093** A claim generalised from a reading carries the instance beside it (realms, client), or states only the instance
+- **L-094** When a loop does less, list what the skipped work also did; "script ran too long" names where time ran out, measure first
+- **L-095** Before explaining a count, open one of the things it counted
+- **L-096** A reader never writes into the record it draws: Payload hands out the stored table, so build your own
+- **L-097** A helper drawn per member is asked how much it reads, not only what it answers
+- **L-098** No colour is the font's colour, and on these panels that is gold: write white when white is meant
+- **L-214** Name the character a probe runs on from the record (seenBy, key with realm); read a key by the code that builds it
+- **L-213** Before a reading becomes a rule, ask whether another property of that row explains it; walk the whole list
+- **L-212** A proxy load suits a scanner that only reads; one that hooks a global leaves the hook firing in later sections
+- **L-211** A double that models a mechanism loosely reproduces the bug it was fixed for: copy the shape the real one documents
+- **L-210** A cut on how much is written down chooses which half is lost: check it on the default, not on an opted-out call
+- **L-209** A fixture is a measurement, not an illustration: fill it from a run, then break the guard and watch it go red
+- **L-208** A check must be able to fail, not crash: guard the chain it reads through and say what was there instead
+- **L-206** A stored answer carries the question it was asked: where a file accumulates runs, ask a run for its date
+- **L-207** A cause is never measured: put the consequence in the question, not in the options offered
+- **L-205** A prefix is not a word: a name test deciding whether to call requires the word to end; check against the list of names
+- **L-204** For which or how many, enumerate by the program's own handle, never by the values you expect
+- **L-203** A file one program writes and another reads is an interface: check it through the reader
+- **L-202** A canary runs the check's own code path; where a gate already answers, run the gate, never a fresh audit
+- **L-201** A limit on what is written down decides what a run can answer: set it where the question is known
+- **L-200** A pcall is no guard against a native crash: make a no-argument call only where it was seen to survive
+- **L-116** A control case is evidence only once checked as hard as what it controls; a lesson number may answer twice
+- **L-115** A figure that can be read is never recalled: quote the count from where it was printed, or run it again
+- **L-114** Price an insurance: ask what a gate has caught and what it could never have been seen catching
+- **L-113** A record of who did something is not who is doing it: ask the system whether the process is alive
+- **L-112** A queue is not a plan: a second run from the same tree is refused, never queued behind the first
+- **L-110** L-110 and L-111 stay empty on purpose; a midnight commit before 2026-09-20 citing L-108 to L-115 means +92
+- **L-109** A partial explanation that is true is not the explanation: two sessions' runs fight for one processor
+- **L-108** A reading refutes only the claim whose conditions it was taken under: write both sets of conditions side by side
+- **L-107** Measure in the thing that will draw it: a ruler outside the tooltip answers a different question
+- **L-106** Text that arrives with data is in the sender's language; only an id is language-free
+- **L-105** Before chasing a regression, establish the behaviour existed: where was it seen working, on which build
+- **L-104** The harness font fits everything: a layout that measures text needs a look in the client before it is done
+- **L-103** A number handed to the client is a request, not a measurement: read back what it drew
+- **L-103** An inventory taken by one route is checked by reading the code that touches the client hardest
+- **L-102** A change that positions something is checked by its anchors, which edge to which, not by its sizes
+- **L-101** Whatever the harness needs from its environment goes to every workflow that runs it, and is checked there
+- **L-100** A check that fires an event accounts for every timer it starts: flush it in the section or cancel it by key
+- **L-099** A gate whose exit status decides the next command is never piped; "N not" is red whatever follows
+- **L-016** A sanitisation cleans the past; only the harness sweep keeps banned words out; an allow line is reserved
+- **L-117** A reading without its moment invents a fit: record the moments, and separate what the direction shows from the arithmetic
+- **L-118** A promise drawn from a reading names its client; three rows of one kind are one reading
+- **L-119** A part added to a scanner asks whether the schedule it inherits has anything to do with what changes it
+- **L-120** A measurement names in its own sentence what it measured, or it is read as what was wanted
+- **L-121** A dead thread fails wherever the hole is found: read the first traceback; workers catch their own task's errors
+- **L-122** When a shared builder gets a caller of a new kind, list the assumptions it never had to state
+- **L-123** A bucket for what could not be scored is where the failures go: every row is right, wrong or silent
+- **L-124** When half a feature works, look at the difference between the halves; another addon's text carries its markup
+- **L-125** A section moving the frame clock moves it in whole minutes: minute-rounded readings later depend on it
+- **L-126** A fix for cut text checks the text that is drawn, not the room it was given
+- **L-127** A /run line is counted (under 255 with "/run ") and compiled with luac5.1 -p before it is sent
+- **L-128** A check about one reading of a panel first puts the panel in it and asserts so; match numbers as drawn
+- **L-215** Anything reading every member at login or on redraw reads entry.payload as stored, never Payload, which decodes

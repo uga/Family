@@ -1,0 +1,6 @@
+name: the lesson hook reads an edit's path and never what it writes
+file: tools/lesson-hook.py
+--- old
+        text = given.get("new_string") or given.get("content") or given.get("new_source") or ""
+--- new
+        text = ""

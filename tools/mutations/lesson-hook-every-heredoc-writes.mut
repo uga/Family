@@ -1,0 +1,6 @@
+name: the lesson hook takes every script fed in on a heredoc for an edit
+file: tools/lesson-hook.py
+--- old
+    return "<<" in command and bool(SCRIPT_WRITES.search(command.split("<<", 1)[1]))
+--- new
+    return "<<" in command

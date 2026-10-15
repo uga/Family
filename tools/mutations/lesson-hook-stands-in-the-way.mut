@@ -1,0 +1,6 @@
+name: the lesson hook fails the tool call when its index cannot be read
+file: tools/lesson-hook.py
+--- old
+        log("%s: %s" % (type(error).__name__, error))
+--- new
+        raise

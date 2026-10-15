@@ -1,0 +1,6 @@
+name: the lesson hook ranks a lesson by its best reason and not by all of them
+file: tools/lesson-hook.py
+--- old
+            score += 3
+--- new
+            score = max(score, 3)

@@ -1,0 +1,156 @@
+# Family — when each lesson applies
+
+Read by `tools/lesson-hook.py`, not by a person first. One line per lesson, in the order of
+`docs/LESSONS.md` and `docs/LESSONS-INDEX.md`, which say the same lessons; the harness holds the
+three together. A line with no trigger applies everywhere and is only in the index.
+
+- `files:` globs on the path from the repository root; `*` stays inside one directory, `**` crosses.
+- `cmd:` a Python regular expression searched in a Bash command.
+- `words:` a Python regular expression, case-insensitive, searched in the prompt and in the text an
+  edit writes.
+
+- L-001 «files: addons/Family/Capabilities.lua» «words: Capabilities\.|capabilit»
+- L-002 «files: tests/Harness.lua» «words: \bstub»
+- L-003 «files: tests/Harness.lua» «words: \bstub|unstubbed»
+- L-004 «files: docs/HANDOFF.md, docs/Project high level specs.md»
+- L-005 «files: addons/Family/Core.lua, addons/Family/Comm.lua» «words: CHAT_MSG_ADDON|Comm:Receive»
+- L-006 «files: addons/Family_UI/*.lua» «words: EnableMouse|SetFrameLevel|full-width»
+- L-007 «cmd: grep .*-[a-zA-Z]*i» «words: \bsweep»
+- L-008 «cmd: \bgit +(add|commit|checkout|restore|stash|reset|clean)\b»
+- L-009 «files: .github/workflows/*.yml, tools/release.sh» «cmd: release\.sh|git +push» «words: releas|publish»
+- L-010 «files: tools/Deploy*.bat» «cmd: Deploy» «words: deploy»
+- L-011 «files: tests/Harness.lua»
+- L-012 «files: docs/*.md, tools/release.sh» «words: \benforce[sd]?\b»
+- L-013 «files: docs/CURSEFORGE.md, docs/Project high level specs.md, addons/Family/Locales/*.lua» «words: languag|translat»
+- L-014 «files: addons/Family/Locales/*.lua, addons/Family_UI/*.lua» «cmd: sed +-i|perl +-p?i» «words: bulk|translat»
+- L-015 «files: addons/Family/Scanners/Professions.lua, addons/Family/Locales/*.lua» «words: locale|languag»
+- L-016 «files: tests/Harness.lua»
+- L-017 «files: addons/Family/Guild.lua, addons/Family/Wide.lua, addons/Family/Comm.lua»
+- L-018 «files: addons/Family/Capabilities.lua» «words: hypothes|NUM_[A-Z_]+_SLOTS|constant»
+- L-019 «files: addons/Family/Scanners/*.lua» «words: BANKFRAME|window is open»
+- L-020 «files: docs/DATASOURCES.md» «words: \bprob(e|es|ed|ing)\b»
+- L-021 «words: semver|next version|version number|ceiling»
+- L-022 «files: tests/Harness.lua, addons/Family_UI/*.lua» «words: tick ?box|checkbox|coveredBy|reachable\(»
+- L-023 «files: addons/Family/Scanners/*.lua, addons/Family/Database.lua» «words: GetGuildInfo|IsInGuild»
+- L-024 «files: addons/Family/Wide.lua, addons/Family/Guild.lua, addons/Family/Comm.lua»
+- L-025 «files: tests/Harness.lua» «words: who calls|MarkChanged»
+- L-026 «files: docs/DATASOURCES.md, docs/GUILD-CRAFTERS.md» «words: \bwire\b»
+- L-027 «files: addons/Family/Scanners/Identity.lua» «words: retry (counter|limit)|waitingFor»
+- L-028 «files: docs/DATASOURCES.md» «words: reported from play|player said»
+- L-029 «cmd: \bgit +(checkout|restore)\b» «words: revert|undo|back out»
+- L-030 «files: tests/Harness.lua»
+- L-031 «words: (tonumber|select|find|gsub)\(\s*Family:TryCall»
+- L-032 «words: /run|snippet|scriptErrors»
+- L-033 «files: docs/DATASOURCES.md» «words: unreadable|impossible|no route|nothing (Family )?can»
+- L-034 «words: NumLines\(|TextLeft»
+- L-035 «words: /run|\bpipe|probe»
+- L-036 «words: :lower\(|:upper\(|string\.(lower|upper)|case-?insens»
+- L-037 «files: tests/Harness.lua» «words: fixture»
+- L-038 «files: .pkgmeta, addons/*/*.toc, .github/workflows/*.yml» «cmd: gh +release» «words: \.pkgmeta|release asset|inside the (zip|artifact)»
+- L-039 «files: addons/Family/Cooldowns.lua, addons/Family/Scanners/Bags.lua» «words: cooldown»
+- L-040 «files: tests/Harness.lua» «words: \bfake|\bmock|LibDBIcon»
+- L-041 «files: tests/Harness.lua» «words: clickButton»
+- L-042 «files: addons/Family/Wide.lua» «words: CATEGORIES|\bgrant»
+- L-043 «files: tests/Harness.lua» «cmd: git +commit» «words: tie-?break|duplicat»
+- L-044 «files: addons/Family/Scanners/Mail.lua» «words: GetInboxHeaderInfo|ATTACHMENTS_MAX|itemCount»
+- L-045 «files: tests/Harness.lua» «cmd: \|.*(grep|tail|head).*&&» «words: os\.time|\bclock\b»
+- L-046 «files: tests/Harness.lua» «words: visibleText|onScreen|drawnText»
+- L-047 «files: addons/*/*.toc, addons/Family_UI/Bindings.xml» «words: binding»
+- L-048 «files: tests/Harness.lua» «words: fixture»
+- L-049 «files: tests/Harness.lua» «words: fallback»
+- L-050 «files: tests/Harness.lua» «words: fixture|filter»
+- L-051 «files: tests/Harness.lua» «cmd: mutate\.py» «words: fixture»
+- L-052 «files: addons/Family_UI/*.lua, addons/Family/Index.lua, addons/Family/Recipes.lua» «words: sibling|linked famil|borrowed»
+- L-053 «files: tests/Harness.lua» «words: \bstub»
+- L-054 «files: tests/Harness.lua» «words: dedup|collaps|grouped»
+- L-055 «cmd: basename|cp .*scratch» «words: basename|backup»
+- L-056 «files: addons/Family_UI/*.lua» «words: MODIFIER_STATE|focus|EditBox»
+- L-057 «files: docs/DATASOURCES.md» «words: impossible|\bprob(e|es|ed|ing)\b»
+- L-058 «files: docs/BACKLOG.md» «words: backlog|what (to|should) (we )?(build|do) next»
+- L-059 «words: GetProfessions|which client|screenshot»
+- L-060 «files: tests/Harness.lua, addons/Family_UI/*.lua» «words: FitColumns|overflow»
+- L-061 «files: addons/Family/Database.lua, addons/Family/Codec.lua» «words: fingerprint|PayloadMark»
+- L-062 «words: \bprob(e|es|ed|ing)\b|/run»
+- L-063 «words: ScanTooltip|:GetSpell\(»
+- L-064 «files: addons/Family/Wide.lua, addons/Family/Comm.lua» «words: acknowledg|AbandonTo|marked sent»
+- L-065 «words: screenshot»
+- L-066 «files: addons/*/*.toc, tests/Harness.lua» «words: new (file|module|scanner)»
+- L-067 «cmd: Harness\.lua.*\|.*grep» «words: FAIL lines|grep[^\n]*FAIL»
+- L-068 «words: RegisterEvent\(»
+- L-069 «files: addons/Family_UI/*.lua» «words: builder|ShowTab»
+- L-070 «files: addons/Family_UI/Slash.lua, addons/Family/Scanners/Auctions.lua» «words: QueryAuctionItems|second try»
+- L-071 «files: addons/Family/Scanners/Auctions.lua, tests/Harness.lua» «words: QueryAuctionItems|argument»
+- L-072 «files: tests/Harness.lua, addons/Family_UI/Tooltip.lua» «words: \bstub|silence|keyring»
+- L-073 «files: addons/Family_UI/*.lua, addons/Family/Scanners/Auctions.lua» «words: anchor|SetPoint»
+- L-074 «words: SecondsToTime|\|4»
+- L-075 «files: addons/Family/Scanners/Auctions.lua» «words: whole house|scope|full scan»
+- L-076 «files: addons/Family/Scanners/Auctions.lua, addons/Family/Core.lua» «words: debounce|settle|dedup»
+- L-077 «files: addons/Family/Scanners/Auctions.lua» «words: residual|remainder»
+- L-078 «files: tests/Harness.lua» «words: fixture»
+- L-079 «files: addons/Family_UI/*.lua» «words: ShowTab|entry point|first caller»
+- L-080 «files: addons/Family_UI/Slash.lua» «words: GetMouseFocus|silence»
+- L-081 «words: local [\w_]+\s*,\s*[\w_]+\s*=\s*[\w_.:]+ and [\w_.:]+\(»
+- L-082 «files: docs/DATASOURCES.md» «words: ItemRack|Auctionator|addon set|other addons?»
+- L-083 «files: tests/Harness.lua» «words: watchdog|[^.\w]time\(\)\s*-»
+- L-084 «files: addons/Family/Scanners/Auctions.lua, tests/Harness.lua» «words: delet\w* (the |a |that |its )?check|re-?aim»
+- L-085 «files: docs/DATASOURCES.md» «words: whose (limit|refusal)|which gate»
+- L-086 «words: \bguard\b»
+- L-087 «files: addons/Family_UI/Tooltip.lua, addons/Family/Scanners/Auctions.lua» «words: fails? safe|identity|neighbour»
+- L-088 «files: tests/Harness.lua» «words: seen to fail»
+- L-089 «cmd: pgrep +-f|pkill +-f|until .*pgrep» «words: pgrep|wait for (it|the run)»
+- L-090 «files: tests/Harness.lua» «words: fixture»
+- L-091 «words: \brisk|could still go wrong|verify later»
+- L-092 «files: tools/mutate.py» «words: optimi[sz]|parallel|thread»
+- L-093 «files: docs/*.md» «words: any realm|generali[sz]»
+- L-094 «files: addons/Family/Database.lua, addons/Family/Names.lua» «words: ran too long|Payload\(»
+- L-095 «files: addons/Family_UI/Slash.lua» «words: denominator|explain (the|this) (count|number)»
+- L-096 «files: addons/Family_UI/*.lua, addons/Family/Database.lua» «words: Payload»
+- L-097 «files: addons/Family/Index.lua, addons/Family/Recipes.lua, addons/Family_UI/*.lua» «words: Payload|HeldBy|refresh»
+- L-098 «files: tools/FamilyIconSheet/**, addons/Family_UI/*.lua» «words: \|cff|white»
+- L-214 «files: docs/MIDNIGHT.md» «words: \bprob(e|es|ed|ing)\b|guild bank»
+- L-213 «files: docs/MIDNIGHT.md» «words: screenshot|retract»
+- L-212 «files: tests/Harness.lua» «words: proxy|hooksecurefunc|second load»
+- L-211 «files: tests/Harness.lua» «words: \bstub|RegisterEvent»
+- L-210 «files: tools/FamilySurface/**, tools/surface.py» «words: truncat|\bcut\b|limit»
+- L-209 «files: tests/Harness.lua» «words: fixture»
+- L-208 «files: tests/Harness.lua» «words: crash»
+- L-206 «files: tools/surface.py» «cmd: surface\.py» «words: --report|surface\.py»
+- L-207 «words: caused by|consequence»
+- L-205 «files: tools/FamilySurface/**» «words: isRead|\^Can|Cancel[A-Z]»
+- L-204 «cmd: grep +-[a-zA-Z]*E?.*\|» «words: how many|which (ones|files|destinations)»
+- L-203 «files: tools/FamilySurface/**, tools/surface.py» «words: self-?test|reader|format»
+- L-202 «cmd: grep +-[a-zA-Z]*l[a-zA-Z]*c|grep +-[a-zA-Z]*c[a-zA-Z]*l» «words: canary|audit|banned»
+- L-201 «files: tools/FamilySurface/**» «words: truncat|showTable»
+- L-200 «files: tools/FamilySurface/**» «words: ACCESS_VIOLATION|pcall[^\n]*crash»
+- L-116 «files: docs/LESSONS.md» «words: control case|renumber»
+- L-115 «cmd: git +commit» «words: \bchecks?\b.*[0-9]|[0-9]+ checks»
+- L-114 «files: tools/mutate.py, tools/mutations/*.mut» «cmd: mutate\.py» «words: insurance|always passes»
+- L-113 «files: tools/mutate.py» «words: who holds|holding line»
+- L-112 «files: tools/mutate.py» «cmd: mutate\.py» «words: queued run|mutate[^\n]*lock»
+- L-110 «files: docs/LESSONS.md» «words: L-1(0[89]|1[0-5])|renumber»
+- L-109 «files: tools/mutate.py» «cmd: mutate\.py» «words: slow|killed|contention»
+- L-108 «files: docs/BACKLOG.md» «words: refut|disprov»
+- L-107 «files: addons/Family_UI/*.lua, tools/FamilyIconSheet/**» «words: ruler|align»
+- L-106 «files: addons/Family_UI/ItemClick.lua, addons/Family/Names.lua» «words: chat link|\[name\]»
+- L-105 «words: regress|stopped working|used to work|lost (its|the)»
+- L-104 «files: addons/Family_UI/*.lua, tests/Harness.lua» «words: GetStringWidth|font metric»
+- L-103 «files: addons/Family_UI/*.lua, tools/FamilyIconSheet/**» «words: width|spacer|\|T»
+- L-103 «files: tools/surface.py» «words: Spacer|\|T»
+- L-102 «files: addons/Family_UI/*.lua» «words: anchor|SetPoint|layout»
+- L-101 «files: .github/workflows/*.yml, tests/Harness.lua» «words: secret|workflow|FAMILY_WORDS»
+- L-100 «files: tests/Harness.lua» «words: \bfire\(|timer|advance»
+- L-099 «cmd: (mutate\.py|Harness\.lua)[^;|\n]*\|\s*(tail|head|grep)\b» «words: pipefail»
+- L-016 «files: docs/**, tools/**» «words: banned word|allow line»
+- L-117 «files: docs/BACKLOG.md, docs/DATASOURCES.md» «words: rested|interval»
+- L-118 «files: docs/BACKLOG.md, docs/DATASOURCES.md» «words: sayable|promise»
+- L-119 «files: addons/Family/Scanners/Character.lua» «words: schedule|ran too long|achievement»
+- L-120 «files: docs/*.md» «words: what was measured|measured (the|a) »
+- L-121 «files: tools/mutate.py» «words: thread|traceback»
+- L-122 «files: addons/Family_UI/Tooltip.lua» «words: new caller»
+- L-123 «files: docs/*.md, tools/*.py» «words: unverified|could not (be )?score|bucket»
+- L-124 «words: GatherMate|Gatherer|other addon|markup»
+- L-125 «files: tests/Harness.lua» «words: advance\(»
+- L-126 «files: addons/Family_UI/*.lua» «words: clip|cut off|Shortened|widen»
+- L-127 «words: /run|\bprob(e|es|ed|ing)\b»
+- L-128 «files: tests/Harness.lua» «words: clickButton|drawnText»
+- L-215 «words: Database:Payload\(|Family\.Database:Payload»

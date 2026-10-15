@@ -1,0 +1,6 @@
+name: the lesson hook tells one session the same lesson every time
+file: tools/lesson-hook.py
+--- old
+    fresh = [l for l in matches(lessons, event) if key(l, lessons) not in told]
+--- new
+    fresh = matches(lessons, event)
