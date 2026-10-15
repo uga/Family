@@ -1,0 +1,6 @@
+name: the gate keeps its warnings to itself
+file: tools/decisions.py
+--- old
+        print("decisions: warning: %s" % warning)
+--- new
+        pass

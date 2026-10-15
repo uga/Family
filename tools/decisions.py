@@ -33,9 +33,21 @@ one decision is hashed whole, exactly as it stands.
 one `- D-old → D-new` line each with its reason. A decision named on the left is no longer in force.
 A line ending `(in part)` is an amendment: the old decision stays in force, and every answer that
 shows it names the row that changed part of it.
+
+**The rows written after the gate are held to two rules** (DECISIONS, 2026-10-15), and the rows
+above `GATE_AFTER` to neither, since they were written before anyone asked:
+
+- A row is at most 1,000 characters, counted over the row as it stands. Until 2026-11-15 a longer
+  one is a warning and the gate stays green; from the day after, it is red. The rest of the
+  reasoning goes in the commit message. `FAMILY_DECISIONS_TODAY` sets the date for a check.
+- A row with revision words - *correction:*, *supersedes*, *the row above*, *retracted* - names the
+  id of a row, which must exist, or says `no row replaced` where what it revises was never a row.
+  The pair that row makes goes into `docs/DECISIONS-SUPERSEDED.md` in the same commit, by hand:
+  only the writer knows whether a row it names was replaced, amended or only cited.
 """
 
 import argparse
+import datetime
 import hashlib
 import os
 import re
@@ -52,6 +64,18 @@ ROW = re.compile(r"\| (\d{4}-\d{2}-\d{2}) \|")
 JOINED = re.compile(r"\\n(?=\| \d{4}-\d{2}-\d{2} \|)")
 REPLACED = re.compile(r"^- (D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?) → "
                       r"(D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?)( \(in part\))?$")
+# The last row written before the gate on new rows: everything below it in the file is new. An id
+# and not a date, because dates in this file run backwards wherever a branch was merged.
+GATE_AFTER = "D-2026-10-15-890482"
+ROW_MAX = 1000
+WARN_UNTIL = "2026-11-15"
+# The phrasings that marked the 47 revising rows recorded in DECISIONS-SUPERSEDED, all of them; the
+# broader word list (*no longer*, *replaced*, *override*) finds 214 rows to this one's 127.
+REVISES = re.compile(r"row above|rows? (of|from) \d{4}-\d{2}-\d{2}|the \d{4}-\d{2}-\d{2} row|supersed"
+                     r"|replaces the|corrects the|correction:"
+                     r"|\b(retract\w*|withdraw[sn]?|amends|revers(es|al)|corrects|corrected)\b", re.I)
+NAMED = re.compile(r"D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?")
+NO_ROW = "no row replaced"
 TICKED = re.compile(r"`([^`]+)`")
 # What follows a path to say which part of it was meant: `:12`, ` §3`, `#anchor`.
 QUALIFIED = re.compile(r"[:# §]")
@@ -83,6 +107,7 @@ def read_decisions(root=ROOT):
                 "id": base if seen[base] == 1 else "%s.%d" % (base, seen[base]),
                 "date": date,
                 "line": number,
+                "text": text,
                 "decision": cells[1],
                 "why": cells[2],
                 "where": cells[3] if len(cells) > 3 else cells[2],
@@ -161,6 +186,31 @@ def check(root=ROOT):
         if not part:
             replaced.setdefault(old, new)
 
+    warnings = []
+    after = [i for i, d in enumerate(decisions) if d["id"] == GATE_AFTER]
+    if not after:
+        problems.append("no row has the id %s, the last row before the gate, so no row can be "
+                        "told new" % GATE_AFTER)
+    today = os.environ.get("FAMILY_DECISIONS_TODAY") or datetime.date.today().isoformat()
+    for d in decisions[after[0] + 1:] if after else ():
+        if len(d["text"]) > ROW_MAX:
+            said = "%s is %d characters, over %d; the rest of the reasoning goes in the commit" \
+                % (d["id"], len(d["text"]), ROW_MAX)
+            if today > WARN_UNTIL:
+                problems.append(said)
+            else:
+                warnings.append(said + " (refused from the day after %s)" % WARN_UNTIL)
+        if REVISES.search(d["text"]):
+            named = NAMED.findall(d["text"])
+            unknown = [i for i in named if i not in order]
+            if unknown:
+                problems.append("%s names %s, which no row has" % (d["id"], " and ".join(unknown)))
+            elif not named and NO_ROW not in d["text"]:
+                problems.append("%s revises (%r) and names no id; say `%s` if what it revises "
+                                "was never a row" % (d["id"], REVISES.search(d["text"]).group(0), NO_ROW))
+
+    for warning in warnings:
+        print("decisions: warning: %s" % warning)
     for problem in problems:
         print("decisions: %s" % problem)
     if problems:

@@ -48239,9 +48239,14 @@ end)()
 		return "D-" .. row:sub(3, 12) .. "-" .. slurp(out):sub(1, 6)
 	end
 
-	-- The gate, on the tree as it is: every row reads as a decision.
+	-- The gate, on the tree as it is: every row reads as a decision. On today's date, not one a
+	-- check chose: this is the gate itself, and a row it only warns about is said here so that the
+	-- pre-commit hook, which shows nothing else of a green run, can show it.
 	local status, text = asked(root, "--check")
 	check("every row of the decisions register reads as a decision", status == 0, text)
+	for line in text:gmatch("[^\n]+") do
+		if line:find("^decisions: warning: ") then print(line) end
+	end
 
 	local register = os.tmpname()
 	os.remove(register)
@@ -48263,9 +48268,17 @@ end)()
 	local new = "| 2026-08-11 | New rule | Because | `tests/Harness.lua` |"
 	local short = "| 2026-08-12 | Short path | Why | `Family_UI/Short.lua:40` |"
 	local bare = "| 2026-08-12 | Bare name | Why | `Short.lua` |"
-	spill(register .. "/docs/DECISIONS.md", table.concat({"# Family - decisions", "",
+	local small = table.concat({"# Family - decisions", "",
 		"| Date | Decision | Why, in one line | Where it landed |", "|---|---|---|---|",
-		old, old, first .. "\\n" .. second, midnight, decoy, new, short, bare, ""}, "\n"))
+		old, old, first .. "\\n" .. second, midnight, decoy, new, short, bare, ""}, "\n")
+	spill(register .. "/docs/DECISIONS.md", small)
+	status, text = asked(register, "--check")
+	check("a register without the last row written before the gate cannot tell a new row, and is "
+		.. "refused", status ~= 0 and text:find("no row can be told new", 1, true) ~= nil, text)
+
+	-- Below the real register, so that every row of it is old to the gate and these are new.
+	local real = slurp(root .. "/docs/DECISIONS.md")
+	spill(register .. "/docs/DECISIONS.md", real .. small)
 	local superseded = string.format("# Replaced decisions\n\n- %s → %s\n  The new rule says it better.\n"
 		.. "- %s → %s (in part)\n  The second row changed half of the first.\n",
 		id(old), id(new), id(first), id(second))
@@ -48323,9 +48336,50 @@ end)()
 		status == 0 and text:find(id(first) .. " — First joined  [amended by " .. id(second) .. "]", 1, true)
 			~= nil, text)
 
+	-- **The gate on new rows** (DECISIONS, 2026-10-15, Alberto): at most 1,000 characters, a
+	-- warning until 2026-11-15 and refused after; a row with revision words names an id that
+	-- exists, or says that what it revises was never a row. The old rows above, 441 of them over
+	-- the length and many revising in words alone, are what the green runs above already passed.
+	spill(register .. "/docs/DECISIONS-SUPERSEDED.md", superseded)
+	local function gated(today, rows)
+		spill(register .. "/docs/DECISIONS.md", real .. small .. table.concat(rows, "\n") .. "\n")
+		local status = shell(string.format("FAMILY_DECISIONS_TODAY=%s FAMILY_DECISIONS_ROOT=%s "
+			.. "python3 %s --check > %s 2>&1", today, register, tool, out))
+		return status, slurp(out)
+	end
+
+	-- Long in its reasoning and short in its Decision, as the long rows of the register are.
+	local long = "| 2026-10-16 | Long row | " .. string.rep("Reasoning. ", 100) .. "| `docs/DECISIONS.md` |"
+	status, text = gated("2026-11-15", {long})
+	check("a new row over 1,000 characters is a warning to the last day of the month allowed",
+		status == 0 and text:find("decisions: warning: " .. id(long) .. " is " .. #long .. " characters", 1, true) == 1,
+		text)
+	status, text = gated("2026-11-16", {long})
+	check("and refused from the day after", status ~= 0
+		and text:find("decisions: " .. id(long) .. " is " .. #long .. " characters", 1, true) ~= nil
+		and text:find("warning", 1, true) == nil, text)
+
+	-- The revision word in the reasoning, where most of the register's revising rows say it.
+	local cited = "| 2026-10-16 | Plain row | Nothing revised | `docs/DECISIONS.md` |"
+	local revising = "| 2026-10-16 | Counts again | This corrects the count it gave | `docs/X.md` |"
+	status, text = gated("2026-11-16", {cited, revising})
+	check("a new row with revision words and no id is refused", status ~= 0
+		and text:find(id(revising) .. " revises ('corrects the') and names no id", 1, true) ~= nil, text)
+	local naming = revising:gsub("it gave", "it gave in " .. id(cited))
+	status, text = gated("2026-11-16", {cited, naming})
+	check("and passes once it names the row it revises", status == 0, text)
+	local typo = revising:gsub("it gave", "it gave in D-2026-10-16-000000")
+	status, text = gated("2026-11-16", {cited, typo})
+	check("but not by naming an id no row has", status ~= 0
+		and text:find(id(typo) .. " names D-2026-10-16-000000, which no row has", 1, true) ~= nil, text)
+	local never = revising:gsub("it gave", "it gave in a commit; no row replaced")
+	status, text = gated("2026-11-16", {cited, never})
+	check("and a row revising what was never a row says so, and passes", status == 0, text)
+
 	shell("rm -rf " .. register)
 	os.remove(out)
 end)()
+
 
 -- **A file's first touch brings its decisions as well as its lessons** (phase 3 of the lessons
 -- brief, 2026-10-15): `tools/lesson-hook.py` asks `tools/decisions.py` for the rows in force that

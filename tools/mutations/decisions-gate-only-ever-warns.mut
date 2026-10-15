@@ -1,0 +1,6 @@
+name: a long new row is a warning for ever
+file: tools/decisions.py
+--- old
+            if today > WARN_UNTIL:
+--- new
+            if False:

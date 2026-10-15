@@ -1,0 +1,8 @@
+name: a register without the gate's last old row passes, every row taken as old
+file: tools/decisions.py
+--- old
+    if not after:
+        problems.append
+--- new
+    if False:
+        problems.append

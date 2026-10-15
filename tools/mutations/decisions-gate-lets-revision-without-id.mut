@@ -1,0 +1,6 @@
+name: a new row revising in words and naming no id passes
+file: tools/decisions.py
+--- old
+            elif not named and NO_ROW not in d["text"]:
+--- new
+            elif False:

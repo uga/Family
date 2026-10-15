@@ -1,0 +1,6 @@
+name: the rows written before the gate are held to it too
+file: tools/decisions.py
+--- old
+    for d in decisions[after[0] + 1:] if after else ():
+--- new
+    for d in decisions:

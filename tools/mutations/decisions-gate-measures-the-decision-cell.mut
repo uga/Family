@@ -1,0 +1,6 @@
+name: the length of a new row is measured on its Decision cell alone
+file: tools/decisions.py
+--- old
+        if len(d["text"]) > ROW_MAX:
+--- new
+        if len(d["decision"]) > ROW_MAX:

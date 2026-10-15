@@ -38,6 +38,10 @@ fi
 count=$(echo "$out" | grep -c '^  ok')
 echo "pre-commit: $count checks passed"
 
+# A green run shows nothing else, so the warnings the decisions gate gives before it starts refusing
+# (DECISIONS, 2026-10-15) are shown here or nowhere.
+echo "$out" | grep '^decisions: warning: '
+
 # Left where `commit-msg` can read it, so a message claiming a different number is refused
 # rather than committed. Inside `.git`, which is not the tree and is not carried anywhere.
 echo "$count" > "$(git rev-parse --git-dir)/family-checks" 2>/dev/null || true

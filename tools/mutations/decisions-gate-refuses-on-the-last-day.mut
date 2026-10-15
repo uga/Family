@@ -1,0 +1,6 @@
+name: a long new row is refused on the last day it should only be warned about
+file: tools/decisions.py
+--- old
+            if today > WARN_UNTIL:
+--- new
+            if today >= WARN_UNTIL:
