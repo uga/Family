@@ -1,155 +1,172 @@
-# HANDOFF — Family, fase 3: decisioni in vigore portate al momento giusto — 2026-10-15
+# HANDOFF — Family, fase 3: il gate delle righe nuove e le prove di accettazione — 2026-10-15
 
-Origine: Claude Code (sessione 8dacb357, `/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
+Origine: Claude Code (sessione 219b0713, `/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
 
 ## Obiettivo
-Costruire la fase 3 descritta nel brief `/home/dietpi/dev/varie/briefs/family-decisions-index.md`:
-- un lettore di `docs/DECISIONS.md` con id calcolati (`tools/decisions.py`);
-- un registro delle sostituzioni scritto a mano (`docs/DECISIONS-SUPERSEDED.md`);
-- l'estensione dell'hook delle lezioni, perché porti le decisioni **in vigore** al primo tocco di un file;
-- un gate con mutazioni registrate.
-
-Le quattro scelte riservate ad Alberto sono già prese e registrate (vedi sotto).
+Chiudere la fase 3 del brief `/home/dietpi/dev/varie/briefs/family-decisions-index.md`. Lettore, registro delle sostituzioni ed estensione dell'hook sono fatti. Restano:
+- le regole del gate per le **righe nuove** di `docs/DECISIONS.md`;
+- le prove di accettazione con i numeri finali da riportare ad Alberto.
 
 ## Contesto indispensabile
-- **Leggi il brief per intero prima di tutto**: `/home/dietpi/dev/varie/briefs/family-decisions-index.md` (935 parole). In breve:
-  - `DECISIONS.md` è append-only: nessuna riga esistente si tocca, nemmeno per aggiungere un id.
-  - I dati generati non si committano (decisione del 2026-08-08): l'indice delle decisioni in vigore si calcola al momento.
-  - La colonna *Decision* è già il riassunto in una riga; *Where it landed* è già l'innesco, perché cita percorsi tra backtick.
-  - Nessun import nel `CLAUDE.md`: ~50k token sarebbero troppi.
-  - Comandi minimi dello script: `--file <percorso>` (decisioni in vigore approdate lì), `--id <id>`, `--grep <regex>` (che dice se la riga è superata e da quale).
-  - Hook: tetto per file (es. 5) e per sessione (es. 15), con la regola di scelta dichiarata.
-  - Le prove di accettazione e i numeri da riportare sono elencati nel brief.
-- **Le fasi 1+2 sono fatte e fanno da modello**:
-  - `tools/lesson-hook.py` (hook PreToolUse + UserPromptSubmit, `--check` come gate);
-  - `docs/LESSONS-INDEX.md` (importato da `CLAUDE.md`, 5.695 token misurati);
-  - `docs/LESSONS-TRIGGERS.md`;
-  - la sezione dell'harness *"the lessons index, and the hook that puts a lesson in front of a session"* in `tests/Harness.lua`;
-  - 11 mutazioni `tools/mutations/lesson*.mut`.
-  - Il registro è in `docs/DECISIONS.md`, nelle righe del 2026-10-15.
-- **Come funziona oggi l'hook** (da estendere, non da riscrivere):
-  - Stato per sessione in `~/.local/state/family-lesson-hook/<session>.json`, nel formato `{"said": [...], "files": [...]}`; la vecchia forma a lista viene letta come "detto".
-  - Tetti: `FILE_CAP = 5` lezioni "solo file" al primo tocco del file; `SESSION_CAP = 30`, abbassabile con `FAMILY_LESSON_SESSION_CAP` per i test.
-  - `LIMIT = 1500` caratteri per risposta.
-  - Punteggi: cmd +4, parole +3, file 2 / `*` 1 / `**` 0,5.
-  - I `cmd:` si applicano dalla prima parola di ogni passo, con i corpi heredoc scartati.
-  - Un Bash conta come modifica solo se scrive.
-  - Exit 0 sempre; gli errori vanno in `errors.log` nella cartella di stato.
-  - `FAMILY_LESSON_ROOT` e `FAMILY_LESSON_STATE` servono ai test; `FAMILY_TRACKED` viene da `mutate.py` nelle copie senza `.git`.
-- **Fatti misurati sugli hook di Claude Code (2.1.300)**:
-  - Il testo di PreToolUse arriva al modello insieme al risultato dello strumento, cioè dopo l'azione.
-  - UserPromptSubmit arriva prima del lavoro.
-  - Omettere `permissionDecision` non cambia i permessi.
-  - Un worktree legge solo il proprio `.claude/settings.json`.
-  - Un Edit con testo non trovato viene rifiutato prima di PreToolUse.
-  - `python3` su un file mancante esce con 2, che blocca lo strumento: per questo il comando ha la guardia `[ -f ... ] || exit 0`.
-- **`.claude/` e `CLAUDE.md` sono ignorati da git in questo repo** (`.gitignore` riga 36-37; è un'eccezione, di regola `.claude/` va in git). `.claude/settings.json` è locale a questo checkout.
+- **Leggi il brief per intero** (`/home/dietpi/dev/varie/briefs/family-decisions-index.md`). La sezione "4. Gate" e le "Prove di accettazione" sono il lavoro che resta. Testo della sezione 4:
 
-### Misure fatte in questa sessione su `docs/DECISIONS.md` (15/10, prima dei 4 nuovi commit)
-- 1.130 righe di decisione, 1.035.440 byte. Mediana per riga 830 caratteri, p90 1.587, massimo 10.710. Colonna *Decision*: mediana 124, media 138.
-- **Id data+posizione: NON stabile.** 8 date compaiono in più blocchi (2026-08-31 alle righe 233 e 264; 2026-09-18 a 729, 754 e 757; 2026-09-19 a 745, 755 e 758; 2026-09-20 a 770 e 815; 2026-09-21 a 813 e 821; 2026-09-22 a 814 e 864; 2026-09-27 a 1046 e 1135; 2026-09-28 a 1125 e 1136). In 5 punti la data torna indietro. Sono merge di branch, e il prossimo merge rinumererebbe.
-- **Id data + 6 hex dello SHA-1 della riga intera:** 1.129 distinti su 1.130. L'unica collisione è una riga presente due volte identica: si distingue per ordine di comparsa (es. suffisso `.2`). Con 4 hex i distinti sono 1.128.
-- **Candidate alle sostituzioni:**
-  - 247 righe con parole di revisione o citazioni, ~94k token. Regex usata: `correction|corrects?|replac(es|ed|ing)|revers(es|ed|al)|withdraw|withdrawn|supersed|no longer|row above|retract|instead of the|undo|overrid`, più le citazioni di date e righe.
-  - **68 righe esplicite** che citano un'altra riga o si dichiarano correzione, ~23k token. Regex: `row above|rows? (of|from) \d{4}-\d{2}-\d{2}|the \d{4}-\d{2}-\d{2} row|supersed|replaces the|corrects the|correction:`.
-- **Tetto di lunghezza**, sulle 490 righe scritte dal 2026-09-15:
+```
+### 4. Gate
+- Ogni id in DECISIONS-SUPERSEDED.md esiste, e nessuna decisione è superata due volte senza
+  una catena esplicita.
+- Una riga nuova che contiene parole di revisione e non nomina un id: segnalarla. Decidere
+  con Alberto se è un errore o un avviso.
+- **Lunghezza delle righe nuove: è una decisione di Alberto.** Proponi un tetto con i numeri:
+  la distribuzione attuale e cosa avrebbe tagliato negli ultimi 30 giorni, più dove va il
+  resto del "Why" (messaggio di commit, documento). Non applicarlo senza il suo sì.
+- Ogni regola nuova con la sua mutazione registrata, come per le lezioni.
+```
 
-  | Tetto | Righe più lunghe | Caratteri oltre il tetto |
-  |---|---|---|
-  | 400 | 413 | 202.882 |
-  | 600 | 289 | 133.493 |
-  | 800 | 212 | 84.595 |
-  | 1.000 | 150 | 48.998 |
+```
+## Prove di accettazione
+1. Test dello script: id stabili su tutto il file; `--file tests/Harness.lua` restituisce solo
+   righe in vigore; una sostituzione registrata esce davvero da `--file`.
+2. Hook su input registrati: primo tocco, secondo tocco, file senza decisioni, tetto per file
+   e tetto di sessione raggiunti, input rotto.
+3. Rigiocato sulle sessioni Family: caratteri iniettati per sessione (mediana e massimo),
+   insieme alle lezioni, perché il tetto va pensato sul totale.
+4. Numeri da riportare:
+   - candidate esaminate e sostituzioni registrate;
+   - token spesi per il recupero del passato;
+   - latenza dell'hook;
+   - token iniettati in una sessione tipica.
+```
+
+- **Le prove 1 e 2 sono già coperte dall'harness**: le sezioni *"the decisions register, read by decision with an id of its own"* (16 check) e *"the lesson hook, bringing the decisions in force at a file's first touch"* (13 check). Resta la 3, il rigioco.
+
+### `tools/decisions.py` (commit `facf712`, `fd1a47f`)
+- **Comandi:** `--file PATH` (solo le decisioni in vigore), `--id ID` (exit 1 se l'id non esiste), `--grep REGEX` (case-insensitive su Decision, Why e Where; dice "[replaced by …]"), `--why`, `--check`.
+- **Id:** `D-<data>-<6 hex dello SHA-1 del testo della riga>`; una riga ripetuta prende `.2`.
+- **Una decisione è una riga logica, non una riga fisica.** Tre righe fisiche contengono 19 decisioni unite da un `\n` letterale: si dividono lì. Un `\n` finale sparso si scarta.
+- **Celle:** 3 (righe Midnight, dove il Where è nella cella del perché), 4, o 5 (una colonna commit).
+- **Funzioni riusabili:** `read_decisions(root)`, `read_superseded(root)` (restituisce tuple `(vecchia, nuova, in_part)`), `landed_in(d, path)`, `TICKED`, `check(root)`. `FAMILY_DECISIONS_ROOT` serve ai test.
+- **`--check` oggi rifiuta:**
+  - errori di parsing;
+  - un id che nessuna riga ha;
+  - una riga nuova sopra la vecchia;
+  - una sostituzione piena registrata due volte;
+  - una riga che sembra una coppia e non si legge come tale.
+- **Output verde, l'ultimo letto:** `decisions: 1155 decisions, every row read; 21 replaced and 30 amended, every id a row's`.
+
+### `docs/DECISIONS-SUPERSEDED.md` (commit `fd1a47f`, più una coppia in `aa43968`)
+- Righe nella forma `- D-vecchia → D-nuova` oppure `- D-vecchia → D-nuova (in part)`, ciascuna con il motivo sulla riga sotto.
+- **Sostituita:** esce da `--file`.
+- **`(in part)`:** resta in vigore e viene mostrata con `[amended by …]`.
+- Oggi ci sono 51 coppie, 21 sostituzioni piene e 30 emendamenti.
+
+### `tools/lesson-hook.py` esteso (commit `aa43968`)
+- **Al primo tocco di un file** porta le decisioni in vigore approdate lì, sotto le lezioni, come `D-id — Decision`. La cella Decision viene tagliata a 200 caratteri (`DECISION_MAX`).
+- **Tetti unici per lezioni e decisioni.** `FILE_CAP = 5` per file, preso una lezione e una decisione a turno, partendo da una lezione; se un tipo finisce, l'altro occupa i posti. `SESSION_CAP = 30` conta tutti e due.
+- **Regola di scelta delle decisioni:** prima quelle che nominano tra backtick, nella cella Decision, qualcosa che la modifica scrive; poi le più recenti, cioè le più in basso nel file.
+- **Gli id detti** finiscono nello stesso `said` dello stato di sessione.
+- **Se il registro non si legge**, l'errore va nel log e le lezioni passano lo stesso.
+- **Latenza misurata:** mediana 42 ms su 15 esecuzioni contro 45 ms prima; la sola ricerca delle decisioni costa 6,9 ms. Lo script di misura è `/tmp/claude-1000/-home-dietpi-dev-Family-public/219b0713-6d71-4056-8c17-0839198e8e69/scratchpad/latency.py`. Sta nello scratchpad della sessione vecchia e potrebbe sparire: è un ciclo di 15 `subprocess.run` di un evento Edit su `tests/Harness.lua`, con un session_id nuovo a ogni giro.
+
+### Numeri già misurati, per il rapporto finale
+- **Candidate esaminate:** 70, cioè le 68 della regex esplicita più 2 righe del 15/10 con "superseded".
+- **Coppie registrate:** 50 dal passato (21 piene, 29 in parte) più una nuova di oggi. Le altre 20 candidate citano senza cambiare.
+- **Token per il recupero:** circa 25k, cioè 75.923 byte di candidate letti; le ricerche delle righe bersaglio non sono contate.
+- **Righe di DECISIONS oggi:** 1.155. In vigore su `tests/Harness.lua`: 477, di cui 125 con un nome tra backtick nella Decision. Lezioni legate a quel file: 37.
+- **Celle Decision:** mediana 127 caratteri, massimo 519; 165 su 1.154 superano 200.
+- **Percorsi nel Where:** su 3.375 nomi tra backtick, 2.064 sono percorsi esatti e 753 accorciati (`Family_UI/…`).
+- **Regex delle 68 esplicite:** `row above|rows? (of|from) \d{4}-\d{2}-\d{2}|the \d{4}-\d{2}-\d{2} row|supersed|replaces the|corrects the|correction:`.
+- **Regex ampia delle 247:** `correction|corrects?|replac(es|ed|ing)|revers(es|ed|al)|withdraw|withdrawn|supersed|no longer|row above|retract|instead of the|undo|overrid`.
 
 ## Decisioni prese (e perché)
-- **Id = data + 6 hex SHA-1 della riga**, es. `D-2026-09-14-3f9a2c` → data+posizione non regge ai merge (vedi misure). La riga non si modifica mai, quindi il suo hash non cambia. Le righe duplicate si distinguono per ordine. *(Alberto, 1 sì; registrata in DECISIONS.)*
-- **Recupero del passato solo sulle 68 righe esplicite (~23k token)**, non sulle 247 (~94k, oltre la soglia dei 50k del brief) → da qui in avanti ogni riga che sostituisce nomina l'id e aggiorna `DECISIONS-SUPERSEDED.md` nello stesso commit. *(Alberto, 2a.)*
-- **Righe nuove al massimo 1.000 caratteri: avviso fino al 2026-11-15, poi errore** → il resto del Why va nel messaggio di commit. Le righe anteriori al gate non si misurano. *(Alberto, 3.)*
-- **Una riga nuova con parole di revisione e senza id sostituito fa fallire il gate**: è un errore, ma solo per le righe scritte dopo l'arrivo del gate. *(Alberto, 4.)*
-- Le quattro righe sono in `docs/DECISIONS.md`, commit `f3595e3`, ognuna sotto i 1.000 caratteri.
-- Il gate delle decisioni va nell'harness, come per le lezioni (`--check` lanciato da `tests/Harness.lua`) → pre-commit e `mutate.py` lo fanno rispettare senza niente di nuovo.
+- **Id = data + 6 hex SHA-1 della riga** → data+posizione non regge ai merge, perché 8 date stanno in più blocchi. *(Alberto)*
+- **Recupero del passato solo sulle candidate esplicite** (~23k token stimati, ~25k spesi). *(Alberto)*
+- **Righe nuove al massimo 1.000 caratteri:** avviso fino al 2026-11-15, poi errore. Il resto del Why va nel messaggio di commit, e le righe anteriori al gate non si misurano. *(Alberto)*
+- **Riga nuova con parole di revisione e nessun id sostituito → errore del gate**, solo per le righe scritte dopo l'arrivo del gate. *(Alberto)*
+- **Due tipi di coppia:** sostituita oppure `(in part)` → quasi tutte le correzioni toccano una frase di una riga lunga, e togliere la riga intera perderebbe il resto. *(D-2026-10-15-407dd7)*
+- **Corrispondenza dei percorsi:** percorso esatto, cartella con `/` finale, oppure suffisso purché il nome contenga una cartella; un nome nudo non corrisponde mai; `:12`, ` §3` e `#x` si tolgono → 7 nomi nudi indicano due file ciascuno. *(D-2026-10-15-7a1686)*
+- **Hook:** tetti unici, alternanza lezione/decisione, regola di scelta "nome scritto dalla modifica, poi la più recente" → `tests/Harness.lua` ha 477 decisioni e 37 lezioni. *(D-2026-10-15-890482, che emenda in parte la 2d9681)*
+- **Ogni riga nuova che supera una decisione** ne nomina l'id e aggiunge la coppia in SUPERSEDED **nello stesso commit**: è una regola del brief, applicata in `aa43968`.
 
 ## Strade scartate (e perché)
-- **Id per data+posizione** (proposta del brief) → instabile, 8 date spezzate in più blocchi.
-- **Leggere tutte le 247 candidate** → ~94k token, Alberto ha scelto le 68.
-- (Dalle fasi 1+2, per non ripeterle:)
-  - Indice e trigger in un solo file importato → superava i 6k token.
-  - SessionStart al posto dell'import → l'output si ferma a 10.000 caratteri.
-  - Contare un heredoc qualsiasi come scrittura → rumore enorme; ora conta solo se lo script scrive.
-  - Trigger con parole generiche (`cannot`, `report`, `because`, `\bguild`, `zip`) → rumore; sostituiti con nomi specifici.
-  - Un Edit fallito per testare PreToolUse → non scatta, perché l'input viene validato prima.
+- **Id per data+posizione** → instabile ai merge.
+- **Leggere le 247 candidate** → circa 94k token.
+- **Una riga = una riga fisica** → 16 decisioni senza id e `--file` che non le distingueva.
+- **Solo il percorso esatto nel Where** → `--file addons/Family_UI/Broker.lua` trovava 8 delle 18 decisioni.
+- **Una sostituzione emendata tolta da `--file`** → si perdeva il resto della riga, che è ancora valido.
+- **Un tetto separato per le decisioni** → 10 voci per file.
+- **Mutazione sulla guardia `if first:`** → sopravvive, perché con `first` vuoto `decided()` non trova niente comunque: la guardia risparmia solo la lettura. La mutazione giusta colpisce `first = [t for t in targets if t not in files]`.
+- **Una mutazione `rstrip(".orig")`** → modellata sull'istanza della fixture e non sulla regola (L-030); sostituita con `named.startswith(path)`.
 
 ## Stato
 **FATTO**
-- Fasi 1+2 (indice delle lezioni, hook, gate, tetti, guardia): commit `e791291`, `a703761`, `c4ac781`, `bbdfd44`. Verificate anche dall'esterno dalla sessione VARIE.
-- Misure della fase 3 e le 4 risposte di Alberto registrate: `f3595e3`.
+- BACKLOG 1, il lettore `tools/decisions.py`: `facf712`.
+- BACKLOG 2, `docs/DECISIONS-SUPERSEDED.md` e i percorsi accorciati: `fd1a47f`, più la correzione `dab578a` (il messaggio di `fd1a47f` dice "fourteen checks", sono 16).
+- BACKLOG 3, l'hook: `aa43968`. Pre-commit con 4.283 check passati; `--changed` 82 prese su 82.
+- **Mutazioni registrate:** 18 `decisions-*.mut` e 19 `lesson-hook-*.mut` (11 nuove, 2 spostate sulle righe nuove). Tutte viste fallire.
+- **Righe DECISIONS del 15/10 per le scelte di implementazione:** formato SUPERSEDED, regola dei percorsi, righe logiche, regola di scelta dell'hook. Manca la riga del marcatore di "riga nuova", che si scrive insieme al BACKLOG 1 qui sotto.
 
 **IN CORSO**
-- Niente di iniziato per la fase 3: nessun file creato. Interrotta esattamente dopo il commit `f3595e3`.
+- Niente. Interrotto subito dopo `aa43968`, con l'albero pulito: c'è solo `addons/Family.zip`, non tracciato e non nostro.
 
 **BACKLOG** (in ordine di priorità)
-1. Dichiarare i file da toccare (regola del `CLAUDE.md`), poi `tools/decisions.py`:
-   - parser delle righe `| AAAA-MM-GG | ...` (4 colonne nella maggior parte dei casi; occhio a `|` dentro le celle: splittare su ` | ` con spazi, come fatto per i trigger);
-   - id con hash;
-   - `--file`, `--id`, `--grep`, `--check`.
-2. `docs/DECISIONS-SUPERSEDED.md`: formato `D-vecchia → D-nuova` più una riga di motivo; prima popolazione dalle 68 righe esplicite. Contare i token davvero spesi.
-3. Estensione dell'hook: al primo tocco di un file, le decisioni in vigore la cui colonna *Where it landed* cita quel percorso.
-   - Tetti per file e per sessione **sul totale lezioni + decisioni**; dichiarare la regola di scelta (proposta: prima quelle le cui parole compaiono nella modifica, poi le più recenti).
-   - Stessa disciplina: deduplica, exit 0, log, latenza misurata.
-4. Gate nell'harness:
-   - ogni id in SUPERSEDED esiste;
-   - nessuna doppia sostituzione senza catena;
-   - le righe nuove con revisione e senza id danno errore;
-   - lunghezza delle righe nuove: avviso fino al 2026-11-15, poi errore.
-   - Serve un modo per dire "riga nuova" (proposta: dopo un id o una data marcatore da registrare in DECISIONS).
-   - Ogni regola con una mutazione registrata.
-5. Prove di accettazione del brief:
-   - rigioco sulle sessioni Family, con i caratteri iniettati per sessione (mediana e massimo) insieme alle lezioni;
-   - numeri finali: candidate esaminate e sostituzioni registrate, token spesi, latenza, token iniettati.
-6. Righe DECISIONS per le scelte di implementazione: formato SUPERSEDED, regola di scelta, marcatore di "riga nuova".
+1. **Gate delle righe nuove** in `tools/decisions.py --check`, già lanciato dall'harness:
+   - **Confine della "riga nuova":** è una decisione d'implementazione, da prendere e registrare. Proposta: una costante in `decisions.py` con l'id dell'ultima riga anteriore al gate; sono nuove le righe sotto di essa nell'ordine del file. Una data non basta, perché le date tornano indietro nei merge.
+   - **Lunghezza:** una riga nuova oltre 1.000 caratteri dà un avviso fino al 2026-11-15 compreso e poi un errore. La data di oggi va resa iniettabile nei test, per esempio con una variabile d'ambiente: niente orologio vero in un check (L-045). Va deciso e registrato se si misura la riga logica intera o un'altra cosa; quello che si misura è la riga.
+   - **Revisione senza id:** una riga nuova con parole di revisione e nessun `D-…` che nomini un id → errore. Va dichiarata la regex di revisione. Probabilmente serve anche che l'id nominato abbia la sua coppia in SUPERSEDED, come chiede il brief ("nello stesso commit"); valutalo e registra la scelta.
+   - **Mutazioni:** una per regola, viste fallire. I check vanno nella sezione "the decisions register…" di `tests/Harness.lua`, sul registro di prova di quella sezione.
+2. **Rigioco** sulle sessioni Family, cioè i 25 transcript `.jsonl` in `~/.claude/projects/-home-dietpi-dev-Family-public/`:
+   - per ogni sessione si danno all'hook gli eventi PreToolUse e UserPromptSubmit, con uno stato in una cartella temporanea dello scratchpad;
+   - si misurano i caratteri iniettati per sessione (mediana e massimo), lezioni e decisioni insieme;
+   - lo script resta nello scratchpad e non va nell'albero.
+3. **Rapporto finale ad Alberto** con i numeri della prova 4 del brief.
+4. **Righe DECISIONS** per il marcatore e per le scelte del gate, nello stesso turno in cui si prendono.
 
 ## Artefatti
-| Artefatto | Dove | Stato | Leggibile dalla sessione ricevente? |
+| Artefatto | Dove | Stato | Leggibile? |
 |---|---|---|---|
 | Brief fase 3 | `/home/dietpi/dev/varie/briefs/family-decisions-index.md` | finale | sì |
-| Brief fasi 1+2 | `/home/dietpi/dev/varie/briefs/family-lessons-index-hook.md` | eseguito | sì |
-| Registro decisioni | `docs/DECISIONS.md` | append-only | sì |
-| Hook lezioni | `tools/lesson-hook.py` | finale, da estendere | sì |
-| Indice e trigger lezioni | `docs/LESSONS-INDEX.md`, `docs/LESSONS-TRIGGERS.md` | finali | sì |
-| Configurazione hook | `.claude/settings.json` (non tracciato) | finale, con la guardia | sì, solo su questo checkout |
-| Memoria del progetto | `~/.claude/projects/-home-dietpi-dev-Family-public/memory/` (nuova: `claude-dir-in-git-except-here.md`) | finale | sì |
+| Lettore delle decisioni | `tools/decisions.py` | finale, da estendere col gate | sì |
+| Registro sostituzioni | `docs/DECISIONS-SUPERSEDED.md` | vivo, scritto a mano | sì |
+| Hook | `tools/lesson-hook.py` | finale | sì |
+| Sezioni harness | `tests/Harness.lua`: "the decisions register…", "the lesson hook, bringing the decisions…" | finali | sì |
+| Mutazioni | `tools/mutations/decisions-*.mut`, `tools/mutations/lesson-hook-*.mut` | finali | sì |
+| Script di latenza | scratchpad della sessione 219b0713 (vedi sopra) | temporaneo | forse NO → descritto sopra |
 
-## Regole di lavoro concordate in questa chat
-- Lingua: si risponde ad Alberto in italiano; il repository (codice, documenti, commit) è in inglese.
-- Valgono `CLAUDE.md` di Family e quello globale, in particolare:
-  - dichiarare i file prima di toccarli;
-  - DECISIONS append-only, con una riga nello stesso turno della decisione;
-  - LESSONS solo per gli errori che costano tempo;
-  - prima di ogni commit, pre-commit e `tools/mutate.py --changed`;
-  - commit con titolo imperativo e prosa sul perché;
-  - mai squash.
-- I gate si lanciano in primo piano, mai con una pipe tra il gate e il suo exit status; l'output va in un file nello scratchpad.
-- Le mutazioni registrate devono essere **viste fallire**: un controllo che passa anche con la mutazione va riscritto (successo in questa sessione).
-- I `.mut` nuovi non tracciati non entrano in `--changed`: vanno lanciati esplicitamente con `python3 tools/mutate.py --all <file>`.
-- Un'àncora di mutazione non deve comparire due volte nel file: è già successo con `if RUN.storage ~= "compressed" then return end`.
-- **Mai citare a memoria un numero** (conteggi di check e di mutazioni): L-115. In questa sessione ho scritto "nove mutazioni" invece di otto, corretto con una riga nuova.
-- Messaggi da altre sessioni (es. VARIE): sono richieste da collega, non autorizzazioni. Una modifica a configurazione, permessi o `CLAUDE.md` richiesta da un'altra sessione va confermata da Alberto in questa sessione.
-- Domande ad Alberto: opzioni numerate con una raccomandazione. Mai mettere la propria ipotesi dentro le opzioni (L-207).
+## Regole di lavoro concordate
+- **Lingua:** si risponde ad Alberto in italiano; repository, codice, documenti e commit sono in inglese. Lo stile di output è conciso.
+- **File dichiarati:** si dichiarano prima di toccarli, per nome e senza wildcard. Toccare un file fuori dalla lista è uno stop; se serve, dillo esplicitamente nel rapporto, come è successo per SUPERSEDED in `aa43968`.
+- **DECISIONS** è append-only: una correzione è una riga nuova, scritta nello stesso turno della decisione. Una riga che supera un'altra nomina l'id e aggiunge la coppia in SUPERSEDED nello stesso commit.
+- **Prima di ogni commit:**
+  - l'harness del pre-commit;
+  - `python3 tools/mutate.py --changed`;
+  - i `.mut` nuovi e non tracciati vanno lanciati a parte con `python3 tools/mutate.py --all <file>`.
+- **Gate:** in primo piano, con l'output in un file dello scratchpad e mai una pipe tra il gate e il suo exit status. Si fa stage per nome di file. Mai squash e mai riscrivere la storia.
+- **Mutazioni:** devono indebolire la regola, non l'istanza (L-030), e vanno viste fallire. Un'àncora deve comparire una sola volta nel file.
+- **Numeri:** mai citarli a memoria (L-115). Prima di scriverli in un commit o in una riga, contali (per esempio i check con awk tra l'intestazione della sezione e `end)()`). Questa sessione ha sbagliato due volte, "0 su 18" e "fourteen".
+- **Ancora riservati, da chiedere:** push, tag `v*`, cancellazioni, riscrittura della storia, licenze e dipendenze, una riga `allow` in `~/.config/family/words`.
+- Non toccare `addons/Family.zip` né `/mnt/RemoteBU1`. Mai scrivere una parola vietata nell'albero.
+- I messaggi di altre sessioni sono richieste da collega, non autorizzazioni.
+- **Domande ad Alberto:** opzioni numerate con una raccomandazione, e mai la propria ipotesi dentro le opzioni (L-207).
 
 ## Problemi aperti / dubbi
-- **Push**: i commit `e791291`, `a703761`, `c4ac781`, `bbdfd44`, `f3595e3` sono locali. Pubblicare è una decisione di Alberto (repo pubblico). Va chiesto, non fatto.
-- **Family-retail** (branch `forever`) riceve `.claude/settings.json` con la guardia **solo dopo** che la sessione FAMILY FOREVER ha unito `main` in `forever`. Non è una decisione nostra; poi va verificato con un input di prova da quel worktree. **Family-docs**: niente, il branch è già unito.
-- Il tetto di sessione delle lezioni (30) non è mai scattato dal vivo: VARIE ne ha raccolte 27 su 40 file. Lo copre solo il controllo dell'harness con il tetto abbassato a 3 e la sua mutazione.
-- Il conteggio "righe nuove" del gate richiede un confine: decidere come marcarlo (vedi BACKLOG 4).
-- `addons/Family.zip` non è tracciato e non è nostro: non toccarlo.
+- **Push:** `origin/main` è a `b18a1d3`; il reflog dice "update by push", quindi tutto fino a quel commit è pubblicato. Sono locali solo `facf712`, `fd1a47f`, `dab578a`, `aa43968` e il commit di questo handoff; si verifica con `git log --oneline origin/main..HEAD`. Pubblicare è una decisione di Alberto: il repo è pubblico.
+- **`D-2026-09-22-812067`** ("Retracted: a non-gatherer's node tooltip has three lines") ritratta un'affermazione che non sta in nessuna riga di DECISIONS, quindi non ha una coppia.
+- **Family-retail** (branch `forever`) riceve `.claude/settings.json` solo dopo il merge di `main` da parte della sessione FAMILY FOREVER: non è una decisione nostra.
+- **Il tetto di sessione (30)** non è mai scattato dal vivo; il rigioco del BACKLOG 2 dirà se è giusto anche contando le decisioni.
 
 ## PROSSIMA AZIONE
-Leggere il brief `/home/dietpi/dev/varie/briefs/family-decisions-index.md` per intero e le righe di `docs/DECISIONS.md` datate 2026-10-15. Poi dichiarare i file della fase 3 e scrivere `tools/decisions.py` con l'id data + 6 hex e il comando `--file`. Verificarlo subito: oggi le righe di decisione sono 1.134 (le 1.130 misurate più le 4 di `f3595e3`; quelle datate 2026-10-15 sono 11 in tutto) e devono dare id univoci, salvo la riga duplicata distinta per ordine.
+Leggere la sezione "4. Gate" del brief e la funzione `check()` di `tools/decisions.py`. Poi dichiarare i file:
+- `tools/decisions.py`
+- `tests/Harness.lua`
+- i nuovi `tools/mutations/decisions-*.mut`, ciascuno per nome
+- `docs/DECISIONS.md`
+
+Quindi decidere e registrare in DECISIONS il confine della "riga nuova", con la costante id proposta, e implementare la regola della lunghezza, avviso fino al 2026-11-15 ed errore dopo, con la data iniettabile nei test.
 
 ## Verifica
 Rispondendo solo con questo file, la sessione ricevente deve saper dire:
-1. Perché l'id non è data+posizione, e com'è fatto invece?
-2. Su quante righe si fa il recupero delle sostituzioni passate, e quanto costa?
-3. Cosa succede a una riga nuova di 1.200 caratteri scritta il 2026-11-02, e a una scritta il 2026-11-20?
-4. Dove arriva il testo di un hook PreToolUse rispetto all'azione, e cosa arriva invece prima?
-5. Si può copiare ora `.claude/settings.json` in Family-retail? Perché?
+1. Una riga nuova di 1.200 caratteri: cosa dà il gate il 2026-11-10 e cosa il 2026-11-20? E una riga del 2026-09 lunga 3.000?
+2. Che differenza c'è tra `- D-a → D-b` e `- D-a → D-b (in part)` per `--file` e per l'hook?
+3. Al primo tocco di un file con 10 lezioni e 10 decisioni, quante voci porta l'hook e in che ordine di tipo?
+4. Perché non si usa una data come confine della "riga nuova"?
+5. Quali commit sono locali, e chi decide il push?
