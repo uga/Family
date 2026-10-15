@@ -1,0 +1,6 @@
+name: a row of three cells is read as having landed nowhere
+file: tools/decisions.py
+--- old
+                "where": cells[3] if len(cells) > 3 else cells[2],
+--- new
+                "where": cells[3] if len(cells) > 3 else "",

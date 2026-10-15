@@ -1,0 +1,6 @@
+name: the decisions gate reads a row of any number of cells
+file: tools/decisions.py
+--- old
+            if len(cells) not in (3, 4, 5):
+--- new
+            if False:

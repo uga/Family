@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+# Family - an alt manager for World of Warcraft Classic
+# Copyright (C) 2026 Alberto Pittaluga
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later version.
+# See the LICENSE file at the root of this repository.
+"""Read `docs/DECISIONS.md` by decision, and say which ones are still in force.
+
+The file is a million bytes, appended to and never edited, and on 2026-10-15 the transcripts of
+this project showed 954 greps of it and not one reading: a decision was found only by a session
+that searched for it, and nothing said whether a later row had replaced it. This reads it instead:
+
+    --file <path>     the decisions in force that landed in that file
+    --id <id>         one decision, whole
+    --grep <regex>    every decision matching, each saying whether it is in force or replaced
+    --why             with any of the three, the reasoning and where it landed as well
+    --check           the gate: exit 1, saying why, unless every row reads as a decision
+
+**An id is computed, never written into the file** (DECISIONS, 2026-10-15): the date and six hex
+of the SHA-1 of the row's own text, `D-2026-09-14-3f9a2c`. Date and position would not hold - eight
+dates sit in more than one block, from branch merges, so the next merge would renumber rows - while
+a row that is never edited never changes its hash. A row present twice is told apart by order: the
+second is `.2`.
+
+A row is a decision, not a line. Three lines carry several decisions joined by a literal `\\n`
+written into the file by mistake; they are split there, so each has its own id, and a stray one
+ending a line is dropped. A line that holds
+one decision is hashed whole, exactly as it stands.
+
+`docs/DECISIONS-SUPERSEDED.md` is the judgement of which decision replaced which, written by hand,
+one `- D-old → D-new` line each with its reason. A decision named on the left is no longer in force.
+"""
+
+import argparse
+import hashlib
+import os
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get("FAMILY_DECISIONS_ROOT") or Path(__file__).resolve().parent.parent)
+
+DECISIONS = "docs/DECISIONS.md"
+SUPERSEDED = "docs/DECISIONS-SUPERSEDED.md"
+
+ROW = re.compile(r"\| (\d{4}-\d{2}-\d{2}) \|")
+# Where a line holds more than one decision: the literal backslash-n before the next row's date.
+JOINED = re.compile(r"\\n(?=\| \d{4}-\d{2}-\d{2} \|)")
+REPLACED = re.compile(r"^- (D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?) → "
+                      r"(D-\d{4}-\d{2}-\d{2}-[0-9a-f]{6}(?:\.\d+)?)\b")
+TICKED = re.compile(r"`([^`]+)`")
+
+
+def read_decisions(root=ROOT):
+    """Every decision in file order, as a dict: id, date, line, the cells, and where it landed.
+
+    Raises on a row it cannot split into cells - the gate wants the reason."""
+    decisions, seen = [], {}
+    lines = (root / DECISIONS).read_text(encoding="utf-8").split("\n")
+    for number, line in enumerate(lines, 1):
+        if not ROW.match(line):
+            continue
+        for text in JOINED.split(line):
+            if text.endswith("\\n"):
+                text = text[:-2]
+            if not text.endswith(" |"):
+                raise ValueError("%s line %d: a row that does not end its last cell" % (DECISIONS, number))
+            cells = text[2:-2].split(" | ")
+            # Four cells is the table; a fifth is a commit added after Where; three is a row whose
+            # reasoning ends by naming where it landed (the Midnight rows of September).
+            if len(cells) not in (3, 4, 5):
+                raise ValueError("%s line %d: %d cells" % (DECISIONS, number, len(cells)))
+            date = ROW.match(text).group(1)
+            base = "D-%s-%s" % (date, hashlib.sha1(text.encode("utf-8")).hexdigest()[:6])
+            seen[base] = seen.get(base, 0) + 1
+            decisions.append({
+                "id": base if seen[base] == 1 else "%s.%d" % (base, seen[base]),
+                "date": date,
+                "line": number,
+                "decision": cells[1],
+                "why": cells[2],
+                "where": cells[3] if len(cells) > 3 else cells[2],
+            })
+    return decisions
+
+
+def read_superseded(root=ROOT):
+    """The pairs in file order, old id and new id. No file yet means nothing has been replaced."""
+    path = root / SUPERSEDED
+    if not path.exists():
+        return []
+    return [REPLACED.match(line).groups() for line in path.read_text(encoding="utf-8").splitlines()
+            if REPLACED.match(line)]
+
+
+def landed_in(decision, path):
+    """Whether the decision names this file where it landed: the path between backticks, or a
+    folder holding it, or the path followed by what part of it was meant (`tests/Harness.lua:12`)."""
+    for named in TICKED.findall(decision["where"]):
+        named = named.strip()
+        if named == path or (named.endswith("/") and path.startswith(named)):
+            return True
+        if named.startswith(path) and named[len(path):len(path) + 1] in (":", " ", "#", "§"):
+            return True
+    return False
+
+
+def show(decision, why, replaced_by=None):
+    out = "%s — %s" % (decision["id"], decision["decision"])
+    if replaced_by:
+        out += "  [replaced by %s]" % replaced_by
+    if why:
+        out += "\n    Why: %s\n    Where: %s" % (decision["why"], decision["where"])
+    return out
+
+
+def check(root=ROOT):
+    """The gate. Every reason it is red, one line each, and exit 1; or one line and exit 0."""
+    try:
+        decisions = read_decisions(root)
+    except (OSError, ValueError) as error:
+        print("decisions: %s" % error)
+        return 1
+    print("decisions: %d decisions, every row read" % len(decisions))
+    return 0
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    which = parser.add_mutually_exclusive_group(required=True)
+    which.add_argument("--file", metavar="PATH")
+    which.add_argument("--id", metavar="ID")
+    which.add_argument("--grep", metavar="REGEX")
+    which.add_argument("--check", action="store_true")
+    parser.add_argument("--why", action="store_true")
+    args = parser.parse_args(argv)
+    if args.check:
+        return check()
+
+    decisions = read_decisions()
+    replaced = dict(read_superseded())
+
+    if args.id:
+        found = [d for d in decisions if d["id"] == args.id]
+        if not found:
+            print("no decision has the id %s" % args.id)
+            return 1
+        print(show(found[0], True, replaced.get(args.id)))
+        return 0
+
+    if args.file:
+        path = Path(args.file)
+        if path.is_absolute():
+            path = path.resolve().relative_to(ROOT)
+        found = [d for d in decisions if d["id"] not in replaced and landed_in(d, path.as_posix())]
+        for d in found:
+            print(show(d, args.why))
+        return 0
+
+    pattern = re.compile(args.grep, re.IGNORECASE)
+    for d in decisions:
+        if pattern.search(d["decision"]) or pattern.search(d["why"]) or pattern.search(d["where"]):
+            print(show(d, args.why, replaced.get(d["id"])))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

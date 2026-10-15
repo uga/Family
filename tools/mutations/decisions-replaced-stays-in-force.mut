@@ -1,0 +1,6 @@
+name: a replaced decision is still given by --file
+file: tools/decisions.py
+--- old
+        found = [d for d in decisions if d["id"] not in replaced and landed_in(d, path.as_posix())]
+--- new
+        found = [d for d in decisions if landed_in(d, path.as_posix())]

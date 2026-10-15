@@ -1,0 +1,6 @@
+name: two identical rows are given one id between them
+file: tools/decisions.py
+--- old
+                "id": base if seen[base] == 1 else "%s.%d" % (base, seen[base]),
+--- new
+                "id": base,

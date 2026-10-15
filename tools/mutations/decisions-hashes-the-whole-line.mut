@@ -1,0 +1,6 @@
+name: a row joined to another is hashed with the line it shares
+file: tools/decisions.py
+--- old
+            base = "D-%s-%s" % (date, hashlib.sha1(text.encode("utf-8")).hexdigest()[:6])
+--- new
+            base = "D-%s-%s" % (date, hashlib.sha1(line.encode("utf-8")).hexdigest()[:6])

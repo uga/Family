@@ -1,0 +1,6 @@
+name: a name that begins with a path is taken for the path
+file: tools/decisions.py
+--- old
+        if named.startswith(path) and named[len(path):len(path) + 1] in (":", " ", "#", "§"):
+--- new
+        if named.startswith(path):

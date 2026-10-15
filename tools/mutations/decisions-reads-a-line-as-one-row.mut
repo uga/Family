@@ -1,0 +1,6 @@
+name: the decisions reader takes a line holding two rows for one decision
+file: tools/decisions.py
+--- old
+        for text in JOINED.split(line):
+--- new
+        for text in [line]:

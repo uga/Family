@@ -48187,6 +48187,113 @@ end
 	shell("rm -rf " .. state)
 end)()
 
+-- **The decisions, read by decision**, asked for 2026-10-15 (phase 3 of the lessons brief):
+-- DECISIONS.md is a million bytes nobody reads whole, and nothing in it says which rows a later
+-- one replaced. `tools/decisions.py` gives each row an id - its date and six hex of the row's
+-- SHA-1, never written into the file - and answers by file, by id and by pattern, leaving out what
+-- `docs/DECISIONS-SUPERSEDED.md` says was replaced. Asked here of a small register written for
+-- the purpose, with every id it should answer computed by `sha1sum` and not by the script.
+;(function()
+	-- Once, on the compressed pass: nothing here reads storage.
+	if not (RUN.storage == "compressed") then return end
+	print()
+	print("the decisions register, read by decision with an id of its own")
+
+	local function shell(command)
+		local ok, how, code = os.execute(command)
+		if type(ok) == "number" then return ok end
+		return (ok and 0) or (how == "exit" and code) or 1
+	end
+
+	local function slurp(path)
+		local handle = io.open(path, "r")
+		local text = handle and handle:read("*a") or ""
+		if handle then handle:close() end
+		return text
+	end
+
+	local function spill(path, text)
+		local handle = io.open(path, "w")
+		handle:write(text)
+		handle:close()
+	end
+
+	local here = io.popen("cd " .. ROOT .. " && pwd")
+	local root = here and here:read("*l") or ROOT
+	if here then here:close() end
+	local tool = root .. "/tools/decisions.py"
+	local out = os.tmpname()
+
+	local function asked(dir, arguments)
+		local status = shell(string.format("FAMILY_DECISIONS_ROOT=%s python3 %s %s > %s 2>&1",
+			dir, tool, arguments, out))
+		return status, slurp(out)
+	end
+
+	-- The id a row should have, from coreutils rather than from the code under test.
+	local function id(row)
+		local file = os.tmpname()
+		spill(file, row)
+		shell(string.format("sha1sum %s > %s", file, out))
+		os.remove(file)
+		return "D-" .. row:sub(3, 12) .. "-" .. slurp(out):sub(1, 6)
+	end
+
+	-- The gate, on the tree as it is: every row reads as a decision.
+	local status, text = asked(root, "--check")
+	check("every row of the decisions register reads as a decision", status == 0, text)
+
+	local register = os.tmpname()
+	os.remove(register)
+	shell("mkdir -p " .. register .. "/docs")
+
+	spill(register .. "/docs/DECISIONS.md", slurp(root .. "/docs/DECISIONS.md")
+		.. "| 2026-10-15 | one | two | three | four | five |\n")
+	status, text = asked(register, "--check")
+	check("and a row it cannot split into a decision turns the gate red", status ~= 0, text)
+
+	-- A row present twice, two rows joined on one line by a literal backslash-n as three lines of
+	-- the real register are, a row of three cells naming where it landed in its reasoning as the
+	-- Midnight rows do, a name that only begins with a path, and a row that replaces the first.
+	local old = "| 2026-08-08 | Old rule | Because | `tests/Harness.lua` |"
+	local first = "| 2026-08-09 | First joined | Why one | `docs/BACKLOG.md` |"
+	local second = "| 2026-08-09 | Second joined | Why two | `addons/Family/Core.lua` |"
+	local midnight = "| 2026-09-19 | Midnight row | Reads it. `docs/MIDNIGHT.md` §36. |"
+	local decoy = "| 2026-08-10 | Decoy | Why | `addons/Family/Core.lua.orig` |"
+	local new = "| 2026-08-11 | New rule | Because | `tests/Harness.lua` |"
+	spill(register .. "/docs/DECISIONS.md", table.concat({"# Family - decisions", "",
+		"| Date | Decision | Why, in one line | Where it landed |", "|---|---|---|---|",
+		old, old, first .. "\\n" .. second, midnight, decoy, new, ""}, "\n"))
+	spill(register .. "/docs/DECISIONS-SUPERSEDED.md", string.format(
+		"# Replaced decisions\n\n- %s → %s\n  The new rule says it better.\n", id(old), id(new)))
+
+	status, text = asked(register, "--id " .. id(old) .. ".2")
+	check("an id is the date and six hex of the row's SHA-1, and a row present twice is told "
+		.. "apart by order", status == 0 and text:find("Old rule", 1, true) ~= nil, text)
+
+	status, text = asked(register, "--file addons/Family/Core.lua")
+	check("a line holding two rows is two decisions, each with the id of its own text",
+		status == 0 and text:find(id(second) .. " — Second joined", 1, true) ~= nil
+			and text:find("First joined", 1, true) == nil, text)
+	check("and a name that only begins with the path is not the path", text:find("Decoy", 1, true) == nil,
+		text)
+
+	status, text = asked(register, "--file docs/MIDNIGHT.md")
+	check("a row of three cells landed where its reasoning says",
+		status == 0 and text:find(id(midnight), 1, true) ~= nil, text)
+
+	status, text = asked(register, "--file tests/Harness.lua")
+	check("a replaced decision is not in force, and leaves --file",
+		status == 0 and text:find(id(new), 1, true) ~= nil and text:find(id(old) .. ".2", 1, true) ~= nil
+			and text:find(id(old) .. " —", 1, true) == nil, text)
+	status, text = asked(register, "--grep 'old rule'")
+	check("and --grep still finds it, saying what replaced it",
+		status == 0 and text:find("replaced by " .. id(new), 1, true) ~= nil, text)
+
+	shell("rm -rf " .. register)
+	os.remove(out)
+end)()
+
 -- **A case that throws is a case, and a bare name is a name.** Both reported by another session
 -- on 2026-09-21, from one incident: it ran `mutate.py nome.mut` with the name and not the path,
 -- `parse` raised, the worker died, `results[index]` stayed nil and the run fell over far away in
