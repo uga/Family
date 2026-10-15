@@ -7692,7 +7692,7 @@ Burning Crusade with one if convenient; Era has none.
 *Grisly Trophy: 0/250* in the game. The page counts objectives finished, not the count inside one; the
 objective's own text is on the row's tooltip. Left as it is unless Alberto asks otherwise.
 
-## 110. The lesson hook falls silent within the first sixty events of a session — OPEN 2026-10-15
+## 110. The lesson hook falls silent within the first sixty events of a session — DONE 2026-10-15, cap raised to sixty
 
 **Measured 2026-10-15** by replaying the 25 Family transcripts on this machine through
 `tools/lesson-hook.py` as it stands at `34986c2`, in process, with a fresh state for each: 18 of them
@@ -7704,3 +7704,6 @@ in the median, 4,930 at most, lessons and decisions together.
 **To decide with Alberto:** whether the cap stays, rises, or becomes a cap per stretch of work rather
 than per session. The replay script is not in the tree; it reads each transcript's prompts and its
 `Edit`, `Write`, `NotebookEdit` and `Bash` calls and hands them to `answer()` in file order.
+
+**Decided by Alberto 2026-10-15:** sixty a session (`D-2026-10-15-31355b`). Replayed again at sixty: 8,500 characters in
+the median, 9,520 at most, and 12 sessions still reach it.

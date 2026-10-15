@@ -1,0 +1,6 @@
+name: a session's cap goes back to thirty, spent within its first sixty events
+file: tools/lesson-hook.py
+--- old
+SESSION_CAP = int(os.environ.get("FAMILY_LESSON_SESSION_CAP") or 60)
+--- new
+SESSION_CAP = int(os.environ.get("FAMILY_LESSON_SESSION_CAP") or 30)

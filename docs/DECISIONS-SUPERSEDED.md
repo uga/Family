@@ -114,3 +114,5 @@ the rows that cite another row or call themselves a correction, and from no othe
   What the hook row says of `cmd:` triggers: they match the command a step runs, from its first word.
 - D-2026-10-15-2d9681 → D-2026-10-15-890482 (in part)
   The five a file and thirty a session count decisions as well as lessons, a file's five taken one of each in turn.
+- D-2026-10-15-890482 → D-2026-10-15-31355b (in part)
+  A session is told sixty lessons and decisions together, not thirty.

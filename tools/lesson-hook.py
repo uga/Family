@@ -65,8 +65,11 @@ LIMIT = 1500
 # decisions. The share takes a lesson and a decision in turn, a lesson first, and whichever runs out
 # leaves its turns to the other. Lessons a command or the words being written match are not held to
 # the file's share, only to the session's. The session's can be lowered for the harness's checks.
+# Sixty, not thirty (DECISIONS, 2026-10-15): replayed over 25 sessions, thirty was spent by the 88th
+# event at the latest and the hook said nothing after; sixty hands a session 8,500 characters in the
+# median and 9,520 at most.
 FILE_CAP = 5
-SESSION_CAP = int(os.environ.get("FAMILY_LESSON_SESSION_CAP") or 30)
+SESSION_CAP = int(os.environ.get("FAMILY_LESSON_SESSION_CAP") or 60)
 
 # Longest a decision is quoted. A Decision cell runs to five hundred characters, and one in seven is
 # over this; the id fetches the rest.

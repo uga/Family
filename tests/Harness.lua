@@ -48510,6 +48510,12 @@ end)()
 	status, text = touched("cap", "docs/Other.md", "b", "FAMILY_LESSON_SESSION_CAP=3")
 	check("a session is told no more lessons and decisions together than its cap",
 		first == 3 and text == "", first .. " on the first touch, then: " .. text)
+	-- And the cap itself, unlowered: sixty, which Alberto chose over thirty on a replay of 25
+	-- sessions, where 18 had spent thirty by their 88th event and were told nothing after.
+	shell(string.format("env -u FAMILY_LESSON_SESSION_CAP python3 -c %q %s > %s 2>&1",
+		"import importlib.util as u, sys; s = u.spec_from_file_location('h', sys.argv[1]); "
+			.. "m = u.module_from_spec(s); s.loader.exec_module(m); print(m.SESSION_CAP)", hook, out))
+	check("and the cap a session has when nothing lowers it is sixty", slurp(out) == "60\n", slurp(out))
 
 	-- A register it cannot read loses the decisions and keeps the lessons; input it cannot read
 	-- loses everything and stops nothing.
