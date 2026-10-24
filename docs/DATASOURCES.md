@@ -829,6 +829,24 @@ client, beside a real transmute column. So the skill line that teaches the spell
 the number, and a match has to agree about the profession as well as the item. A spell id needs
 no such care: it names one recipe of one profession.
 
+**Two recipes of one profession can make one item, and the row's word tells them apart, measured
+2026-10-24.** Six Era products have more than one maker in `RecipeProducts`; three of them twice
+in one profession - Essence of Earth 7076 (17560, 17565), Essence of Water 7080 (17561, 17563) and
+10577 (12716, 13240). An Era trade skill row carries the item alone, so the item cannot say which.
+Read on a French Era client, an alchemist with the Alchemy window open, every filter off:
+
+```
+17560 Transmutation du Feu en Terre      row 102
+17565 Transmutation de la Vie en Terre   row 101
+17561 Transmutation de la Terre en Eau   row 99
+17563 Transmutation du Non-mort en Eau   row 103
+```
+
+Each spell's `GetSpellInfo` name is exactly one window row's `GetTradeSkillInfo` word. So the
+scanner, which reads the row and asks the spell in one language, records the spell whose name is
+the row's word as `matchedSpellID`. Only French and only the two essences were read; 10577 and
+other languages are the same call, not a reading.
+
 **What is still learned by watching.** Anything the table has never heard of - and a nil here is
 not a claim that there is no cooldown, only that this table does not know of one.
 

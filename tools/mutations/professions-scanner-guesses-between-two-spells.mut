@@ -1,0 +1,6 @@
+name: the professions scanner takes the last spell answering a word, not none where two do
+file: addons/Family/Scanners/Professions.lua
+--- old
+							matched = (matched == nil) and spell or false
+--- new
+							matched = spell

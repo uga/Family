@@ -70,6 +70,7 @@ local function build(meta, payload)
 					name = Family.Names:Recipe(recipe, nil, nil, record.locale),
 					was = recipe.name,
 					spellID = recipe.spellID,
+					matchedSpellID = recipe.matchedSpellID,
 					itemID = recipe.itemID,
 					icon = recipe.icon,
 					hasCooldown = recipe.hasCooldown,

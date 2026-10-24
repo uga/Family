@@ -38878,6 +38878,181 @@ print("a record that says the same thing twice is one answer")
 		alchemy and alchemy.recipes and #alchemy.recipes == 2,
 		alchemy and alchemy.recipes and tostring(#alchemy.recipes))
 
+	--------------------------------------------------------------------------------------
+	-- Two recipes of one profession making one item are two recipes (backlog 111)
+	--------------------------------------------------------------------------------------
+
+	-- Reported from a French Era client 2026-10-24: twelve transmutes on one alchemist's page,
+	-- ten in the whole-family search. The window hands over the item and no spell, which is
+	-- every Era trade skill row, and two transmutes make Essence of Earth and two make Essence
+	-- of Water. The words are the ones that client's `GetSpellInfo` answered for each spell,
+	-- read the same day with the Alchemy window open: each was its row's word exactly.
+	local spellsFor = Family.Recipes:SpellsMaking(7076)
+	check("the client's book has Era's two transmutes to Essence of Earth",
+		spellsFor and #spellsFor == 2 and spellsFor[1] == 17560 and spellsFor[2] == 17565,
+		spellsFor and table.concat(spellsFor, " ") or "nil")
+
+	local words = {
+		[17560] = "Transmutation du Feu en Terre", [17565] = "Transmutation de la Vie en Terre",
+		[17561] = "Transmutation de la Terre en Eau", [17563] = "Transmutation du Non-mort en Eau",
+	}
+	local heldWords = {}
+	for spell, word in pairs(words) do
+		heldWords[spell] = SPELL_NAMES[spell]
+		SPELL_NAMES[spell] = word
+	end
+
+	local function transmute(spell, item, essence)
+		return { words[spell], "optimal", 0, nil,
+			"|cffffffff|Hitem:" .. item .. "|h[" .. essence .. "]|h|r" }
+	end
+	TRADE_RECIPES = {
+		{ "Header", "header" },
+		transmute(17560, 7076, "Essence de terre"), transmute(17565, 7076, "Essence de terre"),
+		transmute(17561, 7080, "Essence d'eau"), transmute(17563, 7080, "Essence d'eau"),
+	}
+
+	mark = #DEFAULT_CHAT_FRAME.messages
+	fire("TRADE_SKILL_SHOW")
+	advance(1)
+
+	local function storedSpells()
+		local found = {}
+		local payload = Family.Database:Payload(Family:CurrentMember())
+		local book = payload and payload.professions and payload.professions[171]
+		for _, recipe in ipairs(book and book.recipes or {}) do
+			found[recipe.name] = recipe.matchedSpellID or false
+		end
+		return found
+	end
+
+	local matched = storedSpells()
+	local right = 0
+	for spell, word in pairs(words) do
+		if matched[word] == spell then right = right + 1 end
+	end
+	check("each transmute is recorded with the spell its own word names", right == 4,
+		tostring(right) .. " of 4")
+
+	local twice = false
+	for index = mark + 1, #DEFAULT_CHAT_FRAME.messages do
+		if DEFAULT_CHAT_FRAME.messages[index]:find("twice", 1, true) then twice = true end
+	end
+	check("and the window is not said to have listed any of them twice", not twice)
+
+	-- The rows the whole-family search draws for the current member, by the spell on each.
+	local function searchedSpells(needle)
+		local rows, spells = 0, {}
+		for _, found in ipairs(Family.Recipes:Search(needle)) do
+			for _, member in ipairs(found.members or {}) do
+				if member.key == Family:CurrentMember() then
+					rows = rows + 1
+					spells[#spells + 1] = tostring(found.name)
+				end
+			end
+		end
+		return rows, table.concat(spells, ", ")
+	end
+
+	local rows, named = searchedSpells("transmutation")
+	check("the whole-family search draws four transmutes, not two", rows == 4, named)
+
+	-- **Two spells answering one word leave the row unsaid**: a guess between them would be a
+	-- recipe the alchemist may not know. The case that breaks the tie the other way - the word
+	-- matching one spell twice - is the one that tells a tie from a first match.
+	SPELL_NAMES[17565] = words[17560]
+	fire("TRADE_SKILL_SHOW")
+	advance(1)
+	matched = storedSpells()
+	check("a word two spells answer to is recorded with neither",
+		matched[words[17560]] == false, tostring(matched[words[17560]]))
+	SPELL_NAMES[17565] = words[17565]
+	fire("TRADE_SKILL_SHOW")
+	advance(1)
+
+	-- **One item, two professions, two rows.** A miner smelts Truesilver and an alchemist
+	-- transmutes it, and neither row is the other's recipe. Recorded as the scanner records
+	-- them where no word matched a spell: the item and nothing else.
+	local miner, alchemist = "Smelter-Fire Maw", "Transmuter-Fire Maw"
+	Family.Database:SetMeta(miner, { name = "Smelter", realm = "Fire Maw", level = 60,
+		skills = { [186] = { rank = 300 } } })
+	Family.Database:SetPayload(miner, { professions = { [186] = { recipesSeen = time(),
+		recipes = { { name = "Smelt Truesilver", itemID = 6037 } } } } })
+	Family.Database:SetMeta(alchemist, { name = "Transmuter", realm = "Fire Maw", level = 60,
+		skills = { [171] = { rank = 300 } } })
+	Family.Database:SetPayload(alchemist, { professions = { [171] = { recipesSeen = time(),
+		recipes = { { name = "Transmute: Mithril to Truesilver", itemID = 6037 } } } } })
+
+	local function rowOf(found, memberKey)
+		for _, row in ipairs(found) do
+			for _, member in ipairs(row.members or {}) do
+				if member.key == memberKey then return row end
+			end
+		end
+	end
+
+	local found = Family.Recipes:Search("truesilver")
+	local minerRow, alchemistRow = rowOf(found, miner), rowOf(found, alchemist)
+	check("a miner's and an alchemist's recipe for one item are two rows",
+		minerRow and alchemistRow and minerRow ~= alchemistRow,
+		tostring(minerRow and minerRow.name) .. " / " .. tostring(alchemistRow and alchemistRow.name))
+
+	-- **And a guildmate's row meets the family's where it can say which recipe it is.** The
+	-- guild crosses an item and no spell, as every Era list does. For Truesilver under
+	-- Alchemy that is the alchemist's row; for Essence of Earth under Alchemy it is one of two
+	-- transmutes, and the row the guildmate gets is their own, named after the essence.
+	local wasOn = Family.Guild:Enabled()
+	Family.Guild:SetEnabled(true)
+	local guildKey = Family.Guild:Current()
+	local store = FamilyDB.guild
+	local heldItems = { [6037] = ITEM_NAMES[6037], [7076] = ITEM_NAMES[7076] }
+	ITEM_NAMES[6037], ITEM_NAMES[7076] = "Truesilver Bar", "Essence de terre"
+	-- Announced the way the client announces a name it has loaded: an earlier check asked for
+	-- 6037 while the fixture could not name it, and that miss is remembered until this.
+	fire("GET_ITEM_INFO_RECEIVED", 6037, true)
+	fire("GET_ITEM_INFO_RECEIVED", 7076, true)
+
+	store.known[guildKey] = store.known[guildKey] or {}
+	store.known[guildKey]["Faraway-FireMaw"] = {
+		meta = { name = "Faraway", realm = "Fire Maw" }, from = "Faraway", at = time(),
+		professions = { { skillLine = 171, rank = 300, maxRank = 300 } },
+	}
+	store.recipes[guildKey] = { ["Faraway-FireMaw"] = { [171] = {
+		spells = { 0, 0 }, items = { 6037, 7076 }, missing = 0, fingerprint = 111,
+		at = time(), from = "Faraway" } } }
+
+	local function guildmateOn(row)
+		for _, who in ipairs(row and row.guild or {}) do
+			if who.key == "Faraway-FireMaw" then return true end
+		end
+		return false
+	end
+
+	found = Family.Recipes:Search("truesilver")
+	check("a guildmate's item meets the family's row for it in that profession",
+		guildmateOn(rowOf(found, alchemist)))
+	check("and not the row of another profession making the same item",
+		rowOf(found, miner) ~= nil and not guildmateOn(rowOf(found, miner)))
+
+	found = Family.Recipes:Search("terre")
+	local ownRow
+	for _, row in ipairs(found) do
+		if guildmateOn(row) then ownRow = row end
+	end
+	check("a guildmate's item two transmutes make is a row of its own, named after it",
+		ownRow ~= nil and #(ownRow.members or {}) == 0 and ownRow.name == "Essence de terre",
+		tostring(ownRow and ownRow.name) .. ", "
+			.. tostring(ownRow and #(ownRow.members or {})) .. " members")
+
+	store.known[guildKey]["Faraway-FireMaw"] = nil
+	store.recipes[guildKey] = nil
+	Family.Guild:SetEnabled(wasOn)
+	ITEM_NAMES[6037], ITEM_NAMES[7076] = heldItems[6037], heldItems[7076]
+	Family.Database:Forget(miner)
+	Family.Database:Forget(alchemist)
+
+	for spell in pairs(words) do SPELL_NAMES[spell] = heldWords[spell] end
+
 	TRADE_RECIPES, TRADE_SKILL_NAME = wasRecipes, wasName
 	TRADE_SKILL_OPEN, FamilyDB.debug = wasOpen, wasDebug
 	Family.Database:Forget(key)

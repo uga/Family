@@ -496,7 +496,27 @@ local function readClassicRecipes()
 				recipe.readyAt = time() + cooldown
 			end
 
-			local mark = recipe.spellID and ("spell:" .. recipe.spellID)
+			-- **Which of two recipes making one item this row is**, where the client gave the
+			-- item and no spell. The book names every spell that makes it; the one this
+			-- client calls by the row's own word is the recipe, because here the row and the
+			-- spell's name are in one language. Read on a French Era alchemist 2026-10-24:
+			-- all four transmutes to Earth and Water answered `GetSpellInfo` with their row's
+			-- exact word (DATASOURCES). Two spells answering the same word leave it unsaid.
+			if not recipe.spellID and recipe.itemID then
+				local makers = Family.Recipes:SpellsMaking(recipe.itemID)
+				if makers and #makers > 1 then
+					local matched
+					for _, spell in ipairs(makers) do
+						if Family.Names:Spell(spell) == skillName then
+							matched = (matched == nil) and spell or false
+						end
+					end
+					recipe.matchedSpellID = matched or nil
+				end
+			end
+
+			local mark = (recipe.spellID or recipe.matchedSpellID)
+				and ("spell:" .. (recipe.spellID or recipe.matchedSpellID))
 				or recipe.itemID and ("item:" .. recipe.itemID)
 				or ("name:" .. tostring(skillName))
 			if seenRecipe[mark] then

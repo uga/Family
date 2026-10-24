@@ -350,6 +350,35 @@ function Recipes:MadeBy(itemID)
 	return known[itemID]
 end
 
+-- **Every spell this client's book says makes the item**, lowest first - all of them, where
+-- `MadeBy` answers one. Counted over Era's `RecipeProducts` on 2026-10-24: six products have more
+-- than one, and three of those are two recipes of one profession - two transmutes to Essence of
+-- Earth, two to Essence of Water, two Goblin Mortars. An Era record holds the product and no spell,
+-- so for those six the item alone cannot say which recipe a row is (backlog 111). Nil where the
+-- client has no book.
+local makersOf = {}
+
+function Recipes:SpellsMaking(itemID)
+	if not itemID then return nil end
+
+	local expansion = Family.Capabilities and Family.Capabilities.expansion
+	local products = expansion and (Family.RecipeProducts or {})[expansion]
+	if not products then return nil end
+
+	local makers = makersOf[expansion]
+	if not makers then
+		makers = {}
+		makersOf[expansion] = makers
+		for spell, product in pairs(products) do
+			makers[product] = makers[product] or {}
+			table.insert(makers[product], spell)
+		end
+		for _, spells in pairs(makers) do table.sort(spells) end
+	end
+
+	return makers[itemID]
+end
+
 -- **How many times a character can make a recipe out of what they have.**
 --
 -- The number on a recipe row used to be the client's own - the third value of
@@ -533,8 +562,14 @@ local function guildCrafters(byName, order, needle, limit)
 					-- home and somebody in the guild both know is one row carrying
 					-- both answers rather than two rows saying half each. Either id
 					-- may be the one a row has, and which it is differs by client.
+					--
+					-- An item with no spell meets the family's row for that item in that
+					-- profession and no other. Where the item has two makers in the
+					-- profession the family's rows are keyed by their spells, and this
+					-- row cannot say which of the two its guildmate knows - so it stays a
+					-- row of its own, named after the item, rather than claim one.
 					local id = (spellID ~= 0) and ("spell:" .. spellID)
-						or ("item:" .. tostring(itemID))
+						or ("item:" .. tostring(itemID) .. "\0" .. tostring(line))
 
 					if not byName[id] and #order < limit then
 						byName[id] = {
@@ -1169,8 +1204,18 @@ function Recipes:Search(needle, limit)
 					-- Classic Era is most recipes (DATASOURCES §2). Without that rung
 					-- an Era row keyed by its word could never meet a guild row keyed
 					-- by an id, and the same recipe appeared twice on one screen.
-					local id = recipe.spellID and ("spell:" .. recipe.spellID)
-						or recipe.itemID and ("item:" .. recipe.itemID)
+					--
+					-- **The item with its profession, and a twin by its spell** (backlog
+					-- 111). The item alone made one row of a miner's and an alchemist's
+					-- Truesilver, and of the two transmutes that make Essence of Earth:
+					-- the first met took the row and the second's members joined it. A
+					-- recipe whose product has two makers in one profession carries the
+					-- spell the scanner matched on the window's own word, which is the
+					-- same id in every language where the word is not.
+					local spell = recipe.spellID or recipe.matchedSpellID
+					local id = spell and ("spell:" .. spell)
+						or recipe.itemID and ("item:" .. recipe.itemID .. "\0"
+							.. tostring(profession))
 						or (profession .. "\0" .. name)
 
 					-- Where the same recipe is held under two professions - a real one

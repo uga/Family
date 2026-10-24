@@ -1,0 +1,6 @@
+name: the guild half keys an item-only recipe by the item without its profession
+file: addons/Family/Recipes.lua
+--- old
+						or ("item:" .. tostring(itemID) .. "\0" .. tostring(line))
+--- new
+						or ("item:" .. tostring(itemID))

@@ -1,0 +1,6 @@
+name: the professions scanner records no spell for a row whose item two recipes make
+file: addons/Family/Scanners/Professions.lua
+--- old
+					recipe.matchedSpellID = matched or nil
+--- new
+					recipe.matchedSpellID = nil

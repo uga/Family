@@ -1,0 +1,6 @@
+name: the whole-family search keys an Era transmute by its item, not by the spell the scanner matched
+file: addons/Family/Recipes.lua
+--- old
+					local spell = recipe.spellID or recipe.matchedSpellID
+--- new
+					local spell = recipe.spellID

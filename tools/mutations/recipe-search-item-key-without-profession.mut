@@ -1,0 +1,7 @@
+name: the whole-family search keys an item-only recipe by the item without its profession
+file: addons/Family/Recipes.lua
+--- old
+						or recipe.itemID and ("item:" .. recipe.itemID .. "\0"
+							.. tostring(profession))
+--- new
+						or recipe.itemID and ("item:" .. recipe.itemID)

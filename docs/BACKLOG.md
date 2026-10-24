@@ -7708,7 +7708,7 @@ than per session. The replay script is not in the tree; it reads each transcript
 **Decided by Alberto 2026-10-15:** sixty a session (`D-2026-10-15-31355b`). Replayed again at sixty: 8,500 characters in
 the median, 9,520 at most, and 12 sessions still reach it.
 
-## 111. The whole-family recipe search shows one transmute where two make the same essence — OPEN 2026-10-24
+## 111. The whole-family recipe search shows one transmute where two make the same essence — DONE 2026-10-24, not yet seen in game
 
 **Reported by Alberto 2026-10-24** with screenshots from a French Classic Era client. Searching
 *transmutation* on one alchemist's page lists 12 transmutes; searching it with *Toute la famille* lists
@@ -7734,3 +7734,37 @@ the second's members are added to it. The per-member page does not pool, so it i
   same way, so it logs these two pairs as *listed twice*; its debug line is wrong for them.
 - A fixture with two recipes of one profession making one item (L-054), the real Era item ids from the
   client's tables (L-037), and a mutation putting the item-only key back.
+
+**Key chosen 2026-10-24** (Alberto, option 1 of three; `docs/DECISIONS.md`): item and profession, and
+where two spells of that profession make the item, the spell the scanner matches on the row's own
+word. Counted over Era's `RecipeProducts`: 6 products are made by more than one spell - 3577 and 6037
+across Mining and Alchemy, 18258 across two professions, and within one profession 7076 (17560,
+17565), 7080 (17561, 17563) and 10577 (12716, 13240).
+
+**Waiting on an Era reading** before the scanner trusts the match: with the Alchemy window open,
+
+    /run print(type(GetSpellInfo)) for _,s in ipairs({17560,17565,17561,17563}) do local n=GetSpellInfo(s) local f=0 for i=1,GetNumTradeSkills() do if GetTradeSkillInfo(i)==n then f=i end end print(s,n,f) end
+
+Each line prints the spell, the client's name for it and the window row with exactly that name, 0 for
+none. Four non-zero rows mean the word and the spell agree on that client; a 0 means the match needs
+another route.
+
+**Read 2026-10-24** on a French Era alchemist: all four spells named their row exactly (rows 102,
+101, 99, 103; DATASOURCES, *Two recipes of one profession can make one item*).
+
+**Built 2026-10-24**: the scanner records `matchedSpellID` for a row whose item has more than one
+maker in the client's book, the search keys by it and keys an item-only recipe by item and
+profession, and a guild row for a twin's item is a row of its own (`docs/DECISIONS.md`). Checks
+in the section *a record that says the same thing twice is one answer*; five mutations, all
+caught. An alchemist's twins come apart once their window has been opened again.
+
+---
+
+## 112. Two transmutes making one essence read the same to somebody in another language — OPEN 2026-10-24
+
+Found while building 111. A recipe recorded in another language than the reader's, with no
+`spellID`, is named after the item it makes (`Names:Recipe`), so a French alchemist's two
+transmutes to Essence of Earth are two rows that an English reader sees both called *Essence of
+Earth*. `matchedSpellID` names them in the reader's language; whether `Names:Recipe` should read
+it, and what else reads that name, is the question.
+
