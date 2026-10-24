@@ -39051,6 +39051,39 @@ print("a record that says the same thing twice is one answer")
 	Family.Database:Forget(miner)
 	Family.Database:Forget(alchemist)
 
+	-- **And read in another language, the twins keep their own names** (backlog 112). The
+	-- list is recorded on a French client and searched on this one, which names Essence of
+	-- Earth in its own words; named by what they make, both rows read *Essence of Earth*.
+	local readerLocale = Family.locale
+	Family.locale = "frFR"
+	fire("TRADE_SKILL_SHOW")
+	advance(1)
+	Family.locale = readerLocale
+
+	local english = {
+		[17560] = "Transmute: Fire to Earth", [17565] = "Transmute: Life to Earth",
+		[17561] = "Transmute: Earth to Water", [17563] = "Transmute: Undeath to Water",
+	}
+	for spell, word in pairs(english) do SPELL_NAMES[spell] = word end
+	ITEM_NAMES[7076] = "Essence of Earth"
+	fire("GET_ITEM_INFO_RECEIVED", 7076, true)
+
+	local earth = {}
+	for _, row in ipairs(Family.Recipes:Search("to earth")) do
+		for _, member in ipairs(row.members or {}) do
+			if member.key == Family:CurrentMember() then earth[#earth + 1] = row.name end
+		end
+	end
+	table.sort(earth)
+	check("a French list's twin transmutes read in English by the spell each one is",
+		#earth == 2 and earth[1] == english[17560] and earth[2] == english[17565],
+		table.concat(earth, ", "))
+
+	ITEM_NAMES[7076] = heldItems[7076]
+	for spell, word in pairs(words) do SPELL_NAMES[spell] = word end
+	fire("TRADE_SKILL_SHOW")
+	advance(1)
+
 	for spell in pairs(words) do SPELL_NAMES[spell] = heldWords[spell] end
 
 	TRADE_RECIPES, TRADE_SKILL_NAME = wasRecipes, wasName

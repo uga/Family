@@ -1,0 +1,6 @@
+name: a recipe recorded with a matched spell and no link's spell is named by the item it makes
+file: addons/Family/Names.lua
+--- old
+	local id = recipe.spellID or recipe.matchedSpellID
+--- new
+	local id = recipe.spellID

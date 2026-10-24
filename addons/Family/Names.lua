@@ -274,7 +274,10 @@ function Names:Recipe(recipe, key, callback, locale)
 		return recipe.name
 	end
 
-	local id = recipe.spellID
+	-- Or the spell the scanner matched on the row's word, where the link gave none: on Era that
+	-- is what tells apart two recipes making one item, and named by the item they would read
+	-- alike in every language but the one they were recorded in (backlog 112).
+	local id = recipe.spellID or recipe.matchedSpellID
 	if id then
 		local known = recipeNames[id]
 		if known ~= nil then return known or recipe.name end

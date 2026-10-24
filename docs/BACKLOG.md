@@ -7760,11 +7760,17 @@ caught. An alchemist's twins come apart once their window has been opened again.
 
 ---
 
-## 112. Two transmutes making one essence read the same to somebody in another language — OPEN 2026-10-24
+## 112. Two transmutes making one essence read the same to somebody in another language — DONE 2026-10-24, not yet seen in game
 
 Found while building 111. A recipe recorded in another language than the reader's, with no
 `spellID`, is named after the item it makes (`Names:Recipe`), so a French alchemist's two
 transmutes to Essence of Earth are two rows that an English reader sees both called *Essence of
 Earth*. `matchedSpellID` names them in the reader's language; whether `Names:Recipe` should read
 it, and what else reads that name, is the question.
+
+**Built 2026-10-24** (Alberto: *risolviamola*): `Names:Recipe` names a recipe by `matchedSpellID`
+where the link gave no spell, as it does by `spellID`. Every caller passes a stored recipe or the
+index's copy of one, so the whole-family search, a member's own page and its sort all read it.
+Check *a French list's twin transmutes read in English by the spell each one is*; its mutation is
+caught.
 
