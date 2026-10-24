@@ -7707,3 +7707,30 @@ than per session. The replay script is not in the tree; it reads each transcript
 
 **Decided by Alberto 2026-10-15:** sixty a session (`D-2026-10-15-31355b`). Replayed again at sixty: 8,500 characters in
 the median, 9,520 at most, and 12 sessions still reach it.
+
+## 111. The whole-family recipe search shows one transmute where two make the same essence — OPEN 2026-10-24
+
+**Reported by Alberto 2026-10-24** with screenshots from a French Classic Era client. Searching
+*transmutation* on one alchemist's page lists 12 transmutes; searching it with *Toute la famille* lists
+10 and says *10 recettes*. Missing: *Transmutation de la Vie en Terre* and *Transmutation du Non-mort en
+Eau*. Each makes the same item as one that is shown: *du Feu en Terre* (Essence of Earth) and *de la
+Terre en Eau* (Essence of Water). Searching *transmutation de l* showed *de la Vie en Terre*, because
+its twin was filtered out by the words first.
+
+**Cause, read in the code:** `Recipes:Search` (`addons/Family/Recipes.lua`) keys a row by
+`spell:<id>`, else `item:<id>`, else the name. On Era a recipe has an item id and no spell
+(DATASOURCES, *Keyed by spell and by what the recipe makes*: 111 of 111 alchemy recipes), and within
+one profession the item does not name the recipe. The first recipe met takes the row and its name;
+the second's members are added to it. The per-member page does not pool, so it is right.
+
+**What a fix has to settle:**
+- The family's key for an item-only recipe has to tell two recipes making one item apart, and still be
+  one row for the same recipe recorded on clients in two languages: check how `recipe.name` and
+  `recipe.was` reach `Search` before choosing name, `was` or something else as the second half.
+- `guildCrafters` (`Recipes.lua`, around line 537) keys guild rows the same way so they meet the
+  family's. A guild row on Era carries an item and no spell, so it cannot say which of the two
+  transmutes a guildmate knows; decide where it goes rather than let the key decide.
+- The scanner's `seenRecipe` mark (`addons/Family/Scanners/Professions.lua`, around line 500) keys the
+  same way, so it logs these two pairs as *listed twice*; its debug line is wrong for them.
+- A fixture with two recipes of one profession making one item (L-054), the real Era item ids from the
+  client's tables (L-037), and a mutation putting the item-only key back.

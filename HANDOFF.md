@@ -1,11 +1,21 @@
-# HANDOFF — Family, fase 3 chiusa: gate delle righe nuove, rigioco, tetto a 60 — 2026-10-15
+# HANDOFF — Family: bug 111 da correggere (ricerca di famiglia, trasmutazioni), fase 3 chiusa — 2026-10-24
 
 Origine: Claude Code (sessione a43cd04b, `/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
 
 ## Obiettivo
 La fase 3 del brief `/home/dietpi/dev/varie/briefs/family-decisions-index.md` è **chiusa**: lettore delle decisioni, registro delle
 sostituzioni, hook, gate delle righe nuove, rigioco e rapporto ad Alberto. La sessione successiva non ha un compito ereditato da
-questa: chiede ad Alberto il prossimo lavoro e intanto rispetta il gate nuovo quando scrive in `docs/DECISIONS.md`.
+questa, salvo il **bug 111 di `docs/BACKLOG.md`**, segnalato da Alberto il 2026-10-24: è il prossimo lavoro. La sessione rispetta il gate nuovo quando scrive in `docs/DECISIONS.md`.
+
+**Il bug 111, in breve.** Su Classic Era (client francese), la ricerca di ricette con *Toute la famille* mostra una sola trasmutazione dove due fanno la stessa essenza:
+- mancano *de la Vie en Terre* e *du Non-mort en Eau*;
+- la pagina del singolo alchimista le mostra tutte e 12.
+
+La causa, letta nel codice: `Recipes:Search` (`addons/Family/Recipes.lua`) raggruppa per `item:<id>` quando manca lo spellID, che su Era manca sempre. La voce 111 elenca cosa la correzione deve decidere:
+- la seconda metà della chiave;
+- dove va una riga di gilda che dice solo l'oggetto;
+- la riga di debug sbagliata dello scanner;
+- fixture e mutazione.
 
 ## Contesto indispensabile
 **Il gate su ogni riga nuova di `docs/DECISIONS.md`** (`tools/decisions.py --check`, lanciato dall'harness, commit `34986c2`).
@@ -67,10 +77,10 @@ Ci scrivi tu: le regole valgono per le tue righe.
 - **Gate:** pre-commit a 4.291 check passati; `mutate.py --changed` 91 su 91.
 
 **IN CORSO**
-- Niente. L'albero è pulito salvo `addons/Family.zip`, che non è tracciato e non è nostro. Il commit di questo handoff è locale.
+- Niente. L'albero è pulito salvo `addons/Family.zip`, che non è tracciato e non è nostro. Su `origin/main` mancano due commit: quello del primo handoff (`92c715e`) e quello di questo aggiornamento.
 
 **BACKLOG**
-1. Chiedere ad Alberto il prossimo lavoro.
+1. Correggere il bug 111 come slice intera: leggere la voce, poi DATASOURCES sulle chiavi delle ricette, poi il codice. Servono fixture, check, mutazione, la voce Unreleased del changelog (testo pubblico: cosa cambia per il giocatore) e una riga in DECISIONS.
 2. Verso il 2026-11-15, guardare se il pre-commit stampa avvisi di lunghezza: dal 16 diventano errori e bloccano ogni commit finché la riga resta, e DECISIONS è append-only.
    - Se ne compaiono, chiedere ad Alberto prima di quella data.
    - Una correzione andrebbe scritta come riga nuova; la riga lunga però resterebbe nel file.
@@ -107,7 +117,7 @@ Ci scrivi tu: le regole valgono per le tue righe.
 - Il commit di questo handoff non è pubblicato: il push è di Alberto.
 
 ## PROSSIMA AZIONE
-Chiedere ad Alberto quale lavoro segue la fase 3. Non c'è un compito ereditato da eseguire.
+Leggere la voce 111 di `docs/BACKLOG.md`, poi `Recipes:Search` e `guildCrafters` in `addons/Family/Recipes.lua`. Dichiarare i file per nome e proporre la chiave nuova. Se la regola per la riga di gilda non sta già nella specifica, la scelta si prende e si registra: non è un tema riservato.
 
 ## Verifica
 Rispondendo solo con questo file, la sessione ricevente deve saper dire:
@@ -116,3 +126,4 @@ Rispondendo solo con questo file, la sessione ricevente deve saper dire:
 3. Come si scrive una riga che ritratta un'affermazione mai finita in DECISIONS?
 4. Quante voci al massimo porta l'hook in una sessione, e perché non 30?
 5. Quali commit di questa sessione sono pubblicati?
+6. Perché il bug 111 si vede solo con *Toute la famille* e non sulla pagina del singolo personaggio?
