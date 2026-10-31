@@ -324,6 +324,7 @@ tools/mutations/gear-grid-draws-every-slot.mut	and on Midnight the grid leaves t
 tools/mutations/gear-sheet-draws-every-weapon-slot.mut	on Midnight the sheet has no ranged slot, and the other eighteen are drawn	what a recipe is made of, beside the recipe
 tools/mutations/gear-slot-needs-ignored.mut	on Midnight the sheet has no ranged slot, and the other eighteen are drawn	what a recipe is made of, beside the recipe
 tools/mutations/guild-gear-ranged-slot.mut	a guildmate's gear row leaves the ranged slot out on Midnight	guild share
+tools/mutations/guild-search-item-key-without-profession.mut	a guildmate's item meets the family's row for it in that profession	a record that says the same thing twice is one answer
 tools/mutations/guild-skinning-left-out.mut	where Skinning has recipes it is shared, and herbalism and fishing still not	guild share
 tools/mutations/guild-tab-empty-name-kept.mut	a tab the client gives no name is recorded without one, not with an empty one  ->	the bank
 tools/mutations/guild-tab-name-not-kept.mut	and the tab's own name, as the guild bank gave it	the bank
@@ -473,6 +474,7 @@ tools/mutations/mutator-report-says-caught-for-every-case.mut	the mutator's repo
 tools/mutations/mutator-will-not-find-a-case-by-name.mut	a case named without a directory is found where the cases live	the gate run by the mutator
 tools/mutations/names-asks-the-build-every-time.mut	and the search asks the client for its build no more than once	a whole-family recipe search does not ask the client for its build per recipe
 tools/mutations/names-keeps-the-build-of-a-replaced-client.mut	a client at a build the store has never seen reads every record again	the walk steps past a character it has already read
+tools/mutations/names-recipe-ignores-the-matched-spell.mut	a French list's twin transmutes read in English by the spell each one is  ->	a record that says the same thing twice is one answer
 tools/mutations/neutral-house-beats-your-own.mut	your own side's house wins over the shared one where both have a price	the neutral auction house is one market for both sides of a realm
 tools/mutations/neutral-house-filed-under-a-side.mut	a reading taken at the neutral house is filed under the realm, not under a side	the neutral auction house is one market for both sides of a realm
 tools/mutations/neutral-house-reaches-another-realm.mut	a reading taken at the neutral house is filed under the realm, not under a side	the neutral auction house is one market for both sides of a realm
@@ -590,6 +592,8 @@ tools/mutations/profession-open-by-line-wrong-id.mut	but asks for the window by 
 tools/mutations/professions-door-opens-on-anybody.mut	a member with profession gear and no skills recorded has no professions page	what a recipe is made of, beside the recipe
 tools/mutations/professions-learns-brief-item-cooldowns.mut	unless its cooldown is a brief one, which would carry it to the guild	crafting cooldowns
 tools/mutations/professions-panel-writes-aliases-into-the-record.mut	a profession filed under a word is drawn under its id without the record changing	what a recipe is made of, beside the recipe
+tools/mutations/professions-scanner-guesses-between-two-spells.mut	a word two spells answer to is recorded with neither	a record that says the same thing twice is one answer
+tools/mutations/professions-scanner-matches-no-twin.mut	each transmute is recorded with the spell its own word names	a record that says the same thing twice is one answer
 tools/mutations/profgear-in-possessions-row.mut	the Possessions worn row leaves the profession tools and accessories out	what a recipe is made of, beside the recipe
 tools/mutations/profgear-link-leaks.mut	Cooking's page says it was never opened, with two boxes	what a recipe is made of, beside the recipe
 tools/mutations/profgear-no-button.mut	the Professions panel offers Skinning and Cooking for the gear they wear	what a recipe is made of, beside the recipe
@@ -645,6 +649,8 @@ tools/mutations/recipe-row-describes-the-recipe-first.mut	hovering a recipe open
 tools/mutations/recipe-row-ignores-what-an-enchant-makes.mut	an enchanting recipe that makes a thing describes the thing it makes	what a recipe is made of, beside the recipe
 tools/mutations/recipe-row-picture-ignores-what-it-makes.mut	an enchanting recipe that makes a thing wears the thing's picture	what a recipe is made of, beside the recipe
 tools/mutations/recipe-row-picture-prefers-the-recorded-one.mut	a member's recipe row wears the picture of what it makes	what a recipe is made of, beside the recipe
+tools/mutations/recipe-search-item-key-without-profession.mut	a miner's and an alchemist's recipe for one item are two rows	a record that says the same thing twice is one answer
+tools/mutations/recipe-search-keys-a-twin-by-its-item.mut	the whole-family search draws four transmutes, not two	a record that says the same thing twice is one answer
 tools/mutations/recipe-spell-names-no-product.mut	an enchanting recipe that makes a thing describes the thing it makes	what a recipe is made of, beside the recipe
 tools/mutations/recipe-strip-drops-the-count.mut	with the quantity printed on each, and nothing on the one it needs a single of	what a recipe is made of, beside the recipe
 tools/mutations/recipe-strip-inset-ignores-the-note.mut	and the note ends to the left of the leftmost picture drawn	what a recipe is made of, beside the recipe
