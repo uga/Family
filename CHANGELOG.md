@@ -29,6 +29,8 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+## 5.2.0 — 2026-10-31
+
 ### Professions
 
 - **The whole-family recipe search shows every transmute**, including the two that make the same
