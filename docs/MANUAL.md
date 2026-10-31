@@ -509,7 +509,10 @@ what they carry. Each version of a random-suffix item (§8) is a line of its own
 
 **On Professions**, click a recipe and its materials appear on a line underneath. The people
 who can make it are listed several to a line. Guildmates who share their professions (§12) are
-listed as a second group. The search waits until you stop typing.
+listed as a second group. Where two recipes make the same thing, such as the two transmutes to
+Essence of Earth, and a guildmate's list on Classic Era says only the thing, that guildmate gets
+a line of their own named after it, because their list cannot say which recipe they know. The
+search waits until you stop typing.
 
 **Long lists of owners or crafters fold only when the page cannot hold them.** Where
 everything fits, nothing folds. Where it does not, every list on the page folds by the same
