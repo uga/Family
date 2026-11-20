@@ -7774,3 +7774,61 @@ index's copy of one, so the whole-family search, a member's own page and its sor
 Check *a French list's twin transmutes read in English by the spell each one is*; its mutation is
 caught.
 
+---
+
+## 113. An Era player says the Horde's auction archive overwrites the Alliance's — CLOSED 2026-11-07, a misunderstanding, nothing was overwritten
+
+**Reported by a player through Alberto 2026-11-07**, on Classic Era. What they saw, on which surface
+and at which house is not known yet.
+
+**Read in the code:** prices are stored under realm and side, so two sides can meet in only two keys:
+`realm \30 *`, which is shared on purpose, and `realm \30 ?`, where `UnitFactionGroup` gave no string.
+`readingMarket` picks `*` when `HouseIsNeutral` is true. That asks `npc`, then `target`, and takes
+a unit with a name and no faction string for the neutral house. The two-house reading behind it was
+taken on Burning Crusade; Era answers under `target` alone, and what `target` holds with the window
+open is not read here. So a faction house read as neutral on Era is a candidate, not a finding.
+Three other explanations stay open: both sides using the goblin house, which is one market by design;
+a reading of something other than prices; and a fault not found.
+
+**Readings wanted:** the player's own words, the market list with counts and newest reading, and
+`/family ah` at a faction auctioneer on Era, on both sides.
+
+**The first reading, 2026-11-07, Era, from the player, on the Alliance side.** Their characters are on
+Pyrewood Village, Mirage Raceway and Nethergarde Keep, the group backlog 91 measured.
+
+    Nethergarde Keep / Alliance  6135  07/11 00:46
+    Mirage Raceway / Alliance      89  07/11 01:09
+    Pyrewood Village / Alliance   145  06/11 21:30
+    Pyrewood Village / Horde     1171  06/11 21:09
+    Pyrewood Village / *            4  04/11 19:10
+    Mirage Raceway / *, Mirage Raceway / Horde, Nethergarde Keep / *   0
+
+**The shared key is not where the sides met on this account:** `*` holds four prices and there is no
+`?` market, so at most those four went astray that way. Both sides are stored, and nothing in the code
+empties a market: the only removal is `Forget`, one price at a time. Counts cannot show whether a Horde
+price sits inside an Alliance market, and nothing here says what the player was looking at, so the
+report is still unexplained. The empty markets are `Prices` creating the table when asked.
+
+**The second reading, 2026-11-07, Era, one item from the player, which item not said:** each market
+holds its own price and date.
+
+    Nethergarde Keep / Alliance  15599  07/11 17:13
+    Pyrewood Village / Alliance  14535  07/11 18:31
+    Pyrewood Village / Horde     14217  06/11 21:09
+
+The Horde's price is not inside an Alliance market for this item, so what was stored kept the sides
+apart. What the player saw, and on which surface, is still not known.
+
+**Closed by the player, 2026-11-07:** they expected the two sides' prices to be shown apart with
+something saying which is which, saw them listed without it, and took that for an overwrite. After
+reading the Alliance house they found their Horde price unchanged since 21:00. No fault, no change.
+
+**Found on the way, separate:** backlog 114.
+
+## 114. A long list read at the goblin house is filed under the reader's side — OPEN 2026-11-07
+
+**Found in the code while reading for backlog 113, not seen in the game.** `ReadPrices` chooses
+`readingMarket`, but `bigReadTick` files under `market()`, so a long list read at the goblin house goes
+under the reader's side and not under `*`. The other side's characters then do not get those prices
+from the neutral fallback (backlog 66).
+
