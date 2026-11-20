@@ -1541,6 +1541,18 @@ usually while the player is logged out. There is no event and nothing to hook, s
 - and a bid that happens to close while you stand there, which is the same message - are
 reachable.
 
+### How long the post holds a letter between two of one's own characters, reported 2026-11-20
+
+Reported by Alberto on **Classic Era**: a letter **with items**, sent between two characters **of
+one account**, arrives in the recipient's inbox **an hour** after it is sent, and a mailbox opened
+inside that hour does not show it. That is the whole of the reading: one client, one kind of
+letter, one pair of characters, and a figure given as the game's delivery time, not timed.
+
+Not measured: a letter carrying only money, or only text; characters of two accounts; the other
+clients. `Mail:Scan` does not depend on them - a letter the post did not hold is in the inbox and
+is matched there - and uses the hour only as how long a letter still missing is believed to be
+coming (backlog 115).
+
 ### Things made by using an item, measured 2026-08-31
 
 Refined Deeprock Salt is on nobody's recipe list. It comes out of a **Salt Shaker**, an item

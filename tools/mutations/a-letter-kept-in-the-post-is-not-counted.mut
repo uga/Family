@@ -1,0 +1,6 @@
+name: a letter kept from the post is not counted as in the post
+file: addons/Family/Scanners/Mail.lua
+--- old
+		mailInPost = #waiting > 0 and #waiting or Family.CLEAR,
+--- new
+		mailInPost = Family.CLEAR,

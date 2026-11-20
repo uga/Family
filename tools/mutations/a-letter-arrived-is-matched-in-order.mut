@@ -1,0 +1,7 @@
+name: a letter in the inbox matches a kept one only with its attachments in the same order
+file: addons/Family/Scanners/Mail.lua
+--- old
+	table.sort(items)
+	return tostring(tonumber(letter.money) or 0) .. ";" .. table.concat(items, ",")
+--- new
+	return tostring(tonumber(letter.money) or 0) .. ";" .. table.concat(items, ",")

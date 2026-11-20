@@ -1,0 +1,6 @@
+name: a letter the post is still holding is dropped when its recipient opens the mailbox first
+file: addons/Family/Scanners/Mail.lua
+--- old
+	local waiting = stillInPost(payload.mail, letters, now)
+--- new
+	local waiting = {}

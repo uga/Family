@@ -26,8 +26,8 @@
 -- That is not an exception to §2.2. The letter was seen - by the sender, being sent. What is
 -- carefully not claimed is that it has arrived, so a letter recorded that way is marked as
 -- being in the post, and the moment that member opens their own mailbox their own scan
--- replaces the lot. A real inbox is a better fact than a prediction of one, and it wins
--- without having to be reconciled.
+-- replaces the lot - except a letter the post may still be holding, sent under an hour ago and
+-- not yet in the inbox (backlog 115). A real inbox is a better fact than a prediction of one.
 
 local _, Family = ...
 
@@ -40,6 +40,54 @@ local DAY = 86400
 -- Family watched being posted; anything read out of a real mailbox carries the client's own
 -- countdown and needs no rule of thumb.
 local RETURNS_AFTER = 30 * DAY
+
+-- **How long the post can hold a letter before it is in the recipient's inbox** (backlog 115).
+-- Reported by Alberto on Classic Era 2026-11-20: a letter with items between two characters of
+-- one account arrives an hour after it is sent. Which letters the post holds, and on which
+-- clients, is not measured, and nothing here needs it to be: a letter that arrived at once is
+-- in the inbox and is dropped against it, and only one that is not yet there is kept.
+local DELIVERY = 3600
+
+-- What a kept letter and the same letter in the inbox have in common: the money and what is
+-- attached, by id and count, in any order. Not the sender or the subject, which the post writes
+-- for itself on an auction and a returned letter.
+local function contents(letter)
+	local items = {}
+	for _, attachment in ipairs(letter.attachments or {}) do
+		items[#items + 1] = tostring(attachment.id) .. "x" .. tostring(attachment.count or 1)
+	end
+	table.sort(items)
+	return tostring(tonumber(letter.money) or 0) .. ";" .. table.concat(items, ",")
+end
+
+-- The letters recorded as in the post that the post may still be holding: sent under an hour
+-- ago, and with nothing in the inbox carrying the same contents. Each letter in the inbox
+-- answers for one kept letter at most. An older letter in the inbox with the same contents
+-- answers for it as well, which can only drop one too many, never count one twice.
+local function stillInPost(previous, inbox, now)
+	local kept = {}
+	if type(previous) ~= "table" or type(previous.letters) ~= "table" then return kept end
+
+	local shown = {}
+	for _, letter in ipairs(inbox) do
+		local seen = contents(letter)
+		shown[seen] = (shown[seen] or 0) + 1
+	end
+
+	for _, letter in ipairs(previous.letters) do
+		local sent = tonumber(letter.sentAt)
+		if letter.inPost and sent and now - sent < DELIVERY then
+			local seen = contents(letter)
+			if (shown[seen] or 0) > 0 then
+				shown[seen] = shown[seen] - 1
+			else
+				kept[#kept + 1] = letter
+			end
+		end
+	end
+
+	return kept
+end
 
 --------------------------------------------------------------------------------------------
 
@@ -119,6 +167,18 @@ function Mail:Scan()
 	end
 
 	local payload = Family.Database:Payload(key) or {}
+
+	-- Whatever was recorded as being in the post has either arrived, in which case it is in
+	-- the list above and counted properly, or it has not. Under an hour after it was sent the
+	-- post may still be holding it, so it is kept; after that there is no longer any reason to
+	-- believe it will come, and the guess is over (backlog 115).
+	local waiting = stillInPost(payload.mail, letters, now)
+	for _, letter in ipairs(waiting) do
+		letters[#letters + 1] = letter
+		local by = tonumber(letter.expiresBy)
+		if by and (not soonest or by < soonest) then soonest = by end
+	end
+
 	payload.mail = { letters = letters, seen = now }
 	Family.Database:SetPayload(key, payload, "mail")
 
@@ -126,10 +186,7 @@ function Mail:Scan()
 		mailCount = #letters,
 		mailSeen = now,
 		mailExpiresBy = soonest or Family.CLEAR,
-		-- Whatever was recorded as being in the post has either arrived, in which case it
-		-- is in the list above and counted properly, or it has not and there is no longer
-		-- any reason to believe it will. Either way the guess is over.
-		mailInPost = Family.CLEAR,
+		mailInPost = #waiting > 0 and #waiting or Family.CLEAR,
 	})
 
 	Family:Debug("scanned mailbox: %d letter(s)", #letters)

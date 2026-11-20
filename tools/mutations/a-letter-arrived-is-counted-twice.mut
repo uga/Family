@@ -1,0 +1,6 @@
+name: a letter kept from the post is not dropped when the same letter is in the inbox
+file: addons/Family/Scanners/Mail.lua
+--- old
+			if (shown[seen] or 0) > 0 then
+--- new
+			if false then

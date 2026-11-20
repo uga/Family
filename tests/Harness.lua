@@ -7155,6 +7155,51 @@ check("expired mail is not still reported",
 check("and the time to expiry has run out", Family.Mail:TimeToExpiry(mailMeta) == 0)
 time = realTime
 
+-- **Opened before it can have arrived, a letter is still in the post** (backlog 115). Reported by
+-- Alberto on Era 2026-11-20, a letter with items between two characters of one account: the post
+-- holds it for an hour, and a mailbox opened inside that hour replaced the lot and lost it from
+-- every record. Posted to the member being played, so that the scan the event schedules is the
+-- one that reads it (L-005).
+do
+	local function posted()
+		local found = 0
+		for _, held in ipairs(Family.Database:Payload(key).mail.letters) do
+			if held.money == 12000 then found = found + 1 end
+		end
+		return found
+	end
+	local function inPost() return Family.Database:Meta(key).mailInPost end
+
+	SendMail("Tester", "Here you go", "some words")
+	fire("MAIL_SEND_SUCCESS")
+	fire("MAIL_INBOX_UPDATE")
+	advance(1)
+	check("a letter posted under an hour ago is still in the post when its recipient looks first",
+		inPost() == 1 and posted() == 1 and Family.Database:Meta(key).mailCount == 3,
+		tostring(inPost()) .. ", " .. posted() .. " cop(ies)")
+
+	-- **And once it is in the inbox it is one letter, not two.** The inbox's copy is the fact;
+	-- the one kept from the post is dropped against it, whoever the client says sent it, and
+	-- with its attachments in another order.
+	local heldInbox = INBOX
+	INBOX = { heldInbox[1], heldInbox[2],
+		{ sender = "Someone", subject = "Here you go", money = 12000, cod = 0, days = 30,
+		  items = { { 4306, 5 }, { 2589, 20 } } } }
+	fire("MAIL_INBOX_UPDATE")
+	advance(1)
+	check("and once the inbox shows it, it is the inbox's letter and is counted once",
+		inPost() == nil and posted() == 1, tostring(inPost()) .. ", " .. posted() .. " cop(ies)")
+
+	INBOX = heldInbox
+	fire("MAIL_INBOX_UPDATE")
+	-- Fifty-eight, so that with the two seconds above this moves the frame clock by a whole
+	-- minute (L-125).
+	advance(58)
+	check("and the mailbox is back to what it held before",
+		Family.Database:Meta(key).mailCount == 2 and posted() == 0,
+		tostring(Family.Database:Meta(key).mailCount))
+end
+
 print()
 print("the bank")
 check("a bank nobody opened is not reported as empty",
@@ -21616,14 +21661,20 @@ print("mail posted to another member")
 	check("mail to somebody who is not a member records nothing at all",
 		Family.Database:Meta("Stranger-FireMaw") == nil)
 
-	-- And the truth wins as soon as there is one.
+	-- **And the truth wins once the hour is over**: a letter the inbox still does not show an
+	-- hour after it was sent is no longer believed to be coming. Under that hour it is kept,
+	-- which the mailbox section asks through the events (backlog 115).
 	local playing = Family.currentMember
+	local realClock = time
 	Family.currentMember = recipient
+	time = function() return realClock() + 3601 end
 	Family.Mail:Scan()
+	time = realClock
 	Family.currentMember = playing
 
-	check("the recipient's own mailbox replaces the guess when they open it",
-		(Family.Database:Meta(recipient) or {}).mailInPost == nil)
+	check("the recipient's own mailbox replaces the guess when they open it an hour later",
+		(Family.Database:Meta(recipient) or {}).mailInPost == nil,
+		tostring((Family.Database:Meta(recipient) or {}).mailInPost))
 
 	-- **A letter sent back to one of ours** (backlog 84): counted as in the post for them, once
 	-- the inbox has lost it, and not before. A member of its own, forgotten afterwards, so

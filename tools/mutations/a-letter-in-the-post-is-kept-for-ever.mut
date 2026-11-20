@@ -1,0 +1,6 @@
+name: a letter recorded as in the post is kept however long ago it was sent
+file: addons/Family/Scanners/Mail.lua
+--- old
+		if letter.inPost and sent and now - sent < DELIVERY then
+--- new
+		if letter.inPost and sent then

@@ -29,6 +29,12 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Mail
+
+- **A letter you send to one of your characters stays in the post until it arrives**, even if
+  that character opens their mailbox before then. Before, opening the mailbox during the hour
+  the game takes to deliver a letter with items made Family forget the letter.
+
 ### Auction prices
 
 - **A whole auction house loaded at the goblin auctioneer now prices things for both factions**,

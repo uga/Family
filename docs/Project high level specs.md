@@ -645,7 +645,9 @@ straight away, and the recipient's row shows them before that character has ever
 This is not an exception to §2.2. The letter was seen: by the sender, being sent. What is
 carefully *not* claimed is that it has arrived — a sent letter is marked as in the post
 until that member opens their own mailbox, at which point their own scan replaces the lot,
-because a real inbox is a better fact than a prediction of one. A send that the server
+because a real inbox is a better fact than a prediction of one. The one exception is a letter
+the post may still be holding: sent under an hour ago and not yet in the inbox, it stays in the
+post until it arrives or the hour is over, whichever is first. A send that the server
 refuses is never recorded at all: the record is written when the game confirms the send, not
 when the button is pressed.
 

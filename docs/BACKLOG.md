@@ -7838,3 +7838,50 @@ never again by a tick. Checks *a loaded list read at the goblin house is filed u
 a side* and *and still there when the auctioneer stops answering partway through it*, both through
 the dispatcher; both were red before the fix. Mutations `big-list-filed-under-the-readers-side` and
 `big-list-asks-the-auctioneer-every-tick`.
+
+
+---
+
+## 115. A letter still in the post is dropped when its recipient opens the mailbox first — DONE 2026-11-20, not yet seen in game
+
+**Reported by Alberto 2026-11-20, client not yet named:** *if I send mail from character A to
+character B, but check B's mailbox before the one-hour delivery time has elapsed, the mail that is
+supposed to arrive after that hour is no longer stored in either addon's memory.*
+
+**What the code does, read 2026-11-20.** `Mail:Scan` (`addons/Family/Scanners/Mail.lua`) replaces
+`payload.mail.letters` with what the inbox shows and sets `mailInPost` to `Family.CLEAR`, so a letter
+`CommitSend` wrote with `inPost = true` and `sentAt` is gone at the recipient's first scan whether or
+not it has arrived. That is what specification §5 says (*marked as in the post until that member
+opens their own mailbox, at which point their own scan replaces the lot*); the specification assumed
+that opening the mailbox means the letter is there.
+
+**Not yet measured, and DATASOURCES says nothing about it:** which letters the client delays and by
+how long - with attachments only, with money, between characters of one account, on which clients.
+Before building: that reading, and a rule for telling a kept letter from the same letter arrived,
+or it is counted twice.
+
+**Decided 2026-11-20** (Alberto, option 1 of three): the recipient's scan keeps a letter still in
+the post until its delivery time has passed, and drops it then if the inbox does not show it.
+Alberto then named the client and the letter: Era, items, two characters of one account
+(`docs/DATASOURCES.md`, *How long the post holds a letter*).
+
+**Built 2026-11-20:** `Mail:Scan` keeps a letter recorded as in the post when it was sent under
+`DELIVERY` (an hour) ago and no inbox letter has the same money and attachments; each inbox letter
+answers for one kept letter. Which letters the post holds did not need measuring: one that arrived
+at once is matched and dropped. Checks *a letter posted under an hour ago is still in the post when
+its recipient looks first*, *and once the inbox shows it, it is the inbox's letter and is counted
+once* (both through the events) and *the recipient's own mailbox replaces the guess when they open
+it an hour later*. Five mutations, `a-letter-*.mut`, all caught. Specification §5 says so.
+
+---
+
+## 116. Address a letter to one of the family by name alone, without the wait — OPEN 2026-11-20
+
+**Asked by Alberto 2026-11-20:** *when sending mail to a family member, typing its name at the
+mailbox will automatically find the Name-Server of the characters from the same family, and
+allows to send mail without having the boring 3 seconds timer "Maybe you don't know this person,
+etc...*
+
+Not started. Before building: on each client, what the send box accepts and completes already,
+which dialog the wait belongs to and whether an addon may answer it, read from the client rather
+than assumed (L-020, L-026).
