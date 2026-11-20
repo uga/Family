@@ -1,129 +1,86 @@
-# HANDOFF — Family: bug 111 da correggere (ricerca di famiglia, trasmutazioni), fase 3 chiusa — 2026-10-24
+# HANDOFF — Family: dopo la 5.2.0, voce 114 da correggere — 2026-11-20
 
-Origine: Claude Code (sessione a43cd04b, `/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
+Origine: Claude Code (sessione 53b917b9, `/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
 
 ## Obiettivo
-La fase 3 del brief `/home/dietpi/dev/varie/briefs/family-decisions-index.md` è **chiusa**: lettore delle decisioni, registro delle
-sostituzioni, hook, gate delle righe nuove, rigioco e rapporto ad Alberto. La sessione successiva non ha un compito ereditato da
-questa, salvo il **bug 111 di `docs/BACKLOG.md`**, segnalato da Alberto il 2026-10-24: è il prossimo lavoro. La sessione rispetta il gate nuovo quando scrive in `docs/DECISIONS.md`.
-
-**Il bug 111, in breve.** Su Classic Era (client francese), la ricerca di ricette con *Toute la famille* mostra una sola trasmutazione dove due fanno la stessa essenza:
-- mancano *de la Vie en Terre* e *du Non-mort en Eau*;
-- la pagina del singolo alchimista le mostra tutte e 12.
-
-La causa, letta nel codice: `Recipes:Search` (`addons/Family/Recipes.lua`) raggruppa per `item:<id>` quando manca lo spellID, che su Era manca sempre. La voce 111 elenca cosa la correzione deve decidere:
-- la seconda metà della chiave;
-- dove va una riga di gilda che dice solo l'oggetto;
-- la riga di debug sbagliata dello scanner;
-- fixture e mutazione.
+Il lavoro della sessione è chiuso: le voci 111 e 112 di `docs/BACKLOG.md` sono state corrette e pubblicate nella 5.2.0, e la voce 113 si è chiusa come falso allarme. Il prossimo lavoro è la **voce 114**, un difetto trovato solo leggendo il codice e mai visto in gioco: una lista lunga letta nella casa d'aste dei goblin finisce sotto la fazione di chi legge e non nel mercato neutrale.
 
 ## Contesto indispensabile
-**Il gate su ogni riga nuova di `docs/DECISIONS.md`** (`tools/decisions.py --check`, lanciato dall'harness, commit `34986c2`).
-Ci scrivi tu: le regole valgono per le tue righe.
-- **Riga nuova:** ogni riga sotto `D-2026-10-15-890482` (costante `GATE_AFTER`). Le righe sopra non si misurano.
-- **Lunghezza:** al massimo 1.000 caratteri, contati sulla riga intera così com'è nel file, barre comprese.
-  - Fino al 2026-11-15 compreso una riga più lunga dà `decisions: warning: …`, che il pre-commit stampa dopo il conteggio.
-  - **Dal 2026-11-16 è un errore**, anche per le righe scritte prima di quella data e sotto il confine.
-  - Il resto del perché va nel messaggio di commit.
-- **Parole di revisione:**
-  - **La regex è `REVISES` in `tools/decisions.py`.** Comprende le formule esplicite ("row above", "the AAAA-MM-GG row", "supersed", "replaces the", "corrects the", "correction:") e in più retract*, withdraw[sn], amends, reverses, reversal, corrects, corrected.
-  - **Cosa deve fare la riga:** una riga che le contiene deve nominare un id `D-…` esistente, oppure contenere la frase letterale `no row replaced`.
-  - **Attenzione:** "supersed" prende anche il nome file `DECISIONS-SUPERSEDED.md`, quindi una riga che lo cita deve nominare un id.
-- **Sostituzioni:** se la riga sostituisce o emenda una decisione, la coppia va in `docs/DECISIONS-SUPERSEDED.md` **nello stesso commit**, scritta a mano. Il gate non lo controlla.
-  - **Formato:** `- D-vecchia → D-nuova`, oppure con ` (in part)` in fondo, e la riga del motivo indentata sotto.
-- **Id di una riga:** `D-<data>-` più i primi 6 hex dello SHA-1 del testo della riga. Si calcola con `python3 tools/decisions.py --grep '<parole>'`.
+**La voce 114** (`docs/BACKLOG.md`, intestazione `## 114.`):
+- In `addons/Family/Scanners/Auctions.lua`, `ReadPrices` sceglie il mercato con `readingMarket()`, che restituisce `realm\30*` quando `Auctions:HouseIsNeutral()` è vero.
+- `bigReadTick` invece usa `market()`, cioè sempre `realm\30<fazione di chi legge>`, e passa quel valore a `readRows`.
+- Così i prezzi di una lista lunga letta dai goblin non arrivano all'altra fazione attraverso il ripiego sulla casa neutrale (voce 66).
+- I numeri di riga cambiano: cerca i nomi delle funzioni, non le righe.
 
-**Hook `tools/lesson-hook.py`:**
-- `FILE_CAP = 5` per file: lezione e decisione a turno, partendo da una lezione.
-- `SESSION_CAP = 60` per sessione, lezioni e decisioni insieme (commit `5b24c5f`, era 30).
-- Latenza mediana 42,4 ms su 15 esecuzioni, rimisurata oggi.
+**Come i prezzi sono salvati** (letto nel codice in questa sessione):
+- `FamilyDB.auctionPrices["<reame>\30<fazione>"]`.
+- `*` indica la casa neutrale, condivisa dalle due fazioni dello stesso reame.
+- `?` indica una fazione che il client non ha restituito.
+- `groupMarkets` unisce, solo in lettura, i mercati della stessa fazione e quelli neutrali dei reami connessi (voce 91). Lo store non si sposta.
+- `Auctions:Prices(where)` crea una tabella vuota quando viene interrogato: da qui i mercati con 0 prezzi.
+- L'unica riga che toglie un prezzo è `Forget` (`prices[variant] = nil`).
 
-**Numeri del rapporto ad Alberto (prova 4, già consegnato in chat):**
-- **Candidate e sostituzioni:** 70 candidate esaminate. Le coppie oggi sono 52: 21 sostituzioni piene e 31 emendamenti, secondo `--check` dopo `5b24c5f`.
-- **Recupero del passato:** circa 25k token, cioè 75.923 byte letti.
-- **Rigioco su 25 transcript** (escluso a43cd04b):
-  - **Tetto 30:** mediana 4.276 caratteri e massimo 4.930 per sessione. Il tetto scattava in 18 sessioni, tra l'evento 23 e l'88.
-  - **Tetto 60:** mediana 8.500 e massimo 9.520. Il tetto scatta ancora in 12 sessioni.
-  - **Senza tetto:** massimo 99.174.
-  - **In token:** circa 3k token per sessione con il tetto a 60, al rapporto di ~3,04 byte/token del brief.
+**Il gate di `docs/DECISIONS.md`** (`tools/decisions.py --check`, lanciato dall'harness):
+- Una riga nuova supera al massimo **1000 caratteri**. Dal 2026-11-16 una riga più lunga è un **errore**, non più un avviso.
+- Le parole di revisione (regex `REVISES`) obbligano la riga a citare un id `D-…` esistente, oppure a contenere la frase `no row replaced`.
+
+**Gate prima di ogni commit:** l'harness del pre-commit (4301 check passati al commit `3733284`) e `tools/mutate.py --changed`. Prima di un rilascio serve il run completo di `tools/mutate.py`.
 
 ## Decisioni prese (e perché)
-- **Confine della "riga nuova" = id `GATE_AFTER`, non una data** → le date tornano indietro nei merge. Un registro senza quella riga è rifiutato, così un confine perso non lascia passare tutto in silenzio. *(D-2026-10-15, righe di implementazione)*
-- **Lunghezza misurata sulla riga intera** e data iniettabile con `FAMILY_DECISIONS_TODAY` → nei check la data è fissata, mentre il gate sull'albero legge l'orologio vero perché è il gate stesso.
-- **Regex di revisione stretta** (127 righe trovate, tutte le 47 righe di revisione registrate) invece di quella ampia (214 righe, 45 di quelle 47).
-- **Il gate non pretende la coppia in SUPERSEDED** → 20 candidate su 70 citano una riga senza cambiarla. Esiste la via d'uscita `no row replaced` per chi ritratta qualcosa che non è una riga (es. `D-2026-09-22-812067`).
-- **Il pre-commit stampa gli avvisi del gate** → un harness verde non mostrava nient'altro.
-- **`SESSION_CAP` = 60** → l'ha deciso Alberto sui numeri del rigioco. È la riga `D-2026-10-15-31355b`, che emenda in parte `D-2026-10-15-890482`, e chiude la voce 110 di `docs/BACKLOG.md`.
+- **Ricerca della famiglia (111):** la chiave è `spell:<id>` da `recipe.spellID or recipe.matchedSpellID`, altrimenti `item:<id>\0<professione>`. Per la gilda la chiave è `item:<id>\0<riga>`. Così su Era, dove le righe hanno solo l'oggetto, due trasmutazioni che fanno la stessa essenza non si fondono più.
+- **Scanner professioni (111):** abbina lo spell con la parola esatta quando c'è più di un creatore. Se resta un pareggio, `matchedSpellID` non viene impostato: meglio nessun dato che uno sbagliato.
+- **Nomi (112):** `Names.lua` usa `recipe.spellID or recipe.matchedSpellID`, così chi gioca in un'altra lingua vede due nomi diversi.
+- **Voce 113 chiusa senza modifiche:** due letture dal client del giocatore (Era, cluster Pyrewood Village / Mirage Raceway / Nethergarde Keep) hanno mostrato le fazioni salvate separatamente. Il giocatore ha poi scritto che si aspettava i prezzi delle due fazioni indicati a parte e li aveva scambiati per una sovrascrittura.
 
 ## Strade scartate (e perché)
-- **Regex ampia di revisione** ("no longer", "replaced", "override"…) → quasi il doppio delle righe e una recall peggiore.
-- **Cercare le parole di revisione nella sola cella Decision** → trova 30 sole delle 47 righe di revisione.
-- **Tetto 30** → tace dopo i primi 23–88 eventi.
-- **Nessun tetto** → fino a 99k caratteri nella sessione più lunga.
-- **Una variabile d'ambiente per spostare il confine nei test** → avrebbe testato un valore diverso da quello vero. I check accodano le righe di prova al registro reale.
+- **Dare una causa alla 113 prima delle letture** → L-085 e L-207. La candidata "casa di fazione scambiata per neutrale su Era" è caduta: `*` conteneva 4 prezzi soli e non esisteva nessun mercato `?`.
+- **Correggere `bigReadTick` dentro la 113** → è un difetto diverso, ora voce 114.
 
 ## Stato
-**FATTO** (tutto su `origin/main`, push fino a `5b24c5f`)
-- **`34986c2`, gate delle righe nuove:**
-  - 7 check nuovi nella sezione "the decisions register…", che ora ne ha 23;
-  - 8 mutazioni `decisions-gate-*.mut`, tutte prese;
-  - avvisi nel pre-commit;
-  - 3 righe DECISIONS.
-- **`19e769d`:** voce 110 di BACKLOG, il tetto speso nei primi minuti.
-- **`5b24c5f`, tetto 60:**
-  - check "and the cap a session has when nothing lowers it is sixty";
-  - mutazione `lesson-hook-session-cap-back-to-thirty.mut`, presa;
-  - riga DECISIONS e coppia in SUPERSEDED.
-- **Gate:** pre-commit a 4.291 check passati; `mutate.py --changed` 91 su 91.
+**FATTO**
+- **5.2.0 pubblicata** (`a033868`): contiene la 111 e la 112, e lo SMOKE l'ha compilato Alberto su tutti e quattro i client (`4705d09`).
+- **`c757c4b`:** `tools/mutations/caught-by.tsv` aggiornato dal run completo del rilascio.
+- **`3733284`:** voce 113 chiusa e voce 114 aperta. Pre-commit a 4301 check passati.
+- Questo `HANDOFF.md`, da committare.
 
 **IN CORSO**
-- Niente. L'albero è pulito salvo `addons/Family.zip`, che non è tracciato e non è nostro. Su `origin/main` mancano due commit: quello del primo handoff (`92c715e`) e quello di questo aggiornamento.
+- Niente.
 
-**BACKLOG**
-1. Correggere il bug 111 come slice intera: leggere la voce, poi DATASOURCES sulle chiavi delle ricette, poi il codice. Servono fixture, check, mutazione, la voce Unreleased del changelog (testo pubblico: cosa cambia per il giocatore) e una riga in DECISIONS.
-2. Verso il 2026-11-15, guardare se il pre-commit stampa avvisi di lunghezza: dal 16 diventano errori e bloccano ogni commit finché la riga resta, e DECISIONS è append-only.
-   - Se ne compaiono, chiedere ad Alberto prima di quella data.
-   - Una correzione andrebbe scritta come riga nuova; la riga lunga però resterebbe nel file.
+**BACKLOG** (in ordine)
+1. **Voce 114.** Correzione in `bigReadTick`, più un check nell'harness (vedi PROSSIMA AZIONE), una mutazione in `tools/mutations/`, una riga nell'**Unreleased** di `CHANGELOG.md` e una riga in DECISIONS.
+2. **Push:** `main` è avanti di almeno 2 commit su `origin/main` (`c757c4b`, `3733284`), più quello dell'handoff. Il push lo decide Alberto.
+3. **Conferma in gioco** della 111 e della 112: nelle intestazioni sono ancora "not yet seen in game".
+4. **Pagina *Files* di CurseForge per la 5.2.0:** non l'ho controllata io.
+5. **Possibile richiesta UX, non registrata:** indicare la fazione accanto a un prezzo d'asta. Il giocatore della 113 se la aspettava. Non l'ha chiesto né Alberto né il giocatore come funzione, quindi chiedi ad Alberto prima di aprire una voce.
 
 ## Artefatti
 | Artefatto | Dove | Stato | Leggibile? |
 |---|---|---|---|
-| Brief fase 3 | `/home/dietpi/dev/varie/briefs/family-decisions-index.md` | chiuso | sì |
-| Gate e lettore | `tools/decisions.py` | finale | sì |
-| Hook | `tools/lesson-hook.py` | finale | sì |
-| Script di rigioco | `/tmp/claude-1000/-home-dietpi-dev-Family-public/a43cd04b-72aa-4de8-bc62-5852edad2fb4/scratchpad/replay.py` | temporaneo | forse NO: rilegge ogni transcript `.jsonl` (prompt e chiamate Edit/Write/NotebookEdit/Bash) e passa ogni evento ad `answer()` del modulo hook importato in-process, con `FAMILY_LESSON_STATE` nello scratchpad e lo stato azzerato per sessione; ~2 minuti per giro |
-| Script di latenza | stesso scratchpad, `latency.py` | temporaneo | forse NO: 15 `subprocess.run` dell'hook con un evento Edit su `tests/Harness.lua` e un session_id nuovo a ogni giro |
+| Voci 111–114 | `docs/BACKLOG.md` | 111/112 DONE, 113 CLOSED, 114 OPEN | sì |
+| Codice delle aste | `addons/Family/Scanners/Auctions.lua` | da correggere (114) | sì |
+| `addons/Family.zip` | root | non tracciato, **non nostro**: non toccarlo | sì |
+| `docs/images/)à'.png` | non tracciato | **non nostro**: non toccarlo | sì |
 
-## Regole di lavoro concordate
-- **Lingua:** con Alberto si parla italiano; repo, codice e commit sono in inglese. Lo stile di output è conciso.
-- **File:** si dichiarano per nome prima di toccarli. Un file fuori lista è uno stop, oppure va detto esplicitamente nel rapporto.
-- **DECISIONS** è append-only e una decisione si scrive nello stesso turno in cui si prende. Ora valgono anche le regole del gate qui sopra.
-- **Prima di ogni commit:**
-  - l'harness del pre-commit;
-  - `python3 tools/mutate.py --changed`;
-  - i `.mut` nuovi non tracciati vanno lanciati con `python3 tools/mutate.py --all <file>`.
-- **Gate:** in primo piano, output in un file dello scratchpad, mai una pipe tra il gate e il suo exit status. Stage per nome di file. Mai squash.
-- **Numeri:** mai citarli a memoria (L-115).
-- **Mutazioni:** indeboliscono la regola, non l'istanza (L-030), e vanno viste fallire.
-- **Rischi:** un rischio nominato va scritto subito, come check o voce di BACKLOG (L-091), mai lasciato solo in chat.
-- **Domande ad Alberto:** opzioni numerate con una raccomandazione e i numeri di ciascuna.
-- **Riservati, da chiedere:** push, tag `v*`, cancellazioni, riscrittura della storia, licenze e dipendenze, righe `allow`. Il push di oggi l'ha autorizzato Alberto esplicitamente.
-- **Da non toccare:** `addons/Family.zip` e `/mnt/RemoteBU1`.
+## Regole di lavoro concordate in questa chat
+- **Lingua:** con Alberto si parla in italiano. Repository, codice, commit e documenti sono in inglese.
+- **Stile:** risposte concise. Per le scelte riservate, opzioni numerate con una raccomandazione; Alberto risponde spesso con il solo numero.
+- **Riservati (si chiede sempre prima):** licenza, librerie di terzi o nuove fonti dati, riscrittura della storia, rendere pubblico il repository, condivisione accesa di default, push di un tag `v*`, cancellazioni dall'albero, righe `allow` in `~/.config/family/words`.
+- **Push:** lo decide Alberto. Si committa solo quando lo chiede lui.
+- **Comandi del gioco** (`/family …`, `/run …`): mai dentro un blocco bash. Una riga `/run` si conta (con `/run ` sotto i 255 caratteri, L-127), si compila con `luac5.1 -p` e non deve contenere sequenze `_,_` (L-032).
+- **Segnalazioni dei giocatori:** prima chiedere le parole esatte del giocatore e una lettura, poi parlare di causa.
+- **Dove non si scrive:** mai in `/mnt/RemoteBU1`. I file temporanei vanno nella scratchpad della sessione, mai nell'albero.
+- **Parole bandite:** mai scrivere nell'albero una parola di `~/.config/family/words`.
 
 ## Problemi aperti / dubbi
-- La regex di revisione prende anche il nome `DECISIONS-SUPERSEDED.md`. È innocuo finché quelle righe nominano un id, ma potrebbe sorprendere qualcuno.
-- `D-2026-09-22-812067` resta senza coppia, perché ritratta qualcosa che non è una riga.
-- Family-retail (branch `forever`) riceve `.claude/settings.json` solo dopo il merge di `main`; lo decide la sessione FAMILY FOREVER, non noi.
-- Il commit di questo handoff non è pubblicato: il push è di Alberto.
+- La 114 è stata trovata leggendo il codice, non in gioco. Non è dimostrato che una lista lunga venga mai letta dai goblin su un client reale. Il check dimostra il codice, non il gioco.
+- La lettura di `HouseIsNeutral` su Era (`target` in una casa di fazione) non è stata misurata con `/family ah`. Le letture della 113 la rendono improbabile come guasto, ma non la misurano.
 
 ## PROSSIMA AZIONE
-Leggere la voce 111 di `docs/BACKLOG.md`, poi `Recipes:Search` e `guildCrafters` in `addons/Family/Recipes.lua`. Dichiarare i file per nome e proporre la chiave nuova. Se la regola per la riga di gilda non sta già nella specifica, la scelta si prende e si registra: non è un tema riservato.
+Leggi la voce 114 in `docs/BACKLOG.md` e, in `Auctions.lua`, le funzioni `bigReadTick`, `readingMarket` e `ReadPrices`. Poi dichiara ad Alberto i file da toccare e scrivi prima il check. Il check deve avviare una lettura lunga con l'evento vero attraverso il dispatcher (L-005), con il banditore senza fazione. Deve poi verificare che i prezzi finiscano in `realm\30*` e non nel mercato della fazione di chi legge, e va visto fallire prima della correzione (L-088).
 
 ## Verifica
-Rispondendo solo con questo file, la sessione ricevente deve saper dire:
-1. Scrivi oggi una riga DECISIONS di 1.100 caratteri: cosa succede adesso e cosa al primo commit del 2026-11-16?
-2. Una riga nuova dice "This corrects the count in `D-2026-10-15-31355b`": passa il gate? E se l'id fosse inventato?
-3. Come si scrive una riga che ritratta un'affermazione mai finita in DECISIONS?
-4. Quante voci al massimo porta l'hook in una sessione, e perché non 30?
-5. Quali commit di questa sessione sono pubblicati?
-6. Perché il bug 111 si vede solo con *Toute la famille* e non sulla pagina del singolo personaggio?
+1. In quale mercato deve finire una lista lunga letta dai goblin, e quale funzione la mette oggi nel posto sbagliato?
+2. Perché la voce 113 è stata chiusa senza toccare il codice?
+3. Una riga nuova in DECISIONS di 1100 caratteri oggi passa?
+4. Chi fa il push, e quanti commit locali aspettano?
+5. Cosa non va mai scritto dentro un blocco bash?
