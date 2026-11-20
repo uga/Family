@@ -1786,7 +1786,12 @@ local bigReadTick
 bigReadTick = function()
 	if not bigRead then return end
 
-	local where = market()
+	-- **Filed where the read was asked for**, which `ReadPrices` settled while the auctioneer
+	-- was there to answer. This used `market()`, the reader's own side, so a loaded list read
+	-- at the goblin house went under that side while a page read there went under the realm
+	-- (backlog 114); and asking the auctioneer again here would let a target changed between
+	-- two ticks decide where half a list is filed.
+	local where = bigRead.where
 	if not where then bigRead = nil return end
 
 	local count = tonumber((Family:TryCall(GetNumAuctionItems, "list"))) or 0
@@ -1893,6 +1898,7 @@ function Auctions:ReadPrices()
 		else
 			bigRead.count = count
 		end
+		bigRead.where = where
 
 		if not bigRead.ticking and bigRead.at < bigRead.count then
 			bigRead.ticking = true

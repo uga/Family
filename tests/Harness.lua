@@ -11019,6 +11019,78 @@ do
 			check("and closing the auction house ends it",
 				Family.Auctions:BigListReading() == nil)
 
+			-- **A loaded list read at the goblin house is filed where a page read there is.**
+			--
+			-- Backlog 114, found in the code and not in the game: a page went under the realm,
+			-- because `ReadPrices` asked the auctioneer, while the slices of a loaded list went
+			-- under the reader's own side, because the tick never did. The other side's
+			-- characters then had nothing from the neutral fallback (backlog 66).
+			--
+			-- Fired through the dispatcher, because the handler is what starts the read (L-005).
+			-- The second half takes the auctioneer away after the event: the house is decided
+			-- when the list is read for, not by whatever the target is a tick later - which is
+			-- the case that tells the fix apart from asking the auctioneer again on every tick.
+			do
+				local realName, realFaction, realRealm = UnitName, UnitFactionGroup, GetRealmName
+				local heldPrices = FamilyDB.auctionPrices
+				local here = { name = "Auctioneer Grizzlin", faction = nil }
+
+				UnitName = function(unit)
+					if unit == "npc" or unit == "target" then return here and here.name end
+					return realName(unit)
+				end
+				UnitFactionGroup = function(unit)
+					if unit == "npc" or unit == "target" then return here and here.faction end
+					if unit == "player" then return "Alliance" end
+					return realFaction(unit)
+				end
+				GetRealmName = function() return "Fire Maw" end
+
+				local function filed(id)
+					local shared = (FamilyDB.auctionPrices["Fire Maw\30*"] or {})[id]
+					local side = (FamilyDB.auctionPrices["Fire Maw\30Alliance"] or {})[id]
+					return shared ~= nil, side ~= nil
+				end
+
+				FamilyDB.auctionPrices = {}
+				Family.Auctions:ForgetVisit()
+				Family.Auctions:StopBigListRead()
+				LIST = {}
+				for index = 1, 4000 do
+					LIST[index] = { id = 500000 + index, count = 1, buyout = 700 }
+				end
+
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				advance(1)
+				local shared, side = filed(504000)
+				check("a loaded list read at the goblin house is filed under the realm, not a side",
+					Family.Auctions:BigListReading() ~= nil and shared and not side,
+					"shared " .. tostring(shared) .. ", side " .. tostring(side))
+
+				FamilyDB.auctionPrices = {}
+				Family.Auctions:ForgetVisit()
+				Family.Auctions:StopBigListRead()
+				LIST = {}
+				for index = 1, 4000 do
+					LIST[index] = { id = 600000 + index, count = 1, buyout = 700 }
+				end
+
+				fire("AUCTION_ITEM_LIST_UPDATE")
+				here = nil
+				-- Fifty-nine, so that with the second above this section moves the frame
+				-- clock by a whole minute and no later minute-rounded reading shifts (L-125).
+				advance(59)
+				shared, side = filed(604000)
+				check("and still there when the auctioneer stops answering partway through it",
+					shared and not side,
+					"shared " .. tostring(shared) .. ", side " .. tostring(side))
+
+				FamilyDB.auctionPrices = heldPrices
+				UnitName, UnitFactionGroup, GetRealmName = realName, realFaction, realRealm
+				Family.Auctions:ForgetVisit()
+				Family.Auctions:StopBigListRead()
+			end
+
 			-- **Rows the client will not describe are counted, not passed over in silence.**
 			--
 			-- Reported from play on Burning Crusade 2026-09-12, twice and hours apart: a read

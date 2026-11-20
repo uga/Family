@@ -7825,10 +7825,16 @@ reading the Alliance house they found their Horde price unchanged since 21:00. N
 
 **Found on the way, separate:** backlog 114.
 
-## 114. A long list read at the goblin house is filed under the reader's side — OPEN 2026-11-07
+## 114. A long list read at the goblin house is filed under the reader's side — DONE 2026-11-20, not yet seen in game
 
 **Found in the code while reading for backlog 113, not seen in the game.** `ReadPrices` chooses
 `readingMarket`, but `bigReadTick` files under `market()`, so a long list read at the goblin house goes
 under the reader's side and not under `*`. The other side's characters then do not get those prices
 from the neutral fallback (backlog 66).
 
+**Built 2026-11-20:** `ReadPrices` keeps the market it settled on the read (`bigRead.where`), and
+`bigReadTick` files under that, so the auctioneer is asked once, when the list is read for, and
+never again by a tick. Checks *a loaded list read at the goblin house is filed under the realm, not
+a side* and *and still there when the auctioneer stops answering partway through it*, both through
+the dispatcher; both were red before the fix. Mutations `big-list-filed-under-the-readers-side` and
+`big-list-asks-the-auctioneer-every-tick`.

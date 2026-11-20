@@ -1,0 +1,8 @@
+name: a loaded list asks the auctioneer again on every tick, so a changed target moves half of it
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local where = bigRead.where
+	if not where then bigRead = nil return end
+--- new
+	local where = readingMarket()
+	if not where then bigRead = nil return end

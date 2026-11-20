@@ -1,0 +1,8 @@
+name: a loaded list read at the goblin house is filed under the reader's own side again
+file: addons/Family/Scanners/Auctions.lua
+--- old
+	local where = bigRead.where
+	if not where then bigRead = nil return end
+--- new
+	local where = market()
+	if not where then bigRead = nil return end

@@ -29,6 +29,12 @@ is a decision rather than an afternoon of archaeology.
 
 ## Unreleased
 
+### Auction prices
+
+- **A whole auction house loaded at the goblin auctioneer now prices things for both factions**,
+  as a single page read there already did. Before, those prices counted only for the faction of
+  the character who loaded the list.
+
 ## 5.2.0 — 2026-10-31
 
 ### Professions
