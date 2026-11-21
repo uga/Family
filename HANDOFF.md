@@ -1,86 +1,78 @@
-# HANDOFF — Family: dopo la 5.2.0, voce 114 da correggere — 2026-11-20
+# HANDOFF — Family: 114 e 115 pubblicate su main, voce 116 da studiare — 2026-11-21
 
-Origine: Claude Code (sessione 53b917b9, `/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
+Origine: Claude Code (`/home/dietpi/dev/Family-public`, `main`) · Destinazione prevista: Claude Code, stessa cartella
 
 ## Obiettivo
-Il lavoro della sessione è chiuso: le voci 111 e 112 di `docs/BACKLOG.md` sono state corrette e pubblicate nella 5.2.0, e la voce 113 si è chiusa come falso allarme. Il prossimo lavoro è la **voce 114**, un difetto trovato solo leggendo il codice e mai visto in gioco: una lista lunga letta nella casa d'aste dei goblin finisce sotto la fazione di chi legge e non nel mercato neutrale.
+Questa sessione ha chiuso le voci 114 e 115 di `docs/BACKLOG.md` e ha spinto tutto su `origin/main`. Il prossimo lavoro è la **voce 116**: scrivendo nella cassetta delle lettere il nome di un personaggio della famiglia, Family completa `Nome-Reame` e la lettera parte senza l'attesa di 3 secondi del dialogo «forse non conosci questa persona». La voce non è stata iniziata: prima vanno lette dal client alcune cose (vedi PROSSIMA AZIONE).
 
 ## Contesto indispensabile
-**La voce 114** (`docs/BACKLOG.md`, intestazione `## 114.`):
-- In `addons/Family/Scanners/Auctions.lua`, `ReadPrices` sceglie il mercato con `readingMarket()`, che restituisce `realm\30*` quando `Auctions:HouseIsNeutral()` è vero.
-- `bigReadTick` invece usa `market()`, cioè sempre `realm\30<fazione di chi legge>`, e passa quel valore a `readRows`.
-- Così i prezzi di una lista lunga letta dai goblin non arrivano all'altra fazione attraverso il ripiego sulla casa neutrale (voce 66).
-- I numeri di riga cambiano: cerca i nomi delle funzioni, non le righe.
+**La richiesta di Alberto, testuale** (è anche nella voce 116):
 
-**Come i prezzi sono salvati** (letto nel codice in questa sessione):
-- `FamilyDB.auctionPrices["<reame>\30<fazione>"]`.
-- `*` indica la casa neutrale, condivisa dalle due fazioni dello stesso reame.
-- `?` indica una fazione che il client non ha restituito.
-- `groupMarkets` unisce, solo in lettura, i mercati della stessa fazione e quelli neutrali dei reami connessi (voce 91). Lo store non si sposta.
-- `Auctions:Prices(where)` crea una tabella vuota quando viene interrogato: da qui i mercati con 0 prezzi.
-- L'unica riga che toglie un prezzo è `Forget` (`prices[variant] = nil`).
+> when sending mail to a family member, typing its name at the mailbox will automatically find the Name-Server of the characters from the same family, and allows to send mail without having the boring 3 seconds timer "Maybe you don't know this person, etc...
 
-**Il gate di `docs/DECISIONS.md`** (`tools/decisions.py --check`, lanciato dall'harness):
-- Una riga nuova supera al massimo **1000 caratteri**. Dal 2026-11-16 una riga più lunga è un **errore**, non più un avviso.
-- Le parole di revisione (regex `REVISES`) obbligano la riga a citare un id `D-…` esistente, oppure a contenere la frase `no row replaced`.
+**Cosa dice la voce 116 sul prima di costruire:** su ciascun client va letto che cosa la casella di invio accetta e completa già da sola, a quale dialogo appartiene l'attesa e se un addon può rispondergli. Va letto dal client, non dato per scontato (L-020, L-026). Non si sa se saltare quel dialogo sia permesso: ad Alberto non è stato promesso.
 
-**Gate prima di ogni commit:** l'harness del pre-commit (4301 check passati al commit `3733284`) e `tools/mutate.py --changed`. Prima di un rilascio serve il run completo di `tools/mutate.py`.
+**Codice della posta** (`addons/Family/Scanners/Mail.lua`):
+- `memberNamed(recipient)` trova il membro da un nome scritto, con o senza `-Reame`, senza distinguere maiuscole e minuscole. Probabilmente è il pezzo da riusare.
+- L'invio è osservato con `hooksecurefunc("SendMail", …)` e confermato su `MAIL_SEND_SUCCESS`.
+
+**Gate prima di ogni commit:** l'harness del pre-commit (4306 check al commit `6f1ac86`) e `tools/mutate.py --changed`. Prima di un rilascio serve il run completo di `tools/mutate.py`.
 
 ## Decisioni prese (e perché)
-- **Ricerca della famiglia (111):** la chiave è `spell:<id>` da `recipe.spellID or recipe.matchedSpellID`, altrimenti `item:<id>\0<professione>`. Per la gilda la chiave è `item:<id>\0<riga>`. Così su Era, dove le righe hanno solo l'oggetto, due trasmutazioni che fanno la stessa essenza non si fondono più.
-- **Scanner professioni (111):** abbina lo spell con la parola esatta quando c'è più di un creatore. Se resta un pareggio, `matchedSpellID` non viene impostato: meglio nessun dato che uno sbagliato.
-- **Nomi (112):** `Names.lua` usa `recipe.spellID or recipe.matchedSpellID`, così chi gioca in un'altra lingua vede due nomi diversi.
-- **Voce 113 chiusa senza modifiche:** due letture dal client del giocatore (Era, cluster Pyrewood Village / Mirage Raceway / Nethergarde Keep) hanno mostrato le fazioni salvate separatamente. Il giocatore ha poi scritto che si aspettava i prezzi delle due fazioni indicati a parte e li aveva scambiati per una sovrascrittura.
+- **114:** `ReadPrices` salva in `bigRead.where` il mercato che sceglie, e `bigReadTick` usa quello. Interrogare il banditore a ogni tick lascerebbe decidere a un bersaglio cambiato a metà dove va il resto della lista. Riga in `docs/DECISIONS.md` del 2026-11-20.
+- **115:** è stata scelta da Alberto l'opzione 1 di tre. La scansione della cassetta tiene una lettera «in viaggio» se è stata spedita meno di un'ora fa (`DELIVERY = 3600`) e nessuna lettera della cassetta ha gli stessi soldi e gli stessi oggetti (id e quantità, in qualsiasi ordine). Ogni lettera della cassetta ne copre una sola. Dopo un'ora, una lettera che non si è vista viene lasciata cadere. Riga in DECISIONS, specifica §5 aggiornata.
+- **115, perché non serviva misurare quali lettere la posta trattiene:** una lettera arrivata subito è nella cassetta e viene abbinata lì.
 
 ## Strade scartate (e perché)
-- **Dare una causa alla 113 prima delle letture** → L-085 e L-207. La candidata "casa di fazione scambiata per neutrale su Era" è caduta: `*` conteneva 4 prezzi soli e non esisteva nessun mercato `?`.
-- **Correggere `bigReadTick` dentro la 113** → è un difetto diverso, ora voce 114.
+- **Check della 115 accanto a quelli d'invio** ("mail posted to another member"): lì `advance` fa partire una ventina di timer lasciati in sospeso dalle sezioni precedenti (`guild.hello`, `wide.queue`, `comm.probation`…) e manda in rosso i check dei whisper più avanti. I check stanno nella sezione "the mailbox", dove `fire` + `advance` sono già normali.
+- **Scansione «un'ora dopo» spostando `time()` in avanti con gli eventi:** scriveva nel record del membro giocato e rompeva l'ordinamento per denaro. Il check dell'ora dopo usa una `Scan()` diretta con l'orologio spostato, come faceva il check originale.
 
 ## Stato
 **FATTO**
-- **5.2.0 pubblicata** (`a033868`): contiene la 111 e la 112, e lo SMOKE l'ha compilato Alberto su tutti e quattro i client (`4705d09`).
-- **`c757c4b`:** `tools/mutations/caught-by.tsv` aggiornato dal run completo del rilascio.
-- **`3733284`:** voce 113 chiusa e voce 114 aperta. Pre-commit a 4301 check passati.
-- Questo `HANDOFF.md`, da committare.
+- `ee69715`: voce 114 (asta neutrale, liste lunghe), 2 check e 2 mutazioni.
+- `6f1ac86`: voce 115 (lettera in viaggio), 3 check e 5 mutazioni `a-letter-*.mut`. La voce 116 è aperta.
+- Push di `main` su `origin` (`a033868..6f1ac86`), senza tag. `main` è allineato a `origin/main`.
+- Questo `HANDOFF.md`, ancora da committare.
 
 **IN CORSO**
 - Niente.
 
 **BACKLOG** (in ordine)
-1. **Voce 114.** Correzione in `bigReadTick`, più un check nell'harness (vedi PROSSIMA AZIONE), una mutazione in `tools/mutations/`, una riga nell'**Unreleased** di `CHANGELOG.md` e una riga in DECISIONS.
-2. **Push:** `main` è avanti di almeno 2 commit su `origin/main` (`c757c4b`, `3733284`), più quello dell'handoff. Il push lo decide Alberto.
-3. **Conferma in gioco** della 111 e della 112: nelle intestazioni sono ancora "not yet seen in game".
-4. **Pagina *Files* di CurseForge per la 5.2.0:** non l'ho controllata io.
-5. **Possibile richiesta UX, non registrata:** indicare la fazione accanto a un prezzo d'asta. Il giocatore della 113 se la aspettava. Non l'ha chiesto né Alberto né il giocatore come funzione, quindi chiedi ad Alberto prima di aprire una voce.
+1. **Voce 116**, vedi PROSSIMA AZIONE.
+2. **Conferma in gioco** della 111, 112, 114 e 115: nelle intestazioni sono ancora "not yet seen in game". Per la 115: spedire oggetti da A a B, poi aprire la cassetta di B entro l'ora. Per la 114: caricare tutta la casa d'aste dal banditore goblin.
+3. **Pagina *Files* di CurseForge per la 5.2.0:** nessuno l'ha controllata.
+4. **Possibile richiesta UX, non registrata:** mostrare la fazione accanto a un prezzo d'asta. Va chiesto ad Alberto prima di aprire una voce.
 
 ## Artefatti
 | Artefatto | Dove | Stato | Leggibile? |
 |---|---|---|---|
-| Voci 111–114 | `docs/BACKLOG.md` | 111/112 DONE, 113 CLOSED, 114 OPEN | sì |
-| Codice delle aste | `addons/Family/Scanners/Auctions.lua` | da correggere (114) | sì |
+| Voci 114–116 | `docs/BACKLOG.md` | 114/115 DONE, 116 OPEN | sì |
+| Lettura del ritardo della posta | `docs/DATASOURCES.md`, *How long the post holds a letter…* | Era, oggetti, stesso account; il resto non è misurato | sì |
 | `addons/Family.zip` | root | non tracciato, **non nostro**: non toccarlo | sì |
 | `docs/images/)à'.png` | non tracciato | **non nostro**: non toccarlo | sì |
 
 ## Regole di lavoro concordate in questa chat
 - **Lingua:** con Alberto si parla in italiano. Repository, codice, commit e documenti sono in inglese.
-- **Stile:** risposte concise. Per le scelte riservate, opzioni numerate con una raccomandazione; Alberto risponde spesso con il solo numero.
-- **Riservati (si chiede sempre prima):** licenza, librerie di terzi o nuove fonti dati, riscrittura della storia, rendere pubblico il repository, condivisione accesa di default, push di un tag `v*`, cancellazioni dall'albero, righe `allow` in `~/.config/family/words`.
-- **Push:** lo decide Alberto. Si committa solo quando lo chiede lui.
-- **Comandi del gioco** (`/family …`, `/run …`): mai dentro un blocco bash. Una riga `/run` si conta (con `/run ` sotto i 255 caratteri, L-127), si compila con `luac5.1 -p` e non deve contenere sequenze `_,_` (L-032).
-- **Segnalazioni dei giocatori:** prima chiedere le parole esatte del giocatore e una lettura, poi parlare di causa.
-- **Dove non si scrive:** mai in `/mnt/RemoteBU1`. I file temporanei vanno nella scratchpad della sessione, mai nell'albero.
-- **Parole bandite:** mai scrivere nell'albero una parola di `~/.config/family/words`.
+- **Stile:** risposte concise, e opzioni numerate con una raccomandazione. Alberto risponde con il solo numero: se il numero non corrisponde a nessuna domanda, chiedi di nuovo, non indovinare.
+- **Commit e push:** solo quando lo chiede lui. Il push di `main` non è riservato; il push di un tag `v*` sì.
+- **Riservati (si chiede sempre prima):** licenza, librerie di terzi o nuove fonti dati, riscrittura della storia, rendere pubblico il repository, condivisione accesa di default, tag `v*`, cancellazioni dall'albero, righe `allow` in `~/.config/family/words`.
+- **Comandi del gioco** (`/family …`, `/run …`): mai dentro un blocco bash. Una riga `/run` si conta (con `/run ` sotto i 255 caratteri, L-127), si compila con `luac5.1 -p` e non contiene `_,_` (L-032).
+- **Segnalazioni:** prima il client (L-059) e una lettura, poi la causa.
+- **Un check nuovo** si vede fallire prima della correzione, e la sua mutazione si registra (L-088). L'orologio di una sezione si muove a minuti interi (L-125).
+- **Dove non si scrive:** mai in `/mnt/RemoteBU1`. I file temporanei vanno nella scratchpad della sessione.
 
 ## Problemi aperti / dubbi
-- La 114 è stata trovata leggendo il codice, non in gioco. Non è dimostrato che una lista lunga venga mai letta dai goblin su un client reale. Il check dimostra il codice, non il gioco.
-- La lettura di `HouseIsNeutral` su Era (`target` in una casa di fazione) non è stata misurata con `/family ah`. Le letture della 113 la rendono improbabile come guasto, ma non la misurano.
+- **115:** una lettera più vecchia, con contenuto identico, già nella cassetta può coprire quella nuova. In quel caso la nuova non si vede finché non arriva, ma non viene mai contata due volte. È accettato e scritto nel codice.
+- **Ritardo della posta:** l'ora viene dal racconto di Alberto (Era, oggetti, stesso account), non da una misura. Lettere di soli soldi, account diversi e altri client non sono stati misurati.
+- **Riga DECISIONS della 115:** dice "landed: `docs/BACKLOG.md`" perché è stata scritta prima del codice. DECISIONS è append-only, quindi non va corretta modificandola.
+- **116:** non si sa se un addon può rispondere al dialogo con l'attesa, né su quali client compare.
 
 ## PROSSIMA AZIONE
-Leggi la voce 114 in `docs/BACKLOG.md` e, in `Auctions.lua`, le funzioni `bigReadTick`, `readingMarket` e `ReadPrices`. Poi dichiara ad Alberto i file da toccare e scrivi prima il check. Il check deve avviare una lettura lunga con l'evento vero attraverso il dispatcher (L-005), con il banditore senza fazione. Deve poi verificare che i prezzi finiscano in `realm\30*` e non nel mercato della fazione di chi legge, e va visto fallire prima della correzione (L-088).
+Leggi la voce 116 in `docs/BACKLOG.md` e la parte «Posting to one of your own» di `Mail.lua`. Poi prepara per Alberto le letture da fare in gioco, una per client, come righe `/run` contate e compilate. Devono dire due cose: quale dialogo compare inviando a un personaggio dello stesso account su un altro reame o senza reame, e cosa offre già il completamento della casella di invio. Niente codice finché quelle letture non sono tornate.
 
 ## Verifica
-1. In quale mercato deve finire una lista lunga letta dai goblin, e quale funzione la mette oggi nel posto sbagliato?
-2. Perché la voce 113 è stata chiusa senza toccare il codice?
-3. Una riga nuova in DECISIONS di 1100 caratteri oggi passa?
-4. Chi fa il push, e quanti commit locali aspettano?
-5. Cosa non va mai scritto dentro un blocco bash?
+1. Per quanto tempo la scansione tiene una lettera in viaggio, e con quali campi la abbina a quella arrivata?
+2. Perché i check della 115 non sono accanto ai check d'invio?
+3. Alberto risponde «2» a una domanda che non ha opzioni numerate: cosa fai?
+4. Il push di `main` va chiesto? E quello di un tag `v*`?
+5. Cosa va letto prima di scrivere codice per la 116?
